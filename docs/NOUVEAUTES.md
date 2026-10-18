@@ -4,6 +4,24 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 18 octobre 2026 (famangiana)
+
+- Le menu « Situations particulières » s'appelle maintenant « Famangiana et
+  situations ». Les suivis existants et leurs 4 types sont conservés.
+- Nouveaux types de suivi : naissance, baptême, mariage, maladie ou
+  hospitalisation, accident ou sinistre, décès, famadihana.
+- Un suivi indique la personne concernée quand ce n'est pas le membre
+  lui-même (« sa mère »), et montre la famille du membre à prévenir ou visiter.
+- La visite (date, heure, lieu, membres qui y vont) s'ajoute au Calendrier de
+  ces membres.
+- La participation remise (fanomezana) peut être enregistrée comme dépense
+  dans Finances.
+- Décès d'un membre : depuis le suivi ou sa fiche, « Enregistrer le décès ».
+  La fiche devient inactive, sans cotisation attendue ni rappel
+  d'anniversaire. « Annuler le décès » corrige une erreur.
+- Naissance : « Créer la fiche du bébé » crée sa fiche, déjà reliée à ses
+  parents.
+
 ## 18 octobre 2026 (tous les liens de famille)
 
 - Section « Famille » d'une fiche : en plus des parents, enfants, conjoint(e)

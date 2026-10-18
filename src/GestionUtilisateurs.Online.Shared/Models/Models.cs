@@ -278,7 +278,12 @@ public class UserAccount
     public Dictionary<string, FieldValue> Champs { get; set; } = new();
 
     public string NomComplet => Nom + " " + Prenom;
-    public string Statut => Actif ? "Actif" : "Inactif";
+    public string Statut => EstDecede ? "Décédé(e)" : Actif ? "Actif" : "Inactif";
+
+    /// <summary>Date du décès (yyyy-MM-dd), vide si le membre est en vie.</summary>
+    public string DateDeces { get; set; } = "";
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool EstDecede => !string.IsNullOrWhiteSpace(DateDeces);
 
     /// <summary>Responsable légal (parent, tuteur) d'un membre de moins de 18 ans.</summary>
     public string ResponsableLegal { get; set; } = "";
@@ -405,7 +410,7 @@ public static class AppMenus
         new MenuDef("carte", "Carte de membre", "🪪"),
         new MenuDef("finances", "Finances", "💰"),
         new MenuDef("materiel", "Matériel", "🧰"),
-        new MenuDef("situations", "Situations particulières", "🤝"),
+        new MenuDef("situations", "Famangiana et situations", "🤝"),
         new MenuDef("guide", "Guide utilisateur", "🧭"),
         new MenuDef("comptes", "Comptes en ligne", "👤"),
         new MenuDef("roles", "Rôles et permissions", "🛡"),
@@ -641,6 +646,25 @@ public class Situation
     public string DateCreation { get; set; } = "";
     public string? DateResolution { get; set; }
     public string CreatedBy { get; set; } = "";
+
+    // ---- Famangiana ----
+    /// <summary>Personne concernée quand ce n'est pas le membre lui-même (ex. « sa mère, Rasoa Marie »).</summary>
+    public string PersonneConcernee { get; set; } = "";
+    /// <summary>Date de la visite (yyyy-MM-dd), vide si pas encore prévue.</summary>
+    public string DateVisite { get; set; } = "";
+    /// <summary>Heure de la visite (HH:mm), vide pour toute la journée.</summary>
+    public string HeureVisite { get; set; } = "";
+    public string LieuVisite { get; set; } = "";
+    /// <summary>Identifiants des membres qui font la visite.</summary>
+    public List<string> Visiteurs { get; set; } = new();
+    /// <summary>Événement du calendrier créé pour la visite.</summary>
+    public string? EvenementId { get; set; }
+    /// <summary>Participation remise (fanomezana), en Ariary.</summary>
+    public double Participation { get; set; }
+    /// <summary>Sortie de trésorerie enregistrée pour la participation.</summary>
+    public string? TransactionId { get; set; }
+    /// <summary>Fiche créée pour le bébé (naissance).</summary>
+    public string? EnfantIdentifiant { get; set; }
 }
 
 public static class SituationTypes
@@ -648,12 +672,34 @@ public static class SituationTypes
     public const string Visite = "visite";
     public const string Accompagnement = "accompagnement";
     public const string EvenementImportant = "evenement_important";
+    public const string Naissance = "naissance";
+    public const string Bapteme = "bapteme";
+    public const string Mariage = "mariage";
+    public const string Maladie = "maladie";
+    public const string Accident = "accident";
+    public const string Deces = "deces";
+    public const string Famadihana = "famadihana";
     public const string Autre = "autre";
+
+    /// <summary>Tous les types, dans l'ordre de la liste de choix.</summary>
+    public static readonly string[] Tous =
+    {
+        Visite, Accompagnement, EvenementImportant,
+        Naissance, Bapteme, Mariage, Maladie, Accident, Deces, Famadihana,
+        Autre
+    };
 
     public static string Label(string type) => type switch
     {
         Accompagnement => L.T("Accompagnement"),
         EvenementImportant => L.T("Événement important"),
+        Naissance => L.T("Naissance"),
+        Bapteme => L.T("Baptême"),
+        Mariage => L.T("Mariage"),
+        Maladie => L.T("Maladie ou hospitalisation"),
+        Accident => L.T("Accident ou sinistre"),
+        Deces => L.T("Décès"),
+        Famadihana => L.T("Famadihana"),
         Autre => L.T("Autre"),
         _ => L.T("Visite nécessaire")
     };
@@ -662,6 +708,13 @@ public static class SituationTypes
     {
         Accompagnement => "🤝",
         EvenementImportant => "⭐",
+        Naissance => "👶",
+        Bapteme => "⛪",
+        Mariage => "💍",
+        Maladie => "🏥",
+        Accident => "🚑",
+        Deces => "🕊️",
+        Famadihana => "🌿",
         Autre => "📌",
         _ => "🏠"
     };
@@ -871,7 +924,7 @@ public static class Permissions
         new Definition(FinancesManage, "Gestion", "Gérer les finances (cotisations, trésorerie)"),
         new Definition(MaterielManage, "Gestion", "Gérer le matériel"),
         new Definition(PresenceManage, "Gestion", "Gérer présence et réunions"),
-        new Definition(SituationsManage, "Gestion", "Suivre les situations particulières"),
+        new Definition(SituationsManage, "Gestion", "Suivre les famangiana et situations particulières"),
     };
 }
 

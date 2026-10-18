@@ -211,6 +211,11 @@ public partial class DataStore
         foreach (var p in _prets.Where(p => Meme(p.MembreIdentifiant))) { p.MembreIdentifiant = nouveau; pretChange = true; }
         var sitChange = false;
         foreach (var s in _situations.Where(s => Meme(s.MembreIdentifiant))) { s.MembreIdentifiant = nouveau; sitChange = true; }
+        foreach (var s in _situations)
+        {
+            sitChange |= Remplacer(s.Visiteurs);
+            if (Meme(s.EnfantIdentifiant)) { s.EnfantIdentifiant = nouveau; sitChange = true; }
+        }
         var tacheChange = false;
         foreach (var t in _taches) tacheChange |= Remplacer(t.Assignes);
         var msgChange = false;

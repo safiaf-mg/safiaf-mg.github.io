@@ -158,7 +158,7 @@ new ManagedDataSet("archives", "Archives des utilisateurs", "Comptes supprimés 
         new ManagedDataSet("materiels", "Matériel", "Inventaire du matériel, depuis le menu « … »."),
         new ManagedDataSet("prets", "Prêts de matériel", "Prêts en cours et retours, depuis le menu « … »."),
         new ManagedDataSet("reunions", "Réunions", "Réunions et feuilles de présence, depuis le menu « … »."),
-        new ManagedDataSet("situations", "Situations particulières", "Visites, accompagnements et suivis, depuis le menu « … »."),
+        new ManagedDataSet("situations", "Famangiana et situations", "Famangiana, visites, accompagnements et suivis, depuis le menu « … »."),
         new ManagedDataSet("votes", "Votes internes", "Votes et décisions internes, depuis le menu « … »."),
         new ManagedDataSet("journal_media", "Journal multimédia", "Photos, vidéos et audios, depuis le menu « … »."),
         new ManagedDataSet("settings", "Paramètres", "Nom, thème, couleur, logo et préférences de l'application.")
@@ -4068,8 +4068,8 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         var ident = (user.Identifiant ?? "").Trim();
         var nomComplet = user.NomComplet?.Trim() ?? "";
 
-        // 1) Anniversaire issu de la fiche membre.
-        if (TryParseYmd(user.DateNaissance, out _))
+        // 1) Anniversaire issu de la fiche membre (pas pour un membre décédé).
+        if (!user.EstDecede && TryParseYmd(user.DateNaissance, out _))
         {
             var wantDate = ToYmd(user.DateNaissance);
             var wantTitle = "Anniversaire de " + nomComplet;
@@ -4190,7 +4190,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         var nomComplet = user.NomComplet?.Trim() ?? "";
         var changed = false;
 
-        if (TryParseYmd(user.DateNaissance, out _))
+        if (!user.EstDecede && TryParseYmd(user.DateNaissance, out _))
         {
             var wantDate = ToYmd(user.DateNaissance);
             var wantTitle = "Anniversaire de " + nomComplet;
@@ -4456,7 +4456,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             .Select(c => (c.MembreIdentifiant ?? "").Trim().ToLowerInvariant()));
         if (enAttente.Count == 0) return Array.Empty<UserAccount>();
         return _users
-            .Where(u => enAttente.Contains((u.Identifiant ?? "").Trim().ToLowerInvariant()))
+            .Where(u => !u.EstDecede && enAttente.Contains((u.Identifiant ?? "").Trim().ToLowerInvariant()))
             .OrderBy(u => u.Nom).ThenBy(u => u.Prenom)
             .ToList();
     }
@@ -4780,7 +4780,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             }
         }
 
-        foreach (var u in _users.Where(u => u.Actif && TryParseYmd(u.DateNaissance, out _)))
+        foreach (var u in _users.Where(u => u.Actif && !u.EstDecede && TryParseYmd(u.DateNaissance, out _)))
         {
             TryParseYmd(u.DateNaissance, out var naiss);
             // AddYears ramène le 29 février au 28 les années non bissextiles (pas d'exception).
@@ -4844,15 +4844,17 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             .ThenByDescending(s => s.DateCreation)
             .ToList();
 
-    public OperationResult AddSituation(Situation draft)
+    /// <param name="participationEnFinances">Enregistrer la participation comme sortie dans Finances (null : inchangé).</param>
+    public OperationResult AddSituation(Situation draft, bool? participationEnFinances = null)
     {
         draft.Titre = (draft.Titre ?? "").Trim();
         if (string.IsNullOrWhiteSpace(draft.Titre))
             return OperationResult.Fail(L.T("Le titre de la situation est obligatoire."));
         if (FindUserByIdentifier(draft.MembreIdentifiant) == null)
             return OperationResult.Fail(L.F("Membre introuvable : « {0} ».", draft.MembreIdentifiant));
-        if (draft.Type is not (Models.SituationTypes.Accompagnement or Models.SituationTypes.EvenementImportant or Models.SituationTypes.Autre))
+        if (!Models.SituationTypes.Tous.Contains(draft.Type))
             draft.Type = Models.SituationTypes.Visite;
+        if (NormaliserFamangiana(draft) is { } erreur) return OperationResult.Fail(erreur);
         draft.Description = (draft.Description ?? "").Trim();
         draft.MembreIdentifiant = draft.MembreIdentifiant.Trim();
         draft.Id = Guid.NewGuid().ToString("N");
@@ -4860,14 +4862,19 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         draft.DateCreation = DateTimeOffset.Now.ToString("O");
         draft.DateResolution = null;
         draft.CreatedBy = GetCurrentUser()?.Identifiant ?? "inconnu";
+        draft.EvenementId = null;
+        draft.TransactionId = null;
+        draft.EnfantIdentifiant = null;
         _situations.Add(draft);
+        SyncVisite(draft);
+        SyncParticipation(draft, participationEnFinances);
         SaveSituations();
         LogActivity(Models.ActivityTypes.SituationChange, "Suivi ouvert : « " + draft.Titre + " » (" + draft.MembreIdentifiant + ")");
         DataChanged?.Invoke();
         return OperationResult.Ok();
     }
 
-    public OperationResult UpdateSituation(string id, Situation draft)
+    public OperationResult UpdateSituation(string id, Situation draft, bool? participationEnFinances = null)
     {
         var existing = FindSituation(id);
         if (existing == null) return OperationResult.Fail(L.T("Situation introuvable."));
@@ -4876,12 +4883,16 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             return OperationResult.Fail(L.T("Le titre de la situation est obligatoire."));
         if (FindUserByIdentifier(draft.MembreIdentifiant) == null)
             return OperationResult.Fail(L.F("Membre introuvable : « {0} ».", draft.MembreIdentifiant));
+        if (NormaliserFamangiana(draft) is { } erreur) return OperationResult.Fail(erreur);
         existing.Titre = draft.Titre;
         existing.Description = (draft.Description ?? "").Trim();
         existing.MembreIdentifiant = draft.MembreIdentifiant.Trim();
-        if (draft.Type is Models.SituationTypes.Accompagnement or Models.SituationTypes.EvenementImportant or Models.SituationTypes.Autre or Models.SituationTypes.Visite)
+        if (Models.SituationTypes.Tous.Contains(draft.Type))
             existing.Type = draft.Type;
         existing.Priorite = draft.Priorite;
+        CopierFamangiana(draft, existing);
+        SyncVisite(existing);
+        SyncParticipation(existing, participationEnFinances);
         SaveSituations();
         LogActivity(Models.ActivityTypes.SituationChange, "Modification du suivi « " + existing.Titre + " »");
         DataChanged?.Invoke();
@@ -4909,6 +4920,10 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         var idx = _situations.FindIndex(s => s.Id == id);
         if (idx < 0) return OperationResult.Fail(L.T("Situation introuvable."));
         var titre = _situations[idx].Titre;
+        // La visite prévue disparaît du calendrier ; la participation reste dans Finances.
+        var sansVisite = _situations[idx];
+        sansVisite.DateVisite = "";
+        SyncVisite(sansVisite);
         _situations.RemoveAt(idx);
         SaveSituations();
         LogActivity(Models.ActivityTypes.SituationChange, "Suppression du suivi « " + titre + " »");

@@ -1,0 +1,54 @@
+@inject DataStore Store
+@inject AppState State
+
+@* Enregistre le décès d'un membre : la fiche est désactivée et ses anniversaires retirés. *@
+<Modal Show="Show" Title="@L.T("Enregistrer le décès")" OnClose="Fermer">
+    <ChildContent>
+        @if (Membre != null)
+        {
+            <p>@L.F("Enregistrer le décès de {0} ? Sa fiche reste consultable mais devient inactive : plus de cotisation attendue ni de rappel d'anniversaire.", Membre.NomComplet)</p>
+            <div class="form-group">
+                <label for="deces-date">@L.T("Date du décès *")</label>
+                <DateInput Id="deces-date" Value="@_date" ValueChanged="@(v => _date = v)" MinYear="1900" MaxYear="@(DateTime.Now.Year)" />
+            </div>
+            <span class="form-error">@_erreur</span>
+        }
+    </ChildContent>
+    <FooterContent>
+        <button class="btn btn-secondary" @onclick="Fermer">@L.T("Annuler")</button>
+        <button class="btn btn-primary" @onclick="Enregistrer">🕊 @L.T("Enregistrer")</button>
+    </FooterContent>
+</Modal>
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    [Parameter] public UserAccount? Membre { get; set; }
+    /// <summary>Date proposée (yyyy-MM-dd), aujourd'hui par défaut.</summary>
+    [Parameter] public string? DateProposee { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private string _date = "";
+    private string _erreur = "";
+    private bool _ouvert;
+
+    protected override void OnParametersSet()
+    {
+        if (Show && !_ouvert)
+        {
+            _date = string.IsNullOrWhiteSpace(DateProposee) ? DateTime.Today.ToString("yyyy-MM-dd") : DateProposee;
+            _erreur = "";
+        }
+        _ouvert = Show;
+    }
+
+    private Task Fermer() => OnClose.InvokeAsync();
+
+    private async Task Enregistrer()
+    {
+        if (Membre == null) return;
+        var res = Store.MarquerDeces(Membre.Id, _date);
+        if (!res.Success) { _erreur = res.Error; return; }
+        State.NotifySuccess(L.F("Décès de {0} enregistré.", Membre.NomComplet));
+        await OnClose.InvokeAsync();
+    }
+}
