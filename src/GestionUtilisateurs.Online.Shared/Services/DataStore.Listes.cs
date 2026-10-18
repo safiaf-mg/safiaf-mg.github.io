@@ -52,9 +52,40 @@ public partial class DataStore
             .Where(e => !string.IsNullOrWhiteSpace(e.Cle))
             .GroupBy(e => e.Cle, StringComparer.Ordinal)
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
-        config.Elements = effectifs.Select(e => regles.TryGetValue(e.Cle, out var r) ? r : new ElementListe { Cle = e.Cle }).ToList();
+        config.Elements = effectifs.Select(e => regles.TryGetValue(e.Cle, out var r) ? r : new ElementListe { Cle = e.Cle })
+            // Les choix d'origine supprimés restent notés, pour ne pas revenir d'eux-mêmes.
+            .Concat(regles.Values.Where(r => r.Supprime && effectifs.All(e => e.Cle != r.Cle)))
+            .ToList();
         return config;
     }
+
+    /// <summary>La liste avec ses libellés français (pour comparer et enregistrer).</summary>
+    private IReadOnlyList<ChoixListe> ListeFr(string id)
+    {
+        IReadOnlyList<ChoixListe> liste = Array.Empty<ChoixListe>();
+        L.EnFrancais(() => { liste = Liste(id); return ""; });
+        return liste;
+    }
+
+    /// <summary>Libellé d'origine en français (vide pour un choix ajouté).</summary>
+    public static string LibelleOrigineFr(string id, string cle)
+        => L.EnFrancais(() => ListesChoix.Definition(id)?.Origine().FirstOrDefault(o => o.Cle == cle).Libelle ?? "");
+
+    /// <summary>Ce qui est réglé pour un choix : libellé français, traductions (« en », « mg ») et icône.</summary>
+    public (string Francais, Dictionary<string, string> Traductions, string Icone) ReglageElement(string id, string cle)
+    {
+        var regle = _settings.Listes != null && _settings.Listes.TryGetValue(id, out var l)
+            ? l.Elements?.FirstOrDefault(e => e.Cle == cle) : null;
+        var origine = LibelleOrigineFr(id, cle);
+        var francais = !string.IsNullOrWhiteSpace(regle?.Libelle) ? regle!.Libelle.Trim() : origine.Length > 0 ? origine : cle;
+        var icone = Liste(id).FirstOrDefault(e => e.Cle == cle)?.Icone ?? "";
+        return (francais, new Dictionary<string, string>(regle?.Traductions ?? new Dictionary<string, string>()), icone);
+    }
+
+    private static Dictionary<string, string> NettoyerTraductions(Dictionary<string, string>? traductions)
+        => (traductions ?? new Dictionary<string, string>())
+            .Where(t => t.Key is L.En or L.Mg && !string.IsNullOrWhiteSpace(t.Value))
+            .ToDictionary(t => t.Key, t => t.Value.Trim());
 
     private void ListeModifiee(ListeDefinition def, string detail)
     {
@@ -67,7 +98,7 @@ public partial class DataStore
     {
         if (libelle.Length == 0) return L.T("Le libellé est obligatoire.");
         if (libelle.Length > LibelleListeMax) return L.F("Le libellé ne doit pas dépasser {0} caractères.", LibelleListeMax);
-        if (Liste(id).Any(e => e.Cle != cleExclue && e.Libelle.Equals(libelle, StringComparison.CurrentCultureIgnoreCase)))
+        if (ListeFr(id).Any(e => e.Cle != cleExclue && e.Libelle.Equals(libelle, StringComparison.CurrentCultureIgnoreCase)))
             return L.F("Le choix « {0} » existe déjà dans cette liste.", libelle);
         return null;
     }
@@ -97,7 +128,7 @@ public partial class DataStore
     }
 
     /// <summary>Ajoute un choix à une liste (les listes de statuts n'en acceptent pas).</summary>
-    public OperationResult AjouterElementListe(string id, string libelle, string icone = "", string inverse = "")
+    public OperationResult AjouterElementListe(string id, string libelle, string icone = "", string inverse = "", Dictionary<string, string>? traductions = null)
     {
         if (RefusListe(id, out var def) is { } refus) return refus;
         if (!def.AjoutPermis) return OperationResult.Fail(L.T("On ne peut pas ajouter de choix à cette liste."));
@@ -107,30 +138,36 @@ public partial class DataStore
         if (VerifierLibelle(id, libelle, null) is { } erreur) return OperationResult.Fail(erreur);
         if (icone.Length > 16) return OperationResult.Fail(L.T("L'icône doit être un emoji ou un symbole court."));
         if (VerifierInverse(id, inverse, null) is { } erreurInverse) return OperationResult.Fail(erreurInverse);
+        var trad = NettoyerTraductions(traductions);
+        if (trad.Values.Any(v => v.Length > LibelleListeMax)) return OperationResult.Fail(L.F("Le libellé ne doit pas dépasser {0} caractères.", LibelleListeMax));
 
         var cle = NouvelleCle(id, libelle);
         var config = ConfigListe(id);
-        config.Elements.Add(new ElementListe { Cle = cle, Libelle = libelle, Icone = icone, Inverse = inverse });
+        config.Elements.Add(new ElementListe { Cle = cle, Libelle = libelle, Icone = icone, Inverse = inverse, Traductions = trad });
         LierInverse(id, config, cle, inverse);
         ListeModifiee(def, "ajout de « " + libelle + " »");
         return OperationResult.Ok();
     }
 
     /// <summary>
-    /// Renomme un choix, change son icône et, pour un lien de famille ajouté, son lien inverse.
-    /// Pour un choix d'origine, un libellé ou une icône vide rétablit l'original.
+    /// Renomme un choix (en français, et en anglais et malgache si on le souhaite), change son
+    /// icône et, pour un lien de famille ajouté, son lien inverse. Pour un choix d'origine, un
+    /// libellé ou une icône vide rétablit l'original. <paramref name="traductions"/> null : inchangées.
     /// </summary>
-    public OperationResult ModifierElementListe(string id, string cle, string libelle, string icone = "", string? inverse = null)
+    public OperationResult ModifierElementListe(string id, string cle, string libelle, string icone = "", string? inverse = null, Dictionary<string, string>? traductions = null)
     {
         if (RefusListe(id, out var def) is { } refus) return refus;
-        var actuel = Liste(id).FirstOrDefault(e => e.Cle == cle);
+        var actuel = ListeFr(id).FirstOrDefault(e => e.Cle == cle);
         if (actuel == null) return OperationResult.Fail(L.T("Choix introuvable."));
-        var origine = def.Origine().FirstOrDefault(o => o.Cle == cle);
+        var origine = L.EnFrancais(() => def.Origine().FirstOrDefault(o => o.Cle == cle).Libelle ?? "");
+        var origineIcone = def.Origine().FirstOrDefault(o => o.Cle == cle).Icone ?? "";
         libelle = (libelle ?? "").Trim();
         icone = (icone ?? "").Trim();
-        if (actuel.DOrigine && libelle.Length == 0) libelle = origine.Libelle;
+        if (actuel.DOrigine && libelle.Length == 0) libelle = origine;
         if (VerifierLibelle(id, libelle, cle) is { } erreur) return OperationResult.Fail(erreur);
         if (icone.Length > 16) return OperationResult.Fail(L.T("L'icône doit être un emoji ou un symbole court."));
+        var trad = traductions == null ? null : NettoyerTraductions(traductions);
+        if (trad?.Values.Any(v => v.Length > LibelleListeMax) == true) return OperationResult.Fail(L.F("Le libellé ne doit pas dépasser {0} caractères.", LibelleListeMax));
         if (!actuel.DOrigine && def.AvecInverse && inverse != null)
         {
             inverse = inverse.Trim();
@@ -140,8 +177,9 @@ public partial class DataStore
         var config = ConfigListe(id);
         var e = config.Elements.First(x => x.Cle == cle);
         // Un libellé ou une icône identique à l'original reste « d'origine » (et donc traduit).
-        e.Libelle = actuel.DOrigine && libelle == origine.Libelle ? "" : libelle;
-        e.Icone = actuel.DOrigine && icone == origine.Icone ? "" : icone;
+        e.Libelle = actuel.DOrigine && libelle == origine ? "" : libelle;
+        e.Icone = actuel.DOrigine && icone == origineIcone ? "" : icone;
+        if (trad != null) e.Traductions = trad;
         if (!actuel.DOrigine && def.AvecInverse && inverse != null && inverse != e.Inverse)
         {
             DelierInverse(config, cle);
@@ -180,7 +218,8 @@ public partial class DataStore
             return OperationResult.Fail(L.T("Gardez au moins un choix visible dans la liste."));
         var config = ConfigListe(id);
         config.Elements.First(x => x.Cle == cle).Masque = masque;
-        ListeModifiee(def, (masque ? "« " + actuel.Libelle + " » masqué" : "« " + actuel.Libelle + " » de nouveau proposé"));
+        var nom = ListeFr(id).First(x => x.Cle == cle).Libelle;
+        ListeModifiee(def, masque ? "« " + nom + " » masqué" : "« " + nom + " » de nouveau proposé");
         return OperationResult.Ok();
     }
 
@@ -198,21 +237,39 @@ public partial class DataStore
         return OperationResult.Ok();
     }
 
-    /// <summary>Supprime un choix ajouté qui n'est plus utilisé (les choix d'origine se masquent).</summary>
+    /// <summary>
+    /// Supprime un choix qui n'est plus utilisé. Un choix d'origine supprimé peut être remis
+    /// (« Remettre » ou « Rétablir les choix d'origine »).
+    /// </summary>
     public OperationResult SupprimerElementListe(string id, string cle)
     {
         if (RefusListe(id, out var def) is { } refus) return refus;
+        if (!def.AjoutPermis) return OperationResult.Fail(L.T("On ne peut pas retirer de choix de cette liste."));
         var actuel = Liste(id).FirstOrDefault(e => e.Cle == cle);
         if (actuel == null) return OperationResult.Fail(L.T("Choix introuvable."));
-        if (actuel.DOrigine) return OperationResult.Fail(L.T("Un choix d'origine ne peut pas être supprimé : masquez-le."));
         var n = UtilisationsElement(id, cle);
         if (n > 0) return OperationResult.Fail(L.F("« {0} » est utilisé par {1} fiche(s) : masquez-le plutôt.", actuel.Libelle, n));
         if (Liste(id).Count(e => !e.Masque && e.Cle != cle) == 0)
             return OperationResult.Fail(L.T("Gardez au moins un choix visible dans la liste."));
         var config = ConfigListe(id);
-        config.Elements.RemoveAll(x => x.Cle == cle);
+        var nom = ListeFr(id).First(x => x.Cle == cle).Libelle;
+        if (actuel.DOrigine) config.Elements.First(x => x.Cle == cle).Supprime = true;
+        else config.Elements.RemoveAll(x => x.Cle == cle);
         DelierInverse(config, cle);
-        ListeModifiee(def, "suppression de « " + actuel.Libelle + " »");
+        ListeModifiee(def, "suppression de « " + nom + " »");
+        return OperationResult.Ok();
+    }
+
+    /// <summary>Remet dans la liste un choix d'origine supprimé.</summary>
+    public OperationResult RemettreElementListe(string id, string cle)
+    {
+        if (RefusListe(id, out var def) is { } refus) return refus;
+        var config = ConfigListe(id);
+        var e = config.Elements.FirstOrDefault(x => x.Cle == cle && x.Supprime);
+        if (e == null) return OperationResult.Fail(L.T("Choix introuvable."));
+        e.Supprime = false;
+        e.Masque = false;
+        ListeModifiee(def, "« " + LibelleOrigineFr(id, cle) + " » remis");
         return OperationResult.Ok();
     }
 

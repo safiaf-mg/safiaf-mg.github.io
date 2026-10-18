@@ -15,6 +15,19 @@ public class ElementListe
     public bool Masque { get; set; }
     /// <summary>Liens de famille ajoutés : le lien vu depuis l'autre fiche (vide = le même).</summary>
     public string Inverse { get; set; } = "";
+    /// <summary>Libellé en anglais (« en ») et en malgache (« mg ») ; vide = libellé français.</summary>
+    public Dictionary<string, string> Traductions { get; set; } = new();
+    /// <summary>Choix d'origine supprimé de la liste (« Rétablir » le fait revenir).</summary>
+    public bool Supprime { get; set; }
+
+    /// <summary>Libellé réglé dans la langue affichée (null : aucun réglage).</summary>
+    public string? LibelleAffiche()
+    {
+        var langue = L.LangueAffichee;
+        if (langue != L.Fr && Traductions != null && Traductions.TryGetValue(langue, out var t) && !string.IsNullOrWhiteSpace(t))
+            return t.Trim();
+        return string.IsNullOrWhiteSpace(Libelle) ? null : Libelle.Trim();
+    }
 }
 
 public class ListeConfig
@@ -105,7 +118,8 @@ public static class ListesChoix
             {
                 if (string.IsNullOrWhiteSpace(e.Cle) || !vus.Add(e.Cle)) continue;
                 var dOrigine = parCle.TryGetValue(e.Cle, out var o);
-                var libelle = !string.IsNullOrWhiteSpace(e.Libelle) ? e.Libelle.Trim() : dOrigine ? o.Libelle : e.Cle;
+                if (e.Supprime && dOrigine) continue;
+                var libelle = e.LibelleAffiche() ?? (dOrigine ? o.Libelle : e.Cle);
                 var icone = !string.IsNullOrWhiteSpace(e.Icone) ? e.Icone.Trim() : dOrigine ? o.Icone : "";
                 resultat.Add(new ChoixListe(e.Cle, libelle, icone, e.Masque, dOrigine, dOrigine ? "" : e.Inverse ?? ""));
             }
@@ -114,6 +128,17 @@ public static class ListesChoix
         foreach (var o in origine.Where(o => !vus.Contains(o.Cle)))
             resultat.Add(new ChoixListe(o.Cle, o.Libelle, o.Icone, false, true, ""));
         return resultat;
+    }
+
+    /// <summary>Choix d'origine supprimés d'une liste (pour les remettre).</summary>
+    public static IReadOnlyList<ChoixListe> Supprimes(string id, Dictionary<string, ListeConfig>? config = null)
+    {
+        var def = Definition(id);
+        config ??= Source();
+        if (def == null || config == null || !config.TryGetValue(id, out var liste)) return Array.Empty<ChoixListe>();
+        var supprimes = (liste.Elements ?? new List<ElementListe>()).Where(e => e.Supprime).Select(e => e.Cle).ToHashSet();
+        return def.Origine().Where(o => supprimes.Contains(o.Cle))
+            .Select(o => new ChoixListe(o.Cle, o.Libelle, o.Icone, true, true, "")).ToList();
     }
 
     /// <summary>Choix proposés dans un formulaire : les visibles, plus la valeur actuelle même masquée.</summary>
@@ -131,7 +156,7 @@ public static class ListesChoix
 
     /// <summary>Libellé réglé par un gestionnaire (null : libellé d'origine).</summary>
     public static string? LibellePerso(string id, string? cle)
-        => cle != null && Regle(id, cle) is { } e && !string.IsNullOrWhiteSpace(e.Libelle) ? e.Libelle.Trim() : null;
+        => cle != null && Regle(id, cle) is { } e ? e.LibelleAffiche() : null;
 
     /// <summary>Icône réglée par un gestionnaire (null : icône d'origine).</summary>
     public static string? IconePerso(string id, string? cle)

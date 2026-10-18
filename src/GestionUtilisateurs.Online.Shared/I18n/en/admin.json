@@ -499,5 +499,15 @@
   "Les choix de cette liste ne peuvent pas être masqués.": "The choices in this list cannot be hidden.",
   "Gardez au moins un choix visible dans la liste.": "Keep at least one visible choice in the list.",
   "Un choix d'origine ne peut pas être supprimé : masquez-le.": "An original choice cannot be deleted: hide it instead.",
-  "« {0} » est utilisé par {1} fiche(s) : masquez-le plutôt.": "“{0}” is used by {1} record(s): hide it instead."
+  "« {0} » est utilisé par {1} fiche(s) : masquez-le plutôt.": "“{0}” is used by {1} record(s): hide it instead.",
+  "Ajoutez, renommez, réordonnez, masquez ou supprimez les choix. Un choix masqué n'est plus proposé dans les formulaires, mais les fiches qui l'utilisent le gardent. Un choix encore utilisé ne peut pas être supprimé.": "Add, rename, reorder, hide or delete the choices. A hidden choice is no longer offered in forms, but records that use it keep it. A choice still in use cannot be deleted.",
+  "Chaque membre voit le libellé dans sa langue. Laissé vide, c'est le texte français qui s'affiche.": "Each member sees the label in their own language. Left empty, the French text is shown.",
+  "Choix d'origine supprimés": "Deleted original choices",
+  "Libellé en français *": "Label in French *",
+  "Libellé en anglais": "Label in English",
+  "Libellé en malgache": "Label in Malagasy",
+  "On ne peut pas retirer de choix de cette liste.": "Choices cannot be removed from this list.",
+  "Vide : même texte qu'en français": "Empty: same text as in French",
+  "Vide : « {0} »": "Empty: “{0}”",
+  "« {0} » est de nouveau dans la liste.": "“{0}” is back in the list."
 }

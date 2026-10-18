@@ -4,6 +4,16 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 18 octobre 2026 (listes de choix : supprimer et traduire)
+
+- « Listes de choix » : le bouton 🗑 Supprimer est aussi sur les choix
+  d'origine (types, liens de famille, priorités, catégories, états). Un choix
+  encore utilisé ne se supprime pas. Les choix d'origine supprimés restent
+  listés en bas, avec « ↺ » pour les remettre.
+- Chaque choix ajouté ou modifié a un libellé en français, et si on le
+  souhaite en anglais et en malgache. Chacun voit le libellé dans sa langue ;
+  sans traduction, le texte français s'affiche.
+
 ## 18 octobre 2026 (listes de choix)
 
 - Nouveau dans Paramètres : « Listes de choix » (gestionnaires et

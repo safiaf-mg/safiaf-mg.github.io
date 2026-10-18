@@ -18,7 +18,11 @@ public class DataStoreListesTests : IDisposable
         ListesChoix.Source = () => _store.Settings.Listes;
     }
 
-    public void Dispose() => ListesChoix.Source = () => null;
+    public void Dispose()
+    {
+        ListesChoix.Source = () => null;
+        L.Definir(L.Fr);
+    }
 
     private UserAccount Ajouter(string prenom, string nom)
     {
@@ -103,11 +107,10 @@ public class DataStoreListesTests : IDisposable
         for (var i = 0; i < 5; i++) Assert.True(_store.DeplacerElementListe(liste, cle, -1).Success);
         Assert.Equal(cle, _store.Liste(liste)[0].Cle);
 
-        // Un choix utilisé ne se supprime pas ; un choix d'origine jamais.
+        // Un choix utilisé ne se supprime pas.
         Assert.True(_store.AddMateriel(new Materiel { Nom = "Groupe électrogène", QuantiteTotale = 1, Etat = cle }).Success);
         Assert.Equal(cle, _store.Materiels.Single(m => m.Nom == "Groupe électrogène").Etat);
         Assert.False(_store.SupprimerElementListe(liste, cle).Success);
-        Assert.False(_store.SupprimerElementListe(liste, MaterielEtats.Bon).Success);
         var mat = _store.Materiels.Single(m => m.Nom == "Groupe électrogène");
         Assert.True(_store.DeleteMateriel(mat.Id).Success);
         Assert.True(_store.SupprimerElementListe(liste, cle).Success);
@@ -168,5 +171,65 @@ public class DataStoreListesTests : IDisposable
         Assert.True(_store.Login("lalao", "secret123").Success);
         Assert.False(_store.AjouterElementListe(ListesChoix.TypesSituation, "Test").Success);
         Assert.False(_store.ModifierElementListe(ListesChoix.Priorites, CalendarEventTypes.PrioriteUrgente, "X").Success);
+    }
+
+    [Fact]
+    public void SupprimerUnChoixDOrigine_PuisLeRemettre()
+    {
+        var liste = ListesChoix.TypesSituation;
+        Assert.True(_store.SupprimerElementListe(liste, SituationTypes.Famadihana).Success);
+        Assert.DoesNotContain(_store.Liste(liste), e => e.Cle == SituationTypes.Famadihana);
+        Assert.False(ListesChoix.Contient(liste, SituationTypes.Famadihana));
+        Assert.Equal(new[] { SituationTypes.Famadihana }, ListesChoix.Supprimes(liste).Select(e => e.Cle));
+        // Le choix ne revient pas de lui-même après une autre modification.
+        Assert.True(_store.DeplacerElementListe(liste, SituationTypes.Visite, 1).Success);
+        Assert.DoesNotContain(_store.Liste(liste), e => e.Cle == SituationTypes.Famadihana);
+
+        // Un choix d'origine utilisé ne se supprime pas.
+        var m = Ajouter("Hery", "Rabe");
+        Assert.True(_store.AddSituation(new Situation { MembreIdentifiant = m.Identifiant, Type = SituationTypes.Maladie, Titre = "Malade" }).Success);
+        Assert.False(_store.SupprimerElementListe(liste, SituationTypes.Maladie).Success);
+        // Les listes de statuts ne perdent aucun choix.
+        Assert.False(_store.SupprimerElementListe(ListesChoix.StatutsTache, TacheStatuts.EnCours).Success);
+
+        Assert.True(_store.RemettreElementListe(liste, SituationTypes.Famadihana).Success);
+        Assert.Contains(_store.Liste(liste), e => e.Cle == SituationTypes.Famadihana);
+        Assert.Empty(ListesChoix.Supprimes(liste));
+
+        Assert.True(_store.SupprimerElementListe(liste, SituationTypes.Bapteme).Success);
+        Assert.True(_store.ReinitialiserListe(liste).Success);
+        Assert.Equal(SituationTypes.Tous, _store.Liste(liste).Select(e => e.Cle));
+    }
+
+    [Fact]
+    public void Traductions_ParLangue_SinonTexteFrancais()
+    {
+        var liste = ListesChoix.TypesSituation;
+        Assert.True(_store.AjouterElementListe(liste, "Fiançailles", "💍", traductions: new() { [L.En] = "Engagement", [L.Mg] = "" }).Success);
+        var cle = _store.Liste(liste).Single(e => e.Libelle == "Fiançailles").Cle;
+        Assert.Equal("Fiançailles", SituationTypes.Label(cle));
+
+        L.Definir(L.En);
+        Assert.Equal("Engagement", SituationTypes.Label(cle));
+        Assert.Contains(ListesChoix.Choix(liste), e => e.Libelle == "Engagement");
+        // L'historique reste en français.
+        Assert.Equal("Fiançailles", L.EnFrancais(() => SituationTypes.Label(cle)));
+        L.Definir(L.Mg);
+        Assert.Equal("Fiançailles", SituationTypes.Label(cle));
+
+        // Choix d'origine : la traduction donnée remplace celle de l'application, pour cette langue seulement.
+        Assert.True(_store.ModifierElementListe(liste, SituationTypes.Famadihana, "", traductions: new() { [L.Mg] = "Famadihana (fanaterana razana)" }).Success);
+        Assert.Equal("Famadihana (fanaterana razana)", SituationTypes.Label(SituationTypes.Famadihana));
+        L.Definir(L.Fr);
+        Assert.Equal("Famadihana", SituationTypes.Label(SituationTypes.Famadihana));
+        var reglage = _store.ReglageElement(liste, SituationTypes.Famadihana);
+        Assert.Equal("Famadihana", reglage.Francais);
+        Assert.Equal("Famadihana (fanaterana razana)", reglage.Traductions[L.Mg]);
+
+        // Saisi en anglais, le libellé français reste la référence (pas de doublon, pas d'écrasement).
+        L.Definir(L.En);
+        Assert.True(_store.ModifierElementListe(liste, cle, "Fiançailles", "💍", traductions: new() { [L.En] = "Engagement party" }).Success);
+        L.Definir(L.Fr);
+        Assert.Equal("Fiançailles", SituationTypes.Label(cle));
     }
 }

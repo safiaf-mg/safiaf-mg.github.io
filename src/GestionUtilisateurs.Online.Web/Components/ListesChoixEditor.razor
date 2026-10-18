@@ -9,7 +9,7 @@
             var elements = Store.Liste(Def.Id);
             <p class="muted">
                 @(Def.AjoutPermis
-                    ? L.T("Ajoutez, renommez, réordonnez, masquez ou supprimez les choix. Un choix masqué n'est plus proposé dans les formulaires, mais les fiches qui l'utilisent le gardent.")
+                    ? L.T("Ajoutez, renommez, réordonnez, masquez ou supprimez les choix. Un choix masqué n'est plus proposé dans les formulaires, mais les fiches qui l'utilisent le gardent. Un choix encore utilisé ne peut pas être supprimé.")
                     : L.T("Renommez ou réordonnez les choix. L'application s'appuie sur ces choix pour fonctionner : on ne peut pas en ajouter ni en retirer."))
             </p>
             <div class="menu-order-list listes-elements">
@@ -17,7 +17,7 @@
                 {
                     var e = elements[i];
                     var idx = i;
-                    var n = Def.AjoutPermis && !e.DOrigine ? Store.UtilisationsElement(Def.Id, e.Cle) : 0;
+                    var n = Def.AjoutPermis ? Store.UtilisationsElement(Def.Id, e.Cle) : 0;
                     <div class="menu-order-item @(e.Masque ? "menu-hidden" : "") @(_edition == e.Cle ? "listes-en-edition" : "")" data-cle="@e.Cle" style="@(e.Masque ? "opacity:.55" : "")">
                         @if (AvecIcones)
                         {
@@ -36,10 +36,10 @@
                                 {
                                     <small class="listes-detail">@L.F("De l'autre côté : {0}", LibelleDe(elements, string.IsNullOrEmpty(e.Inverse) ? e.Cle : e.Inverse))</small>
                                 }
-                                @if (n > 0)
-                                {
-                                    <small class="listes-detail">@L.F("Utilisé par {0} fiche(s)", n)</small>
-                                }
+                            }
+                            @if (n > 0)
+                            {
+                                <small class="listes-detail">@L.F("Utilisé par {0} fiche(s)", n)</small>
                             }
                         </span>
                         <div class="menu-order-actions">
@@ -50,7 +50,7 @@
                             {
                                 <button type="button" class="btn btn-secondary btn-sm menu-order-btn listes-masquer" aria-label="@(e.Masque ? L.F("Afficher {0}", e.Libelle) : L.F("Masquer {0}", e.Libelle))" title="@(e.Masque ? L.T("Afficher") : L.T("Masquer"))" @onclick="() => Masquer(e)">@(e.Masque ? "🙈" : "👁")</button>
                             }
-                            @if (!e.DOrigine)
+                            @if (Def.AjoutPermis)
                             {
                                 <button type="button" class="btn btn-secondary btn-sm menu-order-btn listes-supprimer" aria-label="@L.F("Supprimer {0}", e.Libelle)" title="@L.T("Supprimer")" @onclick="() => _aSupprimer = e">🗑</button>
                             }
@@ -59,16 +59,40 @@
                 }
             </div>
 
+            var supprimes = ListesChoix.Supprimes(Def.Id);
+            @if (supprimes.Count > 0)
+            {
+                <div class="divider-section">@L.T("Choix d'origine supprimés")</div>
+                <div class="listes-supprimes">
+                    @foreach (var s in supprimes)
+                    {
+                        <button type="button" class="btn btn-secondary btn-sm listes-remettre" data-cle="@s.Cle" @onclick="() => Remettre(s)">↺ @(string.IsNullOrEmpty(s.Icone) ? "" : s.Icone + " ")@s.Libelle</button>
+                    }
+                </div>
+            }
+
             @if (Def.AjoutPermis || _edition != null)
             {
                 var enCours = _edition == null ? null : elements.FirstOrDefault(x => x.Cle == _edition);
                 <div class="divider-section">@(enCours == null ? L.T("Ajouter un choix") : L.F("Modifier « {0} »", enCours.Libelle))</div>
                 <div class="listes-form">
                     <div class="form-group">
-                        <label for="liste-libelle">@L.T("Libellé *")</label>
+                        <label for="liste-libelle">@L.T("Libellé en français *")</label>
                         <input id="liste-libelle" type="text" maxlength="80" value="@_libelle" placeholder="@(enCours?.DOrigine == true ? L.T("Vide : libellé d'origine") : "")"
                                @oninput="ev => _libelle = ev.Value?.ToString() ?? string.Empty" />
                     </div>
+                    <div class="listes-traductions">
+                        @foreach (var (code, nom) in new[] { (L.En, L.T("Libellé en anglais")), (L.Mg, L.T("Libellé en malgache")) })
+                        {
+                            var langue = code;
+                            <div class="form-group">
+                                <label for="liste-@langue">@nom</label>
+                                <input id="liste-@langue" type="text" maxlength="80" value="@(_traductions.GetValueOrDefault(langue) ?? "")" placeholder="@PlaceholderTraduction(langue, enCours)"
+                                       @oninput="ev => _traductions[langue] = ev.Value?.ToString() ?? string.Empty" />
+                            </div>
+                        }
+                    </div>
+                    <small class="muted listes-aide">@L.T("Chaque membre voit le libellé dans sa langue. Laissé vide, c'est le texte français qui s'affiche.")</small>
                     @if (AvecIcones)
                     {
                         <div class="form-group listes-icone">
@@ -132,6 +156,7 @@
     private string _libelle = "";
     private string _icone = "";
     private string _inverse = "";
+    private Dictionary<string, string> _traductions = new();
     private string _erreur = "";
     private ChoixListe? _aSupprimer;
     private bool _reinit;
@@ -153,23 +178,48 @@
     {
         _edition = null;
         _libelle = _icone = _inverse = _erreur = "";
+        _traductions = new Dictionary<string, string>();
     }
 
     private void Editer(ChoixListe e)
     {
+        if (Def == null) return;
+        var (francais, traductions, icone) = Store.ReglageElement(Def.Id, e.Cle);
         _edition = e.Cle;
-        _libelle = e.Libelle;
-        _icone = e.Icone;
+        _libelle = francais;
+        _traductions = traductions;
+        _icone = icone;
         _inverse = e.Inverse;
         _erreur = "";
+    }
+
+    /// <summary>Exemple affiché dans un champ de traduction vide : la traduction d'origine, sinon le texte français.</summary>
+    private string PlaceholderTraduction(string langue, ChoixListe? enCours)
+    {
+        if (Def != null && enCours?.DOrigine == true)
+        {
+            var origine = DataStore.LibelleOrigineFr(Def.Id, enCours.Cle);
+            var francais = _libelle.Trim();
+            if ((francais.Length == 0 || francais == origine) && L.Dictionnaire(langue).TryGetValue(origine, out var t) && !string.IsNullOrEmpty(t))
+                return L.F("Vide : « {0} »", t);
+        }
+        return L.T("Vide : même texte qu'en français");
+    }
+
+    private void Remettre(ChoixListe s)
+    {
+        if (Def == null) return;
+        var res = Store.RemettreElementListe(Def.Id, s.Cle);
+        if (res.Success) State.NotifySuccess(L.F("« {0} » est de nouveau dans la liste.", s.Libelle));
+        else State.NotifyError(res.Error);
     }
 
     private void Valider()
     {
         if (Def == null) return;
         var res = _edition == null
-            ? Store.AjouterElementListe(Def.Id, _libelle, _icone, _inverse)
-            : Store.ModifierElementListe(Def.Id, _edition, _libelle, _icone, _inverse);
+            ? Store.AjouterElementListe(Def.Id, _libelle, _icone, _inverse, _traductions)
+            : Store.ModifierElementListe(Def.Id, _edition, _libelle, _icone, _inverse, _traductions);
         if (!res.Success) { _erreur = res.Error; return; }
         State.NotifySuccess(_edition == null ? L.F("« {0} » ajouté à la liste.", _libelle.Trim()) : L.T("Choix modifié."));
         AnnulerEdition();
