@@ -295,14 +295,15 @@ public static class HelpCatalog
                     "Les ajustements de rappel dépendent des dates saisies dans chaque module."
                 })
             }),
-        new("situations", "Situations particulières", "🤝",
-            "Suivez discrètement les situations sensibles nécessitant attention (santé, logement, aide…).",
+        new("situations", "Famangiana et situations", "🤝",
+            "Organisez les famangiana (naissance, maladie, décès…) et suivez discrètement les situations sensibles (santé, logement, aide…).",
             new[]
             {
                 new HelpSection("Comprendre", new[]
                 {
                     "Chaque situation est privée et visible uniquement par ce que les permissions autorisent.",
-                    "Un suivi peut être marqué « résolu » et reste alors consultable en historique."
+                    "Un suivi peut être marqué « résolu » et reste alors consultable en historique.",
+                    "Pour organiser les famangiana, choisissez le type : naissance, baptême, mariage, maladie ou hospitalisation, accident ou sinistre, décès, famadihana, ou visite, accompagnement, événement important."
                 })
             }),
         new("carte", "Carte de membre", "🪪",

@@ -108,6 +108,10 @@
 
     <div class="section">
         <h3>@L.T("Organisation")</h3>
+        @if (_user.EstDecede)
+        {
+            <div class="kv-row"><span class="kv-label">🕊 @L.T("Date du décès")</span><span class="kv-value">@FormatDate(_user.DateDeces)</span></div>
+        }
         <div class="kv-row"><span class="kv-label">@L.T("Rôle")</span><span class="kv-value">@L.T(_user.Role)</span></div>
         <div class="kv-row"><span class="kv-label">@L.T("Créé le")</span><span class="kv-value">@FormatDate(_user.DateCreation)</span></div>
         @if (!string.IsNullOrWhiteSpace(_user.DerniereConnexion))
@@ -232,6 +236,17 @@
                     {
                         <button class="btn btn-secondary" @onclick="AskToggle">@(_user.Actif ? "⛔ " + L.T("Désactiver") : "✓ " + L.T("Activer"))</button>
                     }
+                    @if (Store.Can(Permissions.UsersManage) && _user.Id != Store.GetCurrentUser()?.Id)
+                    {
+                        @if (_user.EstDecede)
+                        {
+                            <button class="btn btn-secondary" @onclick="AskAnnulerDeces">↺ @L.T("Annuler le décès")</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-secondary" @onclick="() => _decesOpen = true">🕊 @L.T("Enregistrer le décès")</button>
+                        }
+                    }
                     @if (Store.Can(Permissions.CarteMembreView))
                     {
                         <button class="btn btn-secondary" @onclick="OpenCarte">🪪 @L.T("Voir la carte de membre")</button>
@@ -270,6 +285,8 @@
             <button class="btn btn-secondary btn-block" @onclick="OnBack">← @L.T("Retour à la liste")</button>
         </div>
     }
+
+    <DecesModal Show="_decesOpen" Membre="_user" OnClose="() => _decesOpen = false" />
 
     <ConfirmDialog Show="@_confirm.Show" Title="@_confirm.Title" Message="@_confirm.Message"
                    ConfirmLabel="@_confirm.ConfirmLabel" Danger="@_confirm.Danger"
@@ -311,6 +328,7 @@ else
     /// <summary>Ouvre la fiche d'un autre membre (lien de famille).</summary>
     [Parameter] public EventCallback<string> OnOpenUser { get; set; }
 
+    private bool _decesOpen;
     private bool _lienOpen;
     private string _lienType = LiensFamille.Parent;
     private string _lienSearch = "";
@@ -533,6 +551,21 @@ else
             if (_user.Role == Roles.BaseAdmin) return Store.IsAdmin;
             return Store.IsManager;
         }
+    }
+
+    private void AskAnnulerDeces()
+    {
+        if (_user == null) return;
+        var userId = _user.Id;
+        _confirm = new ConfirmState(true, L.T("Annuler le décès"),
+            L.F("Le décès de « {0} » a été saisi par erreur ? Sa fiche redevient active.", _user.NomComplet),
+            L.T("Annuler le décès"), false, () =>
+            {
+                _confirm = ConfirmState.Hidden();
+                var res = Store.AnnulerDeces(userId);
+                if (res.Success) State.NotifySuccess(L.T("Décès annulé."));
+                else State.NotifyError(res.Error);
+            });
     }
 
     private void AskToggle()

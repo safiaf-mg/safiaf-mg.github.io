@@ -9,7 +9,7 @@
 else
 {
     <div class="page-head">
-        <p>@L.T("Membres à visiter, accompagnements, événements importants : ouvrez un suivi, faites-le avancer, clôturez-le.")</p>
+        <p>@L.T("Membres à visiter, accompagnements, naissances, maladies, décès… : ouvrez un suivi, faites-le avancer, clôturez-le.")</p>
     </div>
 
     <div class="search-box cal-search">
@@ -47,7 +47,11 @@ else
                     <span class="field-type-icon" aria-hidden="true">@SituationTypes.Icon(sit.Type)</span>
                     <div class="user-card-main">
                         <div class="user-card-name">@sit.Titre</div>
-                        <div class="user-card-sub">👤 @MemberName(sit.MembreIdentifiant) · @SituationTypes.Label(sit.Type)</div>
+                        <div class="user-card-sub">👤 @MemberName(sit.MembreIdentifiant)@(string.IsNullOrWhiteSpace(sit.PersonneConcernee) ? "" : " (" + sit.PersonneConcernee + ")") · @SituationTypes.Label(sit.Type)</div>
+                        @if (!string.IsNullOrWhiteSpace(sit.DateVisite))
+                        {
+                            <div class="user-card-sub">📅 @L.F("Visite le {0}", VisiteLabel(sit))</div>
+                        }
                         <div class="user-card-meta">
                             <Badge Text="@(SituationStatuts.Icon(sit.Statut) + " " + SituationStatuts.Label(sit.Statut))" Kind="@(sit.Statut == SituationStatuts.Resolu ? "active" : "role")" />
                             @if (sit.Priorite != CalendarEventTypes.PrioriteNormale)
@@ -86,13 +90,71 @@ else
                 <div class="cal-detail-notes">@sit.Description</div>
             }
             <div class="storage-line"><span>@L.T("Membre")</span><strong>@MemberName(sit.MembreIdentifiant)</strong></div>
-            <div class="storage-line"><span>@L.T("Type")</span><strong>@SituationTypes.Label(sit.Type)</strong></div>
+            @if (!string.IsNullOrWhiteSpace(sit.PersonneConcernee))
+            {
+                <div class="storage-line"><span>@L.T("Personne concernée")</span><strong>@sit.PersonneConcernee</strong></div>
+            }
+            <div class="storage-line"><span>@L.T("Type")</span><strong>@SituationTypes.Icon(sit.Type) @SituationTypes.Label(sit.Type)</strong></div>
             <div class="storage-line"><span>@L.T("Statut")</span><strong>@SituationStatuts.Label(sit.Statut)</strong></div>
             <div class="storage-line"><span>@L.T("Priorité")</span><strong>@PriorityLabel(sit.Priorite)</strong></div>
             <div class="storage-line"><span>@L.T("Ouverte le")</span><strong>@DataStore.FormatDateCourte(sit.DateCreation)</strong></div>
             @if (!string.IsNullOrWhiteSpace(sit.DateResolution))
             {
                 <div class="storage-line"><span>@L.T("Résolue le")</span><strong>@DataStore.FormatDateCourte(sit.DateResolution)</strong></div>
+            }
+
+            <h4 class="si-section">🏠 @L.T("Famangiana")</h4>
+            <div class="storage-line"><span>@L.T("Visite")</span><strong>@(string.IsNullOrWhiteSpace(sit.DateVisite) ? L.T("Pas encore prévue") : VisiteLabel(sit))</strong></div>
+            @if (!string.IsNullOrWhiteSpace(sit.LieuVisite))
+            {
+                <div class="storage-line"><span>@L.T("Lieu")</span><strong>@sit.LieuVisite</strong></div>
+            }
+            @if (sit.Visiteurs.Count > 0)
+            {
+                <div class="storage-line"><span>@L.T("Visiteurs")</span><strong>@string.Join(", ", sit.Visiteurs.Select(MemberName))</strong></div>
+            }
+            @if (sit.Participation > 0)
+            {
+                <div class="storage-line"><span>@L.T("Participation remise")</span><strong>@DataStore.FormatMontant(sit.Participation)@(Store.ParticipationEnFinances(sit) ? " · " + L.T("dans Finances") : "")</strong></div>
+            }
+
+            @if (Store.FindUserByIdentifier(sit.MembreIdentifiant) is { } membre)
+            {
+                var famille = Store.Famille(membre);
+                @if (!famille.EstVide)
+                {
+                    <h4 class="si-section">👪 @L.T("Sa famille (à prévenir ou visiter)")</h4>
+                    @foreach (var g in famille.Groupes.Where(g => g.Membres.Count > 0))
+                    {
+                        <div class="storage-line"><span>@g.Titre</span><strong>@string.Join(", ", g.Membres.Select(m => m.NomComplet + (m.EstDecede ? " 🕊" : "")))</strong></div>
+                    }
+                }
+
+                @if (Store.Can(Permissions.UsersManage))
+                {
+                    <div class="inline-actions" style="margin-top:10px;flex-wrap:wrap">
+                        @if (sit.Type == SituationTypes.Deces && string.IsNullOrWhiteSpace(sit.PersonneConcernee) && !membre.EstDecede && membre.Id != Store.GetCurrentUser()?.Id)
+                        {
+                            <button class="btn btn-secondary btn-sm" @onclick="() => _decesOpen = true">🕊 @L.F("Enregistrer le décès de {0}", membre.NomComplet)</button>
+                        }
+                        @if (membre.EstDecede)
+                        {
+                            <span class="text-muted">🕊 @L.F("{0} est décédé(e) le {1}.", membre.NomComplet, DataStore.FormatDateCourte(membre.DateDeces))</span>
+                        }
+                        @if (sit.Type == SituationTypes.Naissance)
+                        {
+                            @if (!string.IsNullOrWhiteSpace(sit.EnfantIdentifiant) && Store.FindUserByIdentifier(sit.EnfantIdentifiant) is { } bebe)
+                            {
+                                <button class="btn btn-secondary btn-sm" @onclick="() => State.NavigateToUser(bebe.Id)">👶 @L.F("Voir la fiche de {0}", bebe.NomComplet)</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-secondary btn-sm" @onclick="() => OuvrirNaissance(sit, membre)">👶 @L.T("Créer la fiche du bébé")</button>
+                            }
+                        }
+                    </div>
+                    <DecesModal Show="_decesOpen" Membre="membre" DateProposee="@sit.DateCreation[..Math.Min(10, sit.DateCreation.Length)]" OnClose="() => _decesOpen = false" />
+                }
             }
         </div>
     }
@@ -106,12 +168,16 @@ else
                 <MemberPicker Value="@_membre" ValueChanged="@((string v) => _membre = v)" Placeholder="@L.T("Écrire pour chercher un membre…")" />
             </div>
             <div class="form-group">
+                <label for="si-personne">@L.T("Personne concernée")</label>
+                <input id="si-personne" type="text" placeholder="@L.T("Si ce n'est pas le membre lui-même. Ex : sa mère, Rasoa Marie")" value="@_personne" @oninput="e => _personne = e.Value?.ToString() ?? string.Empty" />
+            </div>
+            <div class="form-group">
                 <label for="si-type">@L.T("Type")</label>
                 <select id="si-type" value="@_type" @onchange="e => _type = e.Value?.ToString() ?? SituationTypes.Visite">
-                    <option value="@SituationTypes.Visite">🏠 @L.T("Visite nécessaire")</option>
-                    <option value="@SituationTypes.Accompagnement">🤝 @L.T("Accompagnement")</option>
-                    <option value="@SituationTypes.EvenementImportant">⭐ @L.T("Événement important")</option>
-                    <option value="@SituationTypes.Autre">📌 @L.T("Autre")</option>
+                    @foreach (var t in SituationTypes.Tous)
+                    {
+                        <option value="@t" selected="@(t == _type)">@SituationTypes.Icon(t) @SituationTypes.Label(t)</option>
+                    }
                 </select>
             </div>
             <div class="form-group">
@@ -130,11 +196,88 @@ else
                     <option value="@CalendarEventTypes.PrioriteUrgente">@L.T("Urgente")</option>
                 </select>
             </div>
+
+            <h4 class="si-section">🏠 @L.T("Famangiana (visite)")</h4>
+            <div class="form-group">
+                <label for="si-visite">@L.T("Date de la visite")</label>
+                <DateInput Id="si-visite" Value="@_dateVisite" ValueChanged="@(v => _dateVisite = v)" MinYear="@(DateTime.Now.Year - 1)" MaxYear="@(DateTime.Now.Year + 1)" />
+            </div>
+            <div class="cal-time-row">
+                <div class="form-group cal-time-col">
+                    <label for="si-heure">@L.T("Heure")</label>
+                    <input id="si-heure" type="time" value="@_heure" @onchange="e => _heure = e.Value?.ToString() ?? string.Empty" />
+                </div>
+                <div class="form-group cal-time-col">
+                    <label for="si-lieu">@L.T("Lieu")</label>
+                    <input id="si-lieu" type="text" placeholder="@L.T("Ex : chez lui, hôpital…")" value="@_lieu" @oninput="e => _lieu = e.Value?.ToString() ?? string.Empty" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>@L.F("Membres qui font la visite ({0})", _visiteurs.Count)</label>
+                @if (_visiteurs.Count > 0)
+                {
+                    <div class="person-chips">
+                        @foreach (var v in _visiteurs.ToList())
+                        {
+                            var ident = v;
+                            <span class="person-chip">
+                                <span>@MemberName(ident)</span>
+                                <button type="button" class="person-chip-remove" aria-label="@L.F("Retirer {0}", MemberName(ident))" @onclick="() => _visiteurs.Remove(ident)">×</button>
+                            </span>
+                        }
+                    </div>
+                }
+                <MemberPicker Value="" ValueChanged="@((string v) => AjouterVisiteur(v))" Placeholder="@L.T("Ajouter un membre…")" />
+                <span class="field-hint">@(Store.Can(Permissions.CalendarUse)
+                    ? L.T("Avec une date, la visite est ajoutée au Calendrier des membres qui la font.")
+                    : L.T("Votre rôle ne permet pas de modifier le Calendrier : la visite n'y sera pas ajoutée."))</span>
+            </div>
+            <div class="form-group">
+                <label for="si-part">@L.T("Participation remise (Ar)")</label>
+                <input id="si-part" type="text" inputmode="decimal" placeholder="@L.T("Ex : 20000")" value="@_participation" @oninput="e => _participation = e.Value?.ToString() ?? string.Empty" />
+            </div>
+            @if (Store.Can(Permissions.FinancesManage))
+            {
+                <div class="form-check">
+                    <input id="si-finances" type="checkbox" checked="@_enFinances" @onchange="e => _enFinances = e.Value is true" />
+                    <label for="si-finances">@L.T("Enregistrer comme dépense dans Finances")</label>
+                </div>
+            }
             <span class="form-error">@_error</span>
         </ChildContent>
         <FooterContent>
             <button class="btn btn-secondary" @onclick="CloseEditor">@L.T("Annuler")</button>
             <button class="btn btn-primary" @onclick="Save">@L.T("Enregistrer")</button>
+        </FooterContent>
+    </Modal>
+
+    <Modal Title="@L.T("Créer la fiche du bébé")" Show="_naissanceSituation != null" OnClose="() => _naissanceSituation = null">
+        <ChildContent>
+            <div class="form-group">
+                <label for="nb-prenom">@L.T("Prénom *")</label>
+                <input id="nb-prenom" type="text" value="@_nbPrenom" @oninput="e => _nbPrenom = e.Value?.ToString() ?? string.Empty" />
+            </div>
+            <div class="form-group">
+                <label for="nb-nom">@L.T("Nom")</label>
+                <input id="nb-nom" type="text" value="@_nbNom" @oninput="e => _nbNom = e.Value?.ToString() ?? string.Empty" />
+            </div>
+            <div class="form-group">
+                <label for="nb-date">@L.T("Date de naissance *")</label>
+                <DateInput Id="nb-date" Value="@_nbDate" ValueChanged="@(v => _nbDate = v)" MinYear="@(DateTime.Now.Year - 2)" MaxYear="@(DateTime.Now.Year)" />
+            </div>
+            <p class="field-hint">@L.F("La fiche sera reliée à {0} comme parent.", _nbParent)</p>
+            @if (_nbConjoints.Length > 0)
+            {
+                <div class="form-check">
+                    <input id="nb-conjoint" type="checkbox" checked="@_nbRelierConjoint" @onchange="e => _nbRelierConjoint = e.Value is true" />
+                    <label for="nb-conjoint">@L.F("Relier aussi à {0} comme parent", _nbConjoints)</label>
+                </div>
+            }
+            <span class="form-error">@_nbErreur</span>
+        </ChildContent>
+        <FooterContent>
+            <button class="btn btn-secondary" @onclick="() => _naissanceSituation = null">@L.T("Annuler")</button>
+            <button class="btn btn-primary" @onclick="CreerFicheBebe">👶 @L.T("Créer la fiche")</button>
         </FooterContent>
     </Modal>
 
@@ -159,6 +302,17 @@ else
     private string _titre = "";
     private string _desc = "";
     private string _priorite = CalendarEventTypes.PrioriteNormale;
+    private string _personne = "";
+    private string _dateVisite = "";
+    private string _heure = "";
+    private string _lieu = "";
+    private List<string> _visiteurs = new();
+    private string _participation = "";
+    private bool _enFinances;
+    private bool _decesOpen;
+    private Situation? _naissanceSituation;
+    private string _nbPrenom = "", _nbNom = "", _nbDate = "", _nbParent = "", _nbConjoints = "", _nbErreur = "";
+    private bool _nbRelierConjoint = true;
     private string _error = "";
     private Situation? _deleteTarget;
     private string? _selectedId;
@@ -178,7 +332,7 @@ else
         var q = _search.Trim();
         if (q.Length == 0) return true;
         return (s.Titre + " " + s.Description + " " + SituationTypes.Label(s.Type)
-            + " " + MemberName(s.MembreIdentifiant))
+            + " " + MemberName(s.MembreIdentifiant) + " " + s.PersonneConcernee)
             .Contains(q, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -186,7 +340,48 @@ else
 
     private Situation? SelectedSituation => string.IsNullOrWhiteSpace(_selectedId) ? null : Store.Situations.FirstOrDefault(s => s.Id == _selectedId);
 
-    private void SelectSituation(string id) => _selectedId = _selectedId == id ? null : id;
+    private void SelectSituation(string id)
+    {
+        _selectedId = _selectedId == id ? null : id;
+        _decesOpen = false;
+    }
+
+    private static string VisiteLabel(Situation s)
+        => DataStore.FormatDateCourte(s.DateVisite) + (string.IsNullOrWhiteSpace(s.HeureVisite) ? "" : " · " + s.HeureVisite);
+
+    private void AjouterVisiteur(string identifiant)
+    {
+        if (!string.IsNullOrWhiteSpace(identifiant) && !_visiteurs.Contains(identifiant, StringComparer.OrdinalIgnoreCase))
+            _visiteurs.Add(identifiant);
+    }
+
+    private static double? ParseMontant(string raw)
+    {
+        var v = (raw ?? "").Trim().Replace(" ", "").Replace(",", ".");
+        if (v.Length == 0) return 0;
+        return double.TryParse(v, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n : null;
+    }
+
+    private void OuvrirNaissance(Situation s, UserAccount parent)
+    {
+        _naissanceSituation = s;
+        _nbPrenom = "";
+        _nbNom = parent.Nom;
+        _nbDate = DateTime.Today.ToString("yyyy-MM-dd");
+        _nbParent = parent.NomComplet;
+        _nbConjoints = string.Join(", ", Store.Famille(parent).Conjoints.Select(c => c.NomComplet));
+        _nbRelierConjoint = true;
+        _nbErreur = "";
+    }
+
+    private void CreerFicheBebe()
+    {
+        if (_naissanceSituation == null) return;
+        var res = Store.CreerFicheNaissance(_naissanceSituation.Id, _nbPrenom, _nbNom, _nbDate, _nbRelierConjoint);
+        if (!res.Success) { _nbErreur = res.Error; return; }
+        _naissanceSituation = null;
+        State.NotifySuccess(L.T("Fiche du bébé créée."));
+    }
 
     private void OnSelectKey(KeyboardEventArgs e, string id)
     {
@@ -216,6 +411,9 @@ else
         _membre = ""; _type = SituationTypes.Visite;
         _titre = ""; _desc = "";
         _priorite = CalendarEventTypes.PrioriteNormale;
+        _personne = ""; _dateVisite = ""; _heure = ""; _lieu = "";
+        _visiteurs = new List<string>();
+        _participation = ""; _enFinances = true;
         _error = "";
         _showEditor = true;
     }
@@ -226,6 +424,10 @@ else
         _membre = s.MembreIdentifiant; _type = s.Type;
         _titre = s.Titre; _desc = s.Description;
         _priorite = s.Priorite;
+        _personne = s.PersonneConcernee; _dateVisite = s.DateVisite; _heure = s.HeureVisite; _lieu = s.LieuVisite;
+        _visiteurs = s.Visiteurs.ToList();
+        _participation = s.Participation > 0 ? s.Participation.ToString(System.Globalization.CultureInfo.InvariantCulture) : "";
+        _enFinances = Store.ParticipationEnFinances(s);
         _error = "";
         _showEditor = true;
     }
@@ -235,9 +437,17 @@ else
     private void Save()
     {
         _error = "";
+        if (ParseMontant(_participation) is not { } participation) { _error = L.T("La participation doit être un nombre (ex : 20000)."); return; }
+        var draft = new Situation
+        {
+            MembreIdentifiant = _membre, Type = _type, Titre = _titre, Description = _desc, Priorite = _priorite,
+            PersonneConcernee = _personne, DateVisite = _dateVisite, HeureVisite = _heure, LieuVisite = _lieu,
+            Visiteurs = _visiteurs.ToList(), Participation = participation
+        };
+        bool? enFinances = Store.Can(Permissions.FinancesManage) ? _enFinances : null;
         OperationResult res = _editId == null
-            ? Store.AddSituation(new Situation { MembreIdentifiant = _membre, Type = _type, Titre = _titre, Description = _desc, Priorite = _priorite })
-            : Store.UpdateSituation(_editId, new Situation { MembreIdentifiant = _membre, Type = _type, Titre = _titre, Description = _desc, Priorite = _priorite });
+            ? Store.AddSituation(draft, enFinances)
+            : Store.UpdateSituation(_editId, draft, enFinances);
         if (!res.Success) { _error = res.Error; return; }
         State.NotifySuccess(_editId == null ? L.T("Suivi ouvert.") : L.T("Suivi enregistré."));
         _showEditor = false;
