@@ -147,6 +147,31 @@
 </div>
 }
 
+@if (Store.IsManager)
+{
+<div class="card settings-card settings-card-listes @(IsCollapsed("listes") ? "collapsed" : "")">
+    <span class="card-corner" aria-hidden="true"></span>
+    <div class="settings-card-head">
+        <span class="settings-deco settings-deco-listes" aria-hidden="true">📋</span>
+        <h3>@L.T("Listes de choix")</h3>
+        <button type="button" class="section-toggle" aria-label="@L.T("Réduire ou agrandir la section Listes de choix")" aria-expanded="@(!IsCollapsed("listes"))" @onclick='() => ToggleSection("listes")'>@(IsCollapsed("listes") ? "▸" : "▾")</button>
+    </div>
+    <p class="muted">@L.T("Les choix proposés dans les formulaires : types, liens de famille, priorités, catégories, états, statuts. Ajoutez, renommez, réordonnez, masquez ou supprimez-les vous-même.")</p>
+    <div class="listes-choix">
+        @foreach (var def in ListesChoix.Definitions)
+        {
+            var liste = def.Id;
+            <button type="button" class="listes-choix-item" data-liste="@liste" @onclick="() => _listeOuverte = liste">
+                <span class="listes-choix-titre">@L.T(def.Titre)</span>
+                <span class="listes-choix-module">@L.T(def.Module) · @L.F("{0} choix", Store.Liste(liste).Count(e => !e.Masque))</span>
+                <span class="listes-choix-go" aria-hidden="true">›</span>
+            </button>
+        }
+    </div>
+</div>
+<ListesChoixEditor Show="_listeOuverte != null" ListeId="@_listeOuverte" OnClose="() => _listeOuverte = null" />
+}
+
 <div class="card settings-card settings-card-guide @(IsCollapsed("guide") ? "collapsed" : "")">
     <span class="card-corner" aria-hidden="true"></span>
     <div class="settings-card-head">
@@ -377,6 +402,9 @@
 </Modal>
 
 @code {
+    /// <summary>Liste de choix ouverte dans l'éditeur (null : aucune).</summary>
+    private string? _listeOuverte;
+
     /// <summary>Nom affiché d'une entrée du menu (l'histoire porte le nom de l'application).</summary>
     private string MenuLabel(AppMenus.MenuDef def) => def.Key == "community" ? Store.LibelleHistoire() : L.T(def.Label);
 
@@ -446,7 +474,7 @@
 
     // Sections minimisables, repliées par défaut (mémoire de session uniquement).
     private readonly HashSet<string> _collapsed = new(
-        new[] { "appearance", "menu", "guide", "cartemembre", "pagesize", "storage", "security", "fields", "actions" },
+        new[] { "appearance", "menu", "listes", "guide", "cartemembre", "pagesize", "storage", "security", "fields", "actions" },
         StringComparer.Ordinal);
 
     private bool IsCollapsed(string key) => _collapsed.Contains(key);
@@ -727,6 +755,7 @@
                 SessionTimeoutMinutes = _sessionTimeout,
                 ExportAutoMensuel = _autoExport,
                 DernierExportAuto = prev.DernierExportAuto,
+                Listes = prev.Listes,
                 StorageQuotaMb = Math.Clamp(_storageQuotaMb, DataStore.StorageQuotaMbMin, QuotaMaxMb),
                 MenuOrder = new List<string>(_menuOrder),
                 MenuHidden = new List<string>(_menuHidden),

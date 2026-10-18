@@ -455,9 +455,9 @@ else
                 <div class="form-group">
                     <label for="doc-import-cat">@L.T("Catégorie")</label>
                     <select id="doc-import-cat" value="@_iCat" @onchange="e => _iCat = e.Value?.ToString() ?? DocumentCategories.Autre">
-                        @foreach (var c in DocumentCategories.Toutes)
+                        @foreach (var c in ListesChoix.Choix(ListesChoix.CategoriesDocument, _iCat).Select(x => x.Cle))
                         {
-                            <option value="@c">@DocumentCategories.Icon(c) @L.T(DocumentCategories.Label(c))</option>
+                            <option value="@c" selected="@(c == _iCat)">@DocumentCategories.Icon(c) @DocumentCategories.Label(c)</option>
                         }
                     </select>
                 </div>
@@ -618,9 +618,9 @@ else
             <div class="form-group">
                 <label for="doc-edit-cat">@L.T("Catégorie")</label>
                 <select id="doc-edit-cat" value="@_eCat" @onchange="e => _eCat = e.Value?.ToString() ?? DocumentCategories.Autre">
-                    @foreach (var c in DocumentCategories.Toutes)
+                    @foreach (var c in ListesChoix.Choix(ListesChoix.CategoriesDocument, _eCat).Select(x => x.Cle))
                     {
-                        <option value="@c">@DocumentCategories.Icon(c) @L.T(DocumentCategories.Label(c))</option>
+                        <option value="@c" selected="@(c == _eCat)">@DocumentCategories.Icon(c) @DocumentCategories.Label(c)</option>
                     }
                 </select>
             </div>
@@ -677,7 +677,7 @@ else
         <div class="cal-filter-section">
             <div class="divider-section">@L.T("Catégories")</div>
             <div class="check-group">
-                @foreach (var c in DocumentCategories.Toutes)
+                @foreach (var c in ListesChoix.Elements(ListesChoix.CategoriesDocument).Select(x => x.Cle))
                 {
                     var cat = c;
                     <label class="form-check">

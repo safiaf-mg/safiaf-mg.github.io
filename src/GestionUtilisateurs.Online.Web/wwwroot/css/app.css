@@ -1540,6 +1540,7 @@ html.modal-open, html.modal-open body, body.modal-open {
 .settings-deco-pagesize { background: linear-gradient(135deg, #0891b2, #0ea5e9); color: #fff; }
 .settings-deco-security { background: linear-gradient(135deg, #059669, #10b981); color: #fff; }
 .settings-deco-fields { background: linear-gradient(135deg, #d97706, #f59e0b); color: #fff; }
+.settings-deco-listes { background: linear-gradient(135deg, #0d9488, #14b8a6); color: #fff; }
 .settings-deco-actions { background: linear-gradient(135deg, #0ea5e9, #6366f1); color: #fff; }
 .settings-deco-danger { background: linear-gradient(135deg, #dc2626, #ef4444); color: #fff; }
 .settings-deco-account { background: linear-gradient(135deg, var(--accent), #7c3aed); color: #fff; }

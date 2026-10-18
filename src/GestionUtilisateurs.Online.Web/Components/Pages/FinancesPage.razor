@@ -197,8 +197,10 @@ else
                 <div class="form-group">
                     <label for="fi-statut">@L.T("Statut")</label>
                     <select id="fi-statut" value="@_cStatut" @onchange="e => _cStatut = e.Value?.ToString() ?? CotisationStatuts.Payee">
-                        <option value="@CotisationStatuts.Payee">@L.T("Payée")</option>
-                        <option value="@CotisationStatuts.EnAttente">@L.T("En attente (impayé)")</option>
+                        @foreach (var st in ListesChoix.Elements(ListesChoix.StatutsCotisation))
+                        {
+                            <option value="@st.Cle" selected="@(st.Cle == _cStatut)">@(st.Cle == CotisationStatuts.EnAttente ? ListesChoix.LibellePerso(ListesChoix.StatutsCotisation, st.Cle) ?? L.T("En attente (impayé)") : st.Libelle)</option>
+                        }
                     </select>
                 </div>
             }
@@ -292,11 +294,11 @@ else
                 <div class="radio-row">
                     <label class="radio-option">
                         <input type="radio" name="tr-type" checked="@(_tType == TresorerieTypes.Entree)" @onchange="() => _tType = TresorerieTypes.Entree" />
-                        ↙ @L.T("Entrée")
+                        @TresorerieTypes.Icon(TresorerieTypes.Entree) @TresorerieTypes.Label(TresorerieTypes.Entree)
                     </label>
                     <label class="radio-option">
                         <input type="radio" name="tr-type" checked="@(_tType == TresorerieTypes.Sortie)" @onchange="() => _tType = TresorerieTypes.Sortie" />
-                        ↗ @L.T("Sortie")
+                        @TresorerieTypes.Icon(TresorerieTypes.Sortie) @TresorerieTypes.Label(TresorerieTypes.Sortie)
                     </label>
                 </div>
             </div>

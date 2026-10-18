@@ -66,6 +66,8 @@
             if (string.IsNullOrEmpty(nom) || nom == NomParDefaut) nom = NomGarde?.Trim();
             return string.IsNullOrEmpty(nom) || nom == NomParDefaut ? null : nom;
         };
+        // Libellés, icônes et choix ajoutés dans Paramètres › Listes de choix.
+        ListesChoix.Source = () => Store.Settings.Listes;
         Session.Changed += OnChanged;
         await Session.InitializeAsync();
     }

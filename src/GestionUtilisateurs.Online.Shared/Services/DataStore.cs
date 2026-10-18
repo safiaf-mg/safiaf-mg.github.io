@@ -1325,7 +1325,7 @@ public OperationResult SetUserActive(string userId, bool active)
         draft.Tags = (draft.Tags ?? new List<string>())
             .Select(t => (t ?? "").Trim()).Where(t => t.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
-        if (!DocumentCategories.Toutes.Contains(draft.Categorie)) draft.Categorie = DocumentCategories.Autre;
+        if (!ListesChoix.Contient(ListesChoix.CategoriesDocument, draft.Categorie, _settings.Listes)) draft.Categorie = DocumentCategories.Autre;
         draft.CreatedBy = GetCurrentUser()?.Identifiant ?? "inconnu";
 
         _documents.Add(draft);
@@ -1351,7 +1351,7 @@ public OperationResult SetUserActive(string userId, bool active)
         existing.Titre = draft.Titre;
         existing.Description = draft.Description ?? "";
         existing.FolderId = draft.FolderId;
-        existing.Categorie = DocumentCategories.Toutes.Contains(draft.Categorie) ? draft.Categorie : DocumentCategories.Autre;
+        existing.Categorie = ListesChoix.Contient(ListesChoix.CategoriesDocument, draft.Categorie, _settings.Listes) ? draft.Categorie : DocumentCategories.Autre;
         existing.Tags = (draft.Tags ?? new List<string>())
             .Select(t => (t ?? "").Trim()).Where(t => t.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -2284,6 +2284,10 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         // la liste des homonymes confirmés ne doit pas disparaître au passage.
         if ((value.PasDoublons == null || value.PasDoublons.Count == 0) && _settings.PasDoublons?.Count > 0)
             value.PasDoublons = _settings.PasDoublons;
+        // Idem pour les listes de choix réglées (Paramètres › Listes de choix).
+        if ((value.Listes == null || value.Listes.Count == 0) && _settings.Listes?.Count > 0)
+            value.Listes = _settings.Listes;
+        value.Listes ??= new Dictionary<string, ListeConfig>();
         // En ligne, aucun thème commun : chacun choisit le sien (clair par défaut).
         if (OnlineMode) value.Theme = "light";
         _settings = value;
@@ -4529,7 +4533,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         draft.Description = (draft.Description ?? "").Trim();
         draft.Categorie = (draft.Categorie ?? "").Trim();
         draft.QuantiteTotale = Math.Max(1, draft.QuantiteTotale);
-        if (draft.Etat is not (MaterielEtats.Moyen or MaterielEtats.HorsService)) draft.Etat = MaterielEtats.Bon;
+        if (!ListesChoix.Contient(ListesChoix.EtatsMateriel, draft.Etat, _settings.Listes)) draft.Etat = MaterielEtats.Bon;
         draft.Responsable = (draft.Responsable ?? "").Trim();
         if (!string.IsNullOrWhiteSpace(draft.Responsable) && FindUserByIdentifier(draft.Responsable) == null)
             return OperationResult.Fail(L.F("Responsable introuvable : « {0} ».", draft.Responsable));
@@ -4558,7 +4562,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         existing.Description = (draft.Description ?? "").Trim();
         existing.Categorie = (draft.Categorie ?? "").Trim();
         existing.QuantiteTotale = nouvelleQuantite;
-        if (draft.Etat is MaterielEtats.Moyen or MaterielEtats.HorsService or MaterielEtats.Bon) existing.Etat = draft.Etat;
+        if (ListesChoix.Contient(ListesChoix.EtatsMateriel, draft.Etat, _settings.Listes)) existing.Etat = draft.Etat;
         existing.Responsable = (draft.Responsable ?? "").Trim();
         SaveMateriels();
         LogActivity(Models.ActivityTypes.MaterielChange, "Modification du matériel « " + existing.Nom + " »");
@@ -4852,7 +4856,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             return OperationResult.Fail(L.T("Le titre de la situation est obligatoire."));
         if (FindUserByIdentifier(draft.MembreIdentifiant) == null)
             return OperationResult.Fail(L.F("Membre introuvable : « {0} ».", draft.MembreIdentifiant));
-        if (!Models.SituationTypes.Tous.Contains(draft.Type))
+        if (!ListesChoix.Contient(ListesChoix.TypesSituation, draft.Type, _settings.Listes))
             draft.Type = Models.SituationTypes.Visite;
         if (NormaliserFamangiana(draft) is { } erreur) return OperationResult.Fail(erreur);
         draft.Description = (draft.Description ?? "").Trim();
@@ -4887,7 +4891,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         existing.Titre = draft.Titre;
         existing.Description = (draft.Description ?? "").Trim();
         existing.MembreIdentifiant = draft.MembreIdentifiant.Trim();
-        if (Models.SituationTypes.Tous.Contains(draft.Type))
+        if (ListesChoix.Contient(ListesChoix.TypesSituation, draft.Type, _settings.Listes))
             existing.Type = draft.Type;
         existing.Priorite = draft.Priorite;
         CopierFamangiana(draft, existing);

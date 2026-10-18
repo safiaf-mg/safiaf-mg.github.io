@@ -138,9 +138,10 @@ else
             <div class="form-group">
                 <label for="ta-prio">@L.T("Priorité")</label>
                 <select id="ta-prio" value="@_priorite" @onchange="e => _priorite = e.Value?.ToString() ?? CalendarEventTypes.PrioriteNormale">
-                    <option value="@CalendarEventTypes.PrioriteNormale">@L.T("Normale")</option>
-                    <option value="@CalendarEventTypes.PrioriteImportante">@L.T("Importante")</option>
-                    <option value="@CalendarEventTypes.PrioriteUrgente">@L.T("Urgente")</option>
+                    @foreach (var p in ListesChoix.Choix(ListesChoix.Priorites, _priorite))
+                    {
+                        <option value="@p.Cle" selected="@(p.Cle == _priorite)">@p.Libelle</option>
+                    }
                 </select>
             </div>
             <div class="form-group">
@@ -161,11 +162,14 @@ else
 }
 
 @code {
-    private static readonly (string Key, string Label)[] StatutChoices =
+    private static (string Key, string Label)[] StatutChoices => new[]
     {
-        ("", L.T("Toutes")), (TacheStatuts.AFaire, L.T("À faire")),
-        (TacheStatuts.EnCours, L.T("En cours")), (TacheStatuts.Terminee, L.T("Terminées"))
+        ("", L.T("Toutes")), (TacheStatuts.AFaire, Filtre(TacheStatuts.AFaire, L.T("À faire"))),
+        (TacheStatuts.EnCours, Filtre(TacheStatuts.EnCours, L.T("En cours"))), (TacheStatuts.Terminee, Filtre(TacheStatuts.Terminee, L.T("Terminées")))
     };
+
+    /// <summary>Filtre au pluriel, ou le libellé réglé dans Paramètres › Listes de choix.</summary>
+    private static string Filtre(string statut, string pluriel) => ListesChoix.LibellePerso(ListesChoix.StatutsTache, statut) ?? pluriel;
 
     private string _statut = "";
     private bool _mineOnly = true;
@@ -253,12 +257,7 @@ else
         _ => "#4f46e5"
     };
 
-    private static string PriorityLabel(string p) => p switch
-    {
-        CalendarEventTypes.PrioriteUrgente => L.T("Urgente"),
-        CalendarEventTypes.PrioriteImportante => L.T("Importante"),
-        _ => L.T("Normale")
-    };
+    private static string PriorityLabel(string p) => CalendarEventTypes.PrioriteLabel(p);
 
     private static string SoftColor(string hex) => hex.Length == 7 ? hex + "24" : hex;
 

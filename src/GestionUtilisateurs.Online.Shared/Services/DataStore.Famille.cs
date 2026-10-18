@@ -85,7 +85,9 @@ public partial class DataStore
             .Select(l => FindUserByIdentifier(l.Identifiant)?.Id).OfType<string>().ToHashSet(StringComparer.Ordinal);
         var vus = new HashSet<string>(StringComparer.Ordinal) { u.Id };
         var groupes = new List<GroupeFamille>();
-        foreach (var type in LiensFamille.Tous)
+        // Les déductions suivent toujours l'ordre d'origine ; l'affichage suit l'ordre réglé.
+        var ordre = ListesChoix.Elements(ListesChoix.LiensDeFamille, _settings.Listes).Select(e => e.Cle).ToList();
+        foreach (var type in LiensFamille.Tous.Concat(ordre.Except(LiensFamille.Tous)))
         {
             var membres = Lies(u, type)
                 .Concat((deduits.GetValueOrDefault(type) ?? Enumerable.Empty<UserAccount>()).Where(x => !explicites.Contains(x.Id)))
@@ -96,7 +98,7 @@ public partial class DataStore
             foreach (var m in membres) vus.Add(m.Id);
             groupes.Add(new GroupeFamille(type, membres));
         }
-        return new FamilleVue(groupes);
+        return new FamilleVue(groupes.OrderBy(g => ordre.IndexOf(g.Type) is var i and >= 0 ? i : int.MaxValue).ToList());
     }
 
     /// <summary>Lien explicite entre deux fiches (null si aucun).</summary>
@@ -108,7 +110,7 @@ public partial class DataStore
     public OperationResult AjouterLienFamille(string userId, string autreIdentifiant, string type)
     {
         if (!Can(Permissions.UsersManage)) return OperationResult.Fail(L.T("Action réservée à la gestion des utilisateurs."));
-        if (!LiensFamille.Tous.Contains(type)) return OperationResult.Fail(L.T("Type de lien inconnu."));
+        if (!ListesChoix.Contient(ListesChoix.LiensDeFamille, type, _settings.Listes)) return OperationResult.Fail(L.T("Type de lien inconnu."));
         var moi = _users.FirstOrDefault(u => u.Id == userId);
         var autre = FindUserByIdentifier(autreIdentifiant ?? "");
         if (moi == null || autre == null) return OperationResult.Fail(L.T("Membre introuvable."));
