@@ -217,8 +217,6 @@
   "Maladie ou hospitalisation": "Aretina na fidirana hopitaly",
   "Accident ou sinistre": "Loza na voina",
   "Décès": "Fahafatesana",
-  "Famadihana": "Famadihana",
-  "Pour organiser les famangiana, choisissez le type : naissance, baptême, mariage, maladie ou hospitalisation, accident ou sinistre, décès, famadihana, ou visite, accompagnement, événement important.": "Mba handaminana ny famangiana, safidio ny karazany: fahaterahana, batisa, fanambadiana, aretina na fidirana hopitaly, loza na voina, fahafatesana, famadihana, na fitsidihana, fanohanana, zava-mitranga lehibe.",
   "Ajouter un membre…": "Hanampy mpikambana…",
   "Annuler le décès": "Hanafoana ny fahafatesana",
   "Aucun décès enregistré pour ce membre.": "Tsy misy fahafatesana voasoratra ho an'ity mpikambana ity.",
@@ -270,5 +268,6 @@
   "Votre rôle ne permet pas de modifier le Calendrier : la visite n'y sera pas ajoutée.": "Tsy mahazo manova ny Kalandrie ny anjara asanao: tsy hampidirina ao ny fitsidihana.",
   "Vous ne pouvez pas enregistrer votre propre décès.": "Tsy afaka manoratra ny fahafatesanao ianao.",
   "dans Finances": "ao amin'ny Fitantanam-bola",
-  "{0} est décédé(e) le {1}.": "Nodimandry ny {1} i {0}."
+  "{0} est décédé(e) le {1}.": "Nodimandry ny {1} i {0}.",
+  "Pour organiser les famangiana, choisissez le type : naissance, baptême, mariage, maladie ou hospitalisation, accident ou sinistre, décès, ou visite, accompagnement, événement important.": "Mba handaminana ny famangiana, safidio ny karazany: fahaterahana, batisa, fanambadiana, aretina na fidirana hopitaly, loza na voina, fahafatesana, na fitsidihana, fanohanana, zava-mitranga lehibe."
 }

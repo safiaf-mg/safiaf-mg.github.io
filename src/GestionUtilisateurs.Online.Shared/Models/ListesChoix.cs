@@ -118,7 +118,8 @@ public static class ListesChoix
             {
                 if (string.IsNullOrWhiteSpace(e.Cle) || !vus.Add(e.Cle)) continue;
                 var dOrigine = parCle.TryGetValue(e.Cle, out var o);
-                if (e.Supprime && dOrigine) continue;
+                // Supprimé, ou choix d'origine retiré de l'application (sans libellé à lui) : ignoré.
+                if (e.Supprime || (!dOrigine && string.IsNullOrWhiteSpace(e.Libelle))) continue;
                 var libelle = e.LibelleAffiche() ?? (dOrigine ? o.Libelle : e.Cle);
                 var icone = !string.IsNullOrWhiteSpace(e.Icone) ? e.Icone.Trim() : dOrigine ? o.Icone : "";
                 resultat.Add(new ChoixListe(e.Cle, libelle, icone, e.Masque, dOrigine, dOrigine ? "" : e.Inverse ?? ""));

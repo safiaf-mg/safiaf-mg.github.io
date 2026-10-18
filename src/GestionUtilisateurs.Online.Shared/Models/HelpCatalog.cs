@@ -304,7 +304,7 @@ public static class HelpCatalog
                 {
                     "Chaque situation est privée et visible uniquement par ce que les permissions autorisent.",
                     "Un suivi peut être marqué « résolu » et reste alors consultable en historique.",
-                    "Pour organiser les famangiana, choisissez le type : naissance, baptême, mariage, maladie ou hospitalisation, accident ou sinistre, décès, famadihana, ou visite, accompagnement, événement important."
+                    "Pour organiser les famangiana, choisissez le type : naissance, baptême, mariage, maladie ou hospitalisation, accident ou sinistre, décès, ou visite, accompagnement, événement important."
                 })
             }),
         new("carte", "Carte de membre", "🪪",

@@ -54,7 +54,8 @@ public partial class DataStore
             .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
         config.Elements = effectifs.Select(e => regles.TryGetValue(e.Cle, out var r) ? r : new ElementListe { Cle = e.Cle })
             // Les choix d'origine supprimés restent notés, pour ne pas revenir d'eux-mêmes.
-            .Concat(regles.Values.Where(r => r.Supprime && effectifs.All(e => e.Cle != r.Cle)))
+            .Concat(regles.Values.Where(r => r.Supprime && effectifs.All(e => e.Cle != r.Cle)
+                && ListesChoix.Definition(id)!.Origine().Any(o => o.Cle == r.Cle)))
             .ToList();
         return config;
     }
