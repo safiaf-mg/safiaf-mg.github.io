@@ -4,22 +4,30 @@ namespace GestionUtilisateurs.Shared.Services;
 
 /// <summary>
 /// Liens de famille entre membres : chaque lien est enregistré des deux côtés
-/// (X parent de Y ⇔ Y enfant de X). Grands-parents, petits-enfants et frères
-/// et sœurs par un parent commun en sont déduits.
+/// (X parent de Y ⇔ Y enfant de X, X beau-père de Y ⇔ Y gendre de X…).
+/// Le reste de la famille (grands-parents, oncles, cousins, beaux-parents…)
+/// est déduit des liens enregistrés.
 /// </summary>
 public partial class DataStore
 {
-    /// <summary>La famille d'un membre, déduite de ses liens.</summary>
-    public sealed record FamilleVue(
-        IReadOnlyList<UserAccount> Parents,
-        IReadOnlyList<UserAccount> Enfants,
-        IReadOnlyList<UserAccount> Conjoints,
-        IReadOnlyList<UserAccount> FreresSoeurs,
-        IReadOnlyList<UserAccount> GrandsParents,
-        IReadOnlyList<UserAccount> PetitsEnfants)
+    /// <summary>Une ligne de la section Famille : un type de lien et les membres concernés.</summary>
+    public sealed record GroupeFamille(string Type, IReadOnlyList<UserAccount> Membres)
     {
-        public bool EstVide => Parents.Count + Enfants.Count + Conjoints.Count + FreresSoeurs.Count
-            + GrandsParents.Count + PetitsEnfants.Count == 0;
+        public string Titre => LiensFamille.Titre(Type);
+    }
+
+    /// <summary>La famille d'un membre, groupée dans l'ordre de <see cref="LiensFamille.Tous"/>.</summary>
+    public sealed record FamilleVue(IReadOnlyList<GroupeFamille> Groupes)
+    {
+        public bool EstVide => Groupes.All(g => g.Membres.Count == 0);
+        public IReadOnlyList<UserAccount> De(string type)
+            => Groupes.FirstOrDefault(g => g.Type == type)?.Membres ?? Array.Empty<UserAccount>();
+        public IReadOnlyList<UserAccount> Parents => De(LiensFamille.Parent);
+        public IReadOnlyList<UserAccount> Enfants => De(LiensFamille.Enfant);
+        public IReadOnlyList<UserAccount> Conjoints => De(LiensFamille.Conjoint);
+        public IReadOnlyList<UserAccount> FreresSoeurs => De(LiensFamille.Fratrie);
+        public IReadOnlyList<UserAccount> GrandsParents => De(LiensFamille.GrandParent);
+        public IReadOnlyList<UserAccount> PetitsEnfants => De(LiensFamille.PetitEnfant);
     }
 
     private List<UserAccount> Lies(UserAccount u, string type)
@@ -32,23 +40,63 @@ public partial class DataStore
             .OrderBy(x => x.NomComplet, StringComparer.CurrentCultureIgnoreCase)
             .ToList();
 
+    /// <summary>Frères et sœurs déclarés, ou enfants d'un même parent.</summary>
+    private List<UserAccount> FratrieDe(UserAccount u)
+        => Lies(u, LiensFamille.Fratrie)
+            .Concat(Lies(u, LiensFamille.Parent).SelectMany(p => Lies(p, LiensFamille.Enfant)))
+            .Where(x => x.Id != u.Id)
+            .DistinctBy(x => x.Id)
+            .ToList();
+
     public FamilleVue Famille(UserAccount u)
     {
+        IEnumerable<UserAccount> De(IEnumerable<UserAccount> source, string type)
+            => source.SelectMany(x => Lies(x, type));
+
         var parents = Lies(u, LiensFamille.Parent);
         var enfants = Lies(u, LiensFamille.Enfant);
         var conjoints = Lies(u, LiensFamille.Conjoint);
-        // Frères et sœurs : déclarés, ou enfants d'un même parent.
-        var fratrie = Lies(u, LiensFamille.Fratrie)
-            .Concat(parents.SelectMany(p => Lies(p, LiensFamille.Enfant)))
-            .Where(x => x.Id != u.Id)
-            .DistinctBy(x => x.Id)
-            .OrderBy(x => x.NomComplet, StringComparer.CurrentCultureIgnoreCase)
-            .ToList();
-        var grandsParents = parents.SelectMany(p => Lies(p, LiensFamille.Parent))
-            .Where(x => x.Id != u.Id).DistinctBy(x => x.Id).ToList();
-        var petitsEnfants = enfants.SelectMany(e => Lies(e, LiensFamille.Enfant))
-            .Where(x => x.Id != u.Id).DistinctBy(x => x.Id).ToList();
-        return new FamilleVue(parents, enfants, conjoints, fratrie, grandsParents, petitsEnfants);
+        var fratrie = FratrieDe(u).Concat(Lies(u, LiensFamille.DemiFratrie)).DistinctBy(x => x.Id).ToList();
+        var grandsParents = De(parents, LiensFamille.Parent).Concat(Lies(u, LiensFamille.GrandParent)).ToList();
+        var petitsEnfants = De(enfants, LiensFamille.Enfant).Concat(Lies(u, LiensFamille.PetitEnfant)).ToList();
+        var oncles = parents.SelectMany(FratrieDe).Concat(Lies(u, LiensFamille.OncleTante)).ToList();
+
+        // Liens déduits des liens enregistrés (les liens enregistrés viennent en plus, voir plus bas).
+        var deduits = new Dictionary<string, IEnumerable<UserAccount>>
+        {
+            [LiensFamille.Fratrie] = FratrieDe(u),
+            [LiensFamille.GrandParent] = De(parents, LiensFamille.Parent),
+            [LiensFamille.PetitEnfant] = De(enfants, LiensFamille.Enfant),
+            [LiensFamille.ArriereGrandParent] = De(grandsParents, LiensFamille.Parent),
+            [LiensFamille.ArrierePetitEnfant] = De(petitsEnfants, LiensFamille.Enfant),
+            [LiensFamille.OncleTante] = parents.SelectMany(FratrieDe),
+            [LiensFamille.NeveuNiece] = De(fratrie, LiensFamille.Enfant),
+            [LiensFamille.Cousin] = De(oncles, LiensFamille.Enfant),
+            [LiensFamille.BeauParent] = De(conjoints, LiensFamille.Parent),
+            [LiensFamille.GendreBru] = De(enfants, LiensFamille.Conjoint),
+            [LiensFamille.BeauFrereSoeur] = conjoints.SelectMany(FratrieDe).Concat(De(fratrie, LiensFamille.Conjoint)),
+            [LiensFamille.ConjointDuParent] = De(parents, LiensFamille.Conjoint),
+            [LiensFamille.EnfantDuConjoint] = De(conjoints, LiensFamille.Enfant),
+        };
+
+        // Un membre relié explicitement n'apparaît que sous son lien enregistré ;
+        // un lien déduit n'apparaît qu'une fois, sous le premier type qui le trouve.
+        var explicites = (u.Famille ?? new List<LienFamille>())
+            .Select(l => FindUserByIdentifier(l.Identifiant)?.Id).OfType<string>().ToHashSet(StringComparer.Ordinal);
+        var vus = new HashSet<string>(StringComparer.Ordinal) { u.Id };
+        var groupes = new List<GroupeFamille>();
+        foreach (var type in LiensFamille.Tous)
+        {
+            var membres = Lies(u, type)
+                .Concat((deduits.GetValueOrDefault(type) ?? Enumerable.Empty<UserAccount>()).Where(x => !explicites.Contains(x.Id)))
+                .Where(x => x.Id != u.Id && (explicites.Contains(x.Id) ? LienEntre(u, x.Identifiant) == type : !vus.Contains(x.Id)))
+                .DistinctBy(x => x.Id)
+                .OrderBy(x => x.NomComplet, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+            foreach (var m in membres) vus.Add(m.Id);
+            groupes.Add(new GroupeFamille(type, membres));
+        }
+        return new FamilleVue(groupes);
     }
 
     /// <summary>Lien explicite entre deux fiches (null si aucun).</summary>
@@ -67,11 +115,11 @@ public partial class DataStore
         if (moi.Id == autre.Id) return OperationResult.Fail(L.T("Un membre ne peut pas être lié à lui-même."));
         if (LienEntre(moi, autre.Identifiant) is { } existant)
             return OperationResult.Fail(L.F("{0} est déjà lié(e) à cette fiche ({1}).", autre.NomComplet, L.T(LiensFamille.Libelle(existant)).ToLowerInvariant()));
-        if (type is LiensFamille.Parent or LiensFamille.Enfant)
+        if (LiensFamille.EstAscendant(type) || LiensFamille.EstAscendant(LiensFamille.Inverse(type)))
         {
             // Pas de boucle : on ne peut pas être son propre ancêtre.
-            var parent = type == LiensFamille.Parent ? autre : moi;
-            var enfant = type == LiensFamille.Parent ? moi : autre;
+            var parent = LiensFamille.EstAscendant(type) ? autre : moi;
+            var enfant = LiensFamille.EstAscendant(type) ? moi : autre;
             if (EstAncetre(enfant, parent))
                 return OperationResult.Fail(L.F("{0} est déjà un ascendant de {1}.", enfant.NomComplet, parent.NomComplet));
         }
@@ -108,22 +156,30 @@ public partial class DataStore
     private bool EstAncetre(UserAccount a, UserAccount b)
     {
         var vus = new HashSet<string>(StringComparer.Ordinal);
-        var file = new Queue<UserAccount>(Lies(b, LiensFamille.Parent));
+        IEnumerable<UserAccount> Ascendants(UserAccount x)
+            => LiensFamille.Tous.Where(LiensFamille.EstAscendant).SelectMany(t => Lies(x, t));
+        var file = new Queue<UserAccount>(Ascendants(b));
         while (file.Count > 0)
         {
             var p = file.Dequeue();
             if (p.Id == a.Id) return true;
             if (!vus.Add(p.Id)) continue;
-            foreach (var gp in Lies(p, LiensFamille.Parent)) file.Enqueue(gp);
+            foreach (var gp in Ascendants(p)) file.Enqueue(gp);
         }
         return false;
     }
 
-    /// <summary>Responsable légal affiché : celui saisi, sinon un parent lié à la fiche.</summary>
+    /// <summary>Responsable légal affiché : celui saisi, sinon un parent, sinon un tuteur lié à la fiche.</summary>
     public (string Nom, string Telephone) ResponsableAffiche(UserAccount u)
     {
         if (!string.IsNullOrWhiteSpace(u.ResponsableLegal)) return (u.ResponsableLegal.Trim(), (u.ResponsableTelephone ?? "").Trim());
         var parent = Lies(u, LiensFamille.Parent).FirstOrDefault(p => !p.EstMineur);
-        return parent == null ? ("", "") : (L.F("{0} (parent)", parent.NomComplet), parent.Telephone ?? "");
+        if (parent != null) return (L.F("{0} (parent)", parent.NomComplet), parent.Telephone ?? "");
+        var tuteur = Lies(u, LiensFamille.Tuteur).FirstOrDefault(p => !p.EstMineur);
+        return tuteur == null ? ("", "") : (L.F("{0} (tuteur)", tuteur.NomComplet), tuteur.Telephone ?? "");
     }
+
+    /// <summary>Vrai si un parent ou un tuteur majeur est relié à la fiche.</summary>
+    private bool AResponsableRelie(UserAccount u)
+        => Lies(u, LiensFamille.Parent).Concat(Lies(u, LiensFamille.Tuteur)).Any(p => !p.EstMineur);
 }

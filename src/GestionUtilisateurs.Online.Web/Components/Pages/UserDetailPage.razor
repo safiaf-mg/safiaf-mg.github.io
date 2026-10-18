@@ -51,14 +51,12 @@
             <h3>👪 @L.T("Famille")</h3>
             @if (famille.EstVide)
             {
-                <p class="text-muted family-empty">@L.T("Aucun lien de famille. Reliez ses parents, enfants, conjoint(e) ou frères et sœurs déjà inscrits.")</p>
+                <p class="text-muted family-empty">@L.T("Aucun lien de famille. Reliez ses parents, enfants, conjoint(e), frères et sœurs, gendre ou belle-fille, oncles, cousins… déjà inscrits.")</p>
             }
-            @FamilleLigne(L.T("Parents"), famille.Parents)
-            @FamilleLigne(L.T("Conjoint(e)"), famille.Conjoints)
-            @FamilleLigne(L.T("Enfants"), famille.Enfants)
-            @FamilleLigne(L.T("Frères et sœurs"), famille.FreresSoeurs)
-            @FamilleLigne(L.T("Grands-parents"), famille.GrandsParents)
-            @FamilleLigne(L.T("Petits-enfants"), famille.PetitsEnfants)
+            @foreach (var groupe in famille.Groupes)
+            {
+                @FamilleLigne(groupe.Titre, groupe.Membres)
+            }
             @if (peutGererFamille)
             {
                 <div class="form-actions" style="margin:8px 0 4px">
@@ -72,10 +70,15 @@
         <div class="form-group">
             <label for="fam-type">@L.T("Lien")</label>
             <select id="fam-type" value="@_lienType" @onchange="e => _lienType = e.Value?.ToString() ?? LiensFamille.Parent">
-                <option value="@LiensFamille.Parent">@L.T("Son parent (père, mère)")</option>
-                <option value="@LiensFamille.Enfant">@L.T("Son enfant")</option>
-                <option value="@LiensFamille.Conjoint">@L.T("Son conjoint ou sa conjointe")</option>
-                <option value="@LiensFamille.Fratrie">@L.T("Son frère ou sa sœur")</option>
+                @foreach (var (groupe, types) in LiensFamille.Groupes)
+                {
+                    <optgroup label="@L.T(groupe)">
+                        @foreach (var type in types)
+                        {
+                            <option value="@type" selected="@(type == _lienType)">@LiensFamille.Choix(type)</option>
+                        }
+                    </optgroup>
+                }
             </select>
         </div>
         <div class="form-group">
@@ -360,13 +363,7 @@ else
             .Take(8);
     }
 
-    private static string LienPhrase(string type) => type switch
-    {
-        LiensFamille.Parent => L.T("parent"),
-        LiensFamille.Enfant => L.T("enfant"),
-        LiensFamille.Conjoint => L.T("conjoint(e)"),
-        _ => L.T("frère ou sœur")
-    };
+    private static string LienPhrase(string type) => LiensFamille.Libelle(type).ToLowerInvariant();
 
     private void AjouterLien()
     {

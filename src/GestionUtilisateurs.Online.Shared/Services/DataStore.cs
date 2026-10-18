@@ -1609,8 +1609,8 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             && new UserAccount { DateNaissance = naissance }.EstMineur
             && string.IsNullOrWhiteSpace(draft.ResponsableLegal)
             && !(existingId != null && _users.FirstOrDefault(u => u.Id == existingId) is { } fiche
-                 && Lies(fiche, LiensFamille.Parent).Any(p => !p.EstMineur)))
-            Add("responsable", L.T("Moins de 18 ans : indiquez le responsable légal (parent ou tuteur), ou reliez un parent dans la section Famille de sa fiche."));
+                 && AResponsableRelie(fiche)))
+            Add("responsable", L.T("Moins de 18 ans : indiquez le responsable légal (parent ou tuteur), ou reliez un parent ou un tuteur dans la section Famille de sa fiche."));
 
         // Matricule facultatif mais unique s'il est renseigné.
         if (!string.IsNullOrWhiteSpace(draft.Matricule)

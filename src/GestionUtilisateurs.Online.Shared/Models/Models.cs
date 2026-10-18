@@ -100,16 +100,73 @@ public static class LiensFamille
     public const string Enfant = "enfant";
     public const string Conjoint = "conjoint";
     public const string Fratrie = "fratrie";
+    public const string DemiFratrie = "demi-fratrie";
+    public const string GrandParent = "grand-parent";
+    public const string PetitEnfant = "petit-enfant";
+    public const string ArriereGrandParent = "arriere-grand-parent";
+    public const string ArrierePetitEnfant = "arriere-petit-enfant";
+    public const string OncleTante = "oncle-tante";
+    public const string NeveuNiece = "neveu-niece";
+    public const string Cousin = "cousin";
+    /// <summary>Parent du conjoint (beau-père, belle-mère).</summary>
+    public const string BeauParent = "beau-parent";
+    /// <summary>Conjoint de l'enfant (gendre, belle-fille).</summary>
+    public const string GendreBru = "gendre-bru";
+    public const string BeauFrereSoeur = "beau-frere-soeur";
+    /// <summary>Conjoint d'un parent (famille recomposée).</summary>
+    public const string ConjointDuParent = "conjoint-du-parent";
+    /// <summary>Enfant du conjoint (famille recomposée).</summary>
+    public const string EnfantDuConjoint = "enfant-du-conjoint";
+    public const string ParrainMarraine = "parrain-marraine";
+    public const string Filleul = "filleul";
+    public const string Tuteur = "tuteur";
+    public const string Pupille = "pupille";
+    public const string Autre = "autre";
 
-    public static readonly string[] Tous = { Parent, Enfant, Conjoint, Fratrie };
+    /// <summary>Tous les liens, dans l'ordre d'affichage de la fiche.</summary>
+    public static readonly string[] Tous =
+    {
+        Parent, Conjoint, Enfant, Fratrie, DemiFratrie,
+        GrandParent, PetitEnfant, ArriereGrandParent, ArrierePetitEnfant,
+        OncleTante, NeveuNiece, Cousin,
+        BeauParent, GendreBru, BeauFrereSoeur, ConjointDuParent, EnfantDuConjoint,
+        ParrainMarraine, Filleul, Tuteur, Pupille, Autre
+    };
+
+    /// <summary>Liens regroupés pour la liste de choix.</summary>
+    public static readonly (string Groupe, string[] Types)[] Groupes =
+    {
+        ("Famille proche", new[] { Parent, Conjoint, Enfant, Fratrie, DemiFratrie }),
+        ("Ascendants et descendants", new[] { GrandParent, PetitEnfant, ArriereGrandParent, ArrierePetitEnfant }),
+        ("Famille élargie", new[] { OncleTante, NeveuNiece, Cousin }),
+        ("Par alliance", new[] { BeauParent, GendreBru, BeauFrereSoeur, ConjointDuParent, EnfantDuConjoint }),
+        ("Autres liens", new[] { ParrainMarraine, Filleul, Tuteur, Pupille, Autre })
+    };
 
     /// <summary>Le lien vu depuis l'autre fiche (mon parent → je suis son enfant).</summary>
     public static string Inverse(string type) => type switch
     {
         Parent => Enfant,
         Enfant => Parent,
+        GrandParent => PetitEnfant,
+        PetitEnfant => GrandParent,
+        ArriereGrandParent => ArrierePetitEnfant,
+        ArrierePetitEnfant => ArriereGrandParent,
+        OncleTante => NeveuNiece,
+        NeveuNiece => OncleTante,
+        BeauParent => GendreBru,
+        GendreBru => BeauParent,
+        ConjointDuParent => EnfantDuConjoint,
+        EnfantDuConjoint => ConjointDuParent,
+        ParrainMarraine => Filleul,
+        Filleul => ParrainMarraine,
+        Tuteur => Pupille,
+        Pupille => Tuteur,
         _ => type
     };
+
+    /// <summary>Vrai si l'autre membre est un ascendant (sert à éviter les boucles).</summary>
+    public static bool EstAscendant(string type) => type is Parent or GrandParent or ArriereGrandParent;
 
     public static string Libelle(string type) => type switch
     {
@@ -117,6 +174,80 @@ public static class LiensFamille
         Enfant => L.T("Enfant"),
         Conjoint => L.T("Conjoint(e)"),
         Fratrie => L.T("Frère ou sœur"),
+        DemiFratrie => L.T("Demi-frère ou demi-sœur"),
+        GrandParent => L.T("Grand-parent"),
+        PetitEnfant => L.T("Petit-enfant"),
+        ArriereGrandParent => L.T("Arrière-grand-parent"),
+        ArrierePetitEnfant => L.T("Arrière-petit-enfant"),
+        OncleTante => L.T("Oncle ou tante"),
+        NeveuNiece => L.T("Neveu ou nièce"),
+        Cousin => L.T("Cousin(e)"),
+        BeauParent => L.T("Beau-père ou belle-mère"),
+        GendreBru => L.T("Gendre ou belle-fille"),
+        BeauFrereSoeur => L.T("Beau-frère ou belle-sœur"),
+        ConjointDuParent => L.T("Conjoint(e) d'un parent"),
+        EnfantDuConjoint => L.T("Enfant du conjoint"),
+        ParrainMarraine => L.T("Parrain ou marraine"),
+        Filleul => L.T("Filleul(e)"),
+        Tuteur => L.T("Tuteur ou tutrice"),
+        Pupille => L.T("Pupille"),
+        Autre => L.T("Autre membre de la famille"),
+        _ => type
+    };
+
+    /// <summary>Titre de la ligne sur la fiche (au pluriel).</summary>
+    public static string Titre(string type) => type switch
+    {
+        Parent => L.T("Parents"),
+        Enfant => L.T("Enfants"),
+        Conjoint => L.T("Conjoint(e)"),
+        Fratrie => L.T("Frères et sœurs"),
+        DemiFratrie => L.T("Demi-frères et demi-sœurs"),
+        GrandParent => L.T("Grands-parents"),
+        PetitEnfant => L.T("Petits-enfants"),
+        ArriereGrandParent => L.T("Arrière-grands-parents"),
+        ArrierePetitEnfant => L.T("Arrière-petits-enfants"),
+        OncleTante => L.T("Oncles et tantes"),
+        NeveuNiece => L.T("Neveux et nièces"),
+        Cousin => L.T("Cousins et cousines"),
+        BeauParent => L.T("Beaux-parents"),
+        GendreBru => L.T("Gendres et belles-filles"),
+        BeauFrereSoeur => L.T("Beaux-frères et belles-sœurs"),
+        ConjointDuParent => L.T("Conjoint(e) du père ou de la mère"),
+        EnfantDuConjoint => L.T("Enfants du conjoint"),
+        ParrainMarraine => L.T("Parrain et marraine"),
+        Filleul => L.T("Filleuls"),
+        Tuteur => L.T("Tuteur ou tutrice"),
+        Pupille => L.T("Pupilles"),
+        Autre => L.T("Autres membres de la famille"),
+        _ => type
+    };
+
+    /// <summary>Texte de la liste de choix : « Son gendre ou sa belle-fille (conjoint de son enfant) ».</summary>
+    public static string Choix(string type) => type switch
+    {
+        Parent => L.T("Son parent (père, mère)"),
+        Enfant => L.T("Son enfant"),
+        Conjoint => L.T("Son conjoint ou sa conjointe"),
+        Fratrie => L.T("Son frère ou sa sœur"),
+        DemiFratrie => L.T("Son demi-frère ou sa demi-sœur"),
+        GrandParent => L.T("Son grand-parent (grand-père, grand-mère)"),
+        PetitEnfant => L.T("Son petit-enfant (petit-fils, petite-fille)"),
+        ArriereGrandParent => L.T("Son arrière-grand-parent"),
+        ArrierePetitEnfant => L.T("Son arrière-petit-enfant"),
+        OncleTante => L.T("Son oncle ou sa tante"),
+        NeveuNiece => L.T("Son neveu ou sa nièce"),
+        Cousin => L.T("Son cousin ou sa cousine"),
+        BeauParent => L.T("Son beau-père ou sa belle-mère (parent de son conjoint)"),
+        GendreBru => L.T("Son gendre ou sa belle-fille (conjoint de son enfant)"),
+        BeauFrereSoeur => L.T("Son beau-frère ou sa belle-sœur"),
+        ConjointDuParent => L.T("Le conjoint ou la conjointe de son père ou de sa mère"),
+        EnfantDuConjoint => L.T("L'enfant de son conjoint ou de sa conjointe"),
+        ParrainMarraine => L.T("Son parrain ou sa marraine"),
+        Filleul => L.T("Son filleul ou sa filleule"),
+        Tuteur => L.T("Son tuteur ou sa tutrice (responsable légal)"),
+        Pupille => L.T("Son pupille (sous sa tutelle)"),
+        Autre => L.T("Un autre membre de sa famille"),
         _ => type
     };
 }

@@ -178,6 +178,71 @@ public class DataStoreDoublonsTests
     }
 
     [Fact]
+    public void Famille_TousLesLiens_InversesEtDeductions()
+    {
+        var store = NewAdminStore();
+        var pere = Ajouter(store, "Hery", "Rabe");
+        var mere = Ajouter(store, "Lalao", "Rasoa");
+        var fille = Ajouter(store, "Fara", "Rabe");
+        var gendre = Ajouter(store, "Naina", "Rakoto");
+        var oncle = Ajouter(store, "Solo", "Rabe");
+        var cousin = Ajouter(store, "Mamy", "Rabe");
+        var parrain = Ajouter(store, "Jean", "Randria");
+
+        // Chaque type a un inverse, et l'inverse de l'inverse revient au type.
+        foreach (var t in LiensFamille.Tous)
+        {
+            Assert.Contains(LiensFamille.Inverse(t), LiensFamille.Tous);
+            Assert.Equal(t, LiensFamille.Inverse(LiensFamille.Inverse(t)));
+        }
+        Assert.Equal(LiensFamille.Tous.Length, LiensFamille.Groupes.SelectMany(g => g.Types).Distinct().Count());
+
+        Assert.True(store.AjouterLienFamille(fille.Id, pere.Identifiant, LiensFamille.Parent).Success);
+        Assert.True(store.AjouterLienFamille(pere.Id, mere.Identifiant, LiensFamille.Conjoint).Success);
+        Assert.True(store.AjouterLienFamille(pere.Id, gendre.Identifiant, LiensFamille.GendreBru).Success);
+        Assert.True(store.AjouterLienFamille(oncle.Id, pere.Identifiant, LiensFamille.Fratrie).Success);
+        Assert.True(store.AjouterLienFamille(cousin.Id, oncle.Identifiant, LiensFamille.Parent).Success);
+        Assert.True(store.AjouterLienFamille(fille.Id, parrain.Identifiant, LiensFamille.ParrainMarraine).Success);
+
+        // Enregistré des deux côtés : le gendre voit son beau-père, le parrain sa filleule.
+        Assert.Equal(pere.Id, Assert.Single(store.Famille(gendre).De(LiensFamille.BeauParent)).Id);
+        Assert.Equal(fille.Id, Assert.Single(store.Famille(parrain).De(LiensFamille.Filleul)).Id);
+
+        var ff = store.Famille(fille);
+        Assert.Equal(oncle.Id, Assert.Single(ff.De(LiensFamille.OncleTante)).Id);       // frère du père
+        Assert.Equal(cousin.Id, Assert.Single(ff.De(LiensFamille.Cousin)).Id);          // enfant de l'oncle
+        Assert.Equal(mere.Id, Assert.Single(ff.De(LiensFamille.ConjointDuParent)).Id);  // non déclarée comme mère
+        Assert.Equal(fille.Id, Assert.Single(store.Famille(oncle).De(LiensFamille.NeveuNiece)).Id);
+        Assert.Equal(pere.Id, Assert.Single(store.Famille(cousin).De(LiensFamille.OncleTante)).Id);
+        Assert.Equal(fille.Id, Assert.Single(store.Famille(mere).De(LiensFamille.EnfantDuConjoint)).Id);
+        Assert.Equal(oncle.Id, Assert.Single(store.Famille(mere).De(LiensFamille.BeauFrereSoeur)).Id);
+
+        // Un membre n'apparaît qu'une fois sur la fiche.
+        var tous = ff.Groupes.SelectMany(g => g.Membres).Select(m => m.Id).ToList();
+        Assert.Equal(tous.Count, tous.Distinct().Count());
+
+        // Pas de boucle : un petit-enfant ne peut pas devenir grand-parent.
+        Assert.True(store.AjouterLienFamille(oncle.Id, mere.Identifiant, LiensFamille.Autre).Success);
+        var bebe = Ajouter(store, "Koto", "Rabe");
+        Assert.True(store.AjouterLienFamille(bebe.Id, pere.Identifiant, LiensFamille.GrandParent).Success);
+        Assert.False(store.AjouterLienFamille(bebe.Id, pere.Identifiant, LiensFamille.PetitEnfant).Success);
+        Assert.False(store.AjouterLienFamille(pere.Id, fille.Identifiant, LiensFamille.ArriereGrandParent).Success);
+        Assert.Equal(bebe.Id, Assert.Single(store.Famille(pere).PetitsEnfants).Id);
+        Assert.False(store.AjouterLienFamille(fille.Id, pere.Identifiant, "inconnu").Success);
+    }
+
+    [Fact]
+    public void Famille_TuteurRelie_SuffitPourUnMineur()
+    {
+        var store = NewAdminStore();
+        var tuteur = Ajouter(store, "Hery", "Rabe", tel: "+261 34 11 222 33");
+        var enfant = Ajouter(store, "Tiana", "Rabe", naissance: DateTime.Today.AddYears(-10).ToString("yyyy-MM-dd"));
+        Assert.True(store.AjouterLienFamille(tuteur.Id, enfant.Identifiant, LiensFamille.Pupille).Success);
+        Assert.Equal(tuteur.NomComplet + " (tuteur)", store.ResponsableAffiche(enfant).Nom);
+        Assert.DoesNotContain("responsable", store.ValidateUser(enfant, enfant.Id, false, false).Keys);
+    }
+
+    [Fact]
     public void HistoireDeLaCommunaute_PorteLeNomDeLApplication()
     {
         var store = NewAdminStore();

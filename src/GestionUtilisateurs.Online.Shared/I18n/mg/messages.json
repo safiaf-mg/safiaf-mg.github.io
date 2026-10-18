@@ -78,7 +78,7 @@
   "Cet identifiant existe déjà.": "Efa misy io anarana fidirana io.",
   "Le format de l'adresse e-mail est invalide.": "Tsy mety ny endriky ny adiresy mailaka.",
   "Cette adresse e-mail existe déjà.": "Efa misy io adiresy mailaka io.",
-  "Moins de 18 ans : indiquez le responsable légal (parent ou tuteur), ou reliez un parent dans la section Famille de sa fiche.": "Latsaky ny 18 taona: soraty ny tompon'andraikitra ara-dalàna (ray aman-dreny na mpiahy), na ampifandraiso amin'ny ray na reny ao amin'ny fizarana Fianakaviana amin'ny takelany.",
+  "Moins de 18 ans : indiquez le responsable légal (parent ou tuteur), ou reliez un parent ou un tuteur dans la section Famille de sa fiche.": "Latsaky ny 18 taona: soraty ny tompon'andraikitra ara-dalàna (ray aman-dreny na mpiahy), na ampifandraiso amin'ny ray na reny na mpiahy ao amin'ny fizarana Fianakaviana amin'ny takelany.",
   "Le numéro doit être au format « +261 xx xxx xx » (ex. +261 32 12 345 67).": "Tsy maintsy amin'ny endrika « +261 xx xxx xx » ny laharana (ohatra: +261 32 12 345 67).",
   "Le mot de passe est obligatoire.": "Tsy maintsy fenoina ny teny miafina.",
   "Le mot de passe doit contenir au moins 6 caractères.": "Tsy maintsy misy litera 6 farafahakeliny ny teny miafina.",
