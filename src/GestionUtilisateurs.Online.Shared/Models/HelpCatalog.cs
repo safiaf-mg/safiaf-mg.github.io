@@ -72,7 +72,7 @@ public static class HelpCatalog
                     "Touchez un utilisateur pour ouvrir sa fiche détaillée (photo, signature, documents, cotisations…).",
                     "« ＋ Ajouter » crée une fiche (nom, contacts, matricule…). Pour se connecter, la personne crée elle-même son compte sur le site, puis un administrateur le valide.",
                     "Le badge « Mineur » signale les moins de 18 ans : leur fiche demande le responsable légal.",
-                    "La section « Famille » d'une fiche relie parents, enfants, conjoint(e) et frères et sœurs ; grands-parents et petits-enfants s'en déduisent.",
+                    "La section « Famille » d'une fiche relie tous les liens : parents, enfants, conjoint(e), frères et sœurs, grands-parents, oncles et tantes, cousins, beaux-parents, gendre ou belle-fille, beaux-frères, parrain, tuteur… Le reste s'en déduit (le conjoint de sa fille apparaît comme gendre, les enfants de son oncle comme cousins).",
                     "Le bandeau « fiches en double possibles » propose de fusionner deux fiches de la même personne, ou de les marquer comme différentes."
                 }),
                 new HelpSection("Bon à savoir", new[]

@@ -4,6 +4,19 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 18 octobre 2026 (tous les liens de famille)
+
+- Section « Famille » d'une fiche : en plus des parents, enfants, conjoint(e)
+  et frères et sœurs, on peut relier un gendre ou une belle-fille, des
+  beaux-parents, un beau-frère ou une belle-sœur, des grands-parents et
+  petits-enfants, arrière-grands-parents, oncles et tantes, neveux et nièces,
+  cousins, demi-frères et demi-sœurs, le conjoint d'un parent (famille
+  recomposée), parrain et marraine, tuteur ou tutrice, et « autre membre de la
+  famille ». Chaque lien s'enregistre des deux côtés (gendre ⇔ beau-père).
+- La fiche déduit aussi le reste de la famille : le frère du père apparaît
+  comme oncle, ses enfants comme cousins, le conjoint d'une fille comme gendre.
+- Un tuteur relié à la fiche d'un mineur compte comme responsable légal.
+
 ## 18 octobre 2026 (nouvelle adresse)
 
 - Le site est maintenant à l'adresse **https://safiaf-mg.github.io/**

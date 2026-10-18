@@ -78,7 +78,7 @@
   "Cet identifiant existe déjà.": "This username already exists.",
   "Le format de l'adresse e-mail est invalide.": "The email address format is invalid.",
   "Cette adresse e-mail existe déjà.": "This email address already exists.",
-  "Moins de 18 ans : indiquez le responsable légal (parent ou tuteur), ou reliez un parent dans la section Famille de sa fiche.": "Under 18: enter the legal guardian (parent or guardian), or link a parent in the Family section of their record.",
+  "Moins de 18 ans : indiquez le responsable légal (parent ou tuteur), ou reliez un parent ou un tuteur dans la section Famille de sa fiche.": "Under 18: enter the legal guardian (parent or guardian), or link a parent or guardian in the Family section of their record.",
   "Le numéro doit être au format « +261 xx xxx xx » (ex. +261 32 12 345 67).": "The number must use the \"+261 xx xxx xx\" format (e.g. +261 32 12 345 67).",
   "Le mot de passe est obligatoire.": "Password is required.",
   "Le mot de passe doit contenir au moins 6 caractères.": "The password must be at least 6 characters long.",
