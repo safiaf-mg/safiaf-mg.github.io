@@ -217,8 +217,6 @@
   "Maladie ou hospitalisation": "Illness or hospital stay",
   "Accident ou sinistre": "Accident or disaster",
   "Décès": "Death",
-  "Famadihana": "Famadihana (turning of the bones)",
-  "Pour organiser les famangiana, choisissez le type : naissance, baptême, mariage, maladie ou hospitalisation, accident ou sinistre, décès, famadihana, ou visite, accompagnement, événement important.": "To organise famangiana (visits), pick the type: birth, baptism, wedding, illness or hospital stay, accident or disaster, death, famadihana, or visit, support, important event.",
   "Ajouter un membre…": "Add a member…",
   "Annuler le décès": "Undo the death record",
   "Aucun décès enregistré pour ce membre.": "No death recorded for this member.",
@@ -270,5 +268,6 @@
   "Votre rôle ne permet pas de modifier le Calendrier : la visite n'y sera pas ajoutée.": "Your role cannot edit the Calendar: the visit will not be added to it.",
   "Vous ne pouvez pas enregistrer votre propre décès.": "You cannot record your own death.",
   "dans Finances": "in Finances",
-  "{0} est décédé(e) le {1}.": "{0} died on {1}."
+  "{0} est décédé(e) le {1}.": "{0} died on {1}.",
+  "Pour organiser les famangiana, choisissez le type : naissance, baptême, mariage, maladie ou hospitalisation, accident ou sinistre, décès, ou visite, accompagnement, événement important.": "To organise famangiana (visits), pick the type: birth, baptism, wedding, illness or hospital stay, accident or disaster, death, or visit, support, important event."
 }

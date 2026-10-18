@@ -177,13 +177,13 @@ public class DataStoreListesTests : IDisposable
     public void SupprimerUnChoixDOrigine_PuisLeRemettre()
     {
         var liste = ListesChoix.TypesSituation;
-        Assert.True(_store.SupprimerElementListe(liste, SituationTypes.Famadihana).Success);
-        Assert.DoesNotContain(_store.Liste(liste), e => e.Cle == SituationTypes.Famadihana);
-        Assert.False(ListesChoix.Contient(liste, SituationTypes.Famadihana));
-        Assert.Equal(new[] { SituationTypes.Famadihana }, ListesChoix.Supprimes(liste).Select(e => e.Cle));
+        Assert.True(_store.SupprimerElementListe(liste, SituationTypes.Accident).Success);
+        Assert.DoesNotContain(_store.Liste(liste), e => e.Cle == SituationTypes.Accident);
+        Assert.False(ListesChoix.Contient(liste, SituationTypes.Accident));
+        Assert.Equal(new[] { SituationTypes.Accident }, ListesChoix.Supprimes(liste).Select(e => e.Cle));
         // Le choix ne revient pas de lui-même après une autre modification.
         Assert.True(_store.DeplacerElementListe(liste, SituationTypes.Visite, 1).Success);
-        Assert.DoesNotContain(_store.Liste(liste), e => e.Cle == SituationTypes.Famadihana);
+        Assert.DoesNotContain(_store.Liste(liste), e => e.Cle == SituationTypes.Accident);
 
         // Un choix d'origine utilisé ne se supprime pas.
         var m = Ajouter("Hery", "Rabe");
@@ -192,8 +192,8 @@ public class DataStoreListesTests : IDisposable
         // Les listes de statuts ne perdent aucun choix.
         Assert.False(_store.SupprimerElementListe(ListesChoix.StatutsTache, TacheStatuts.EnCours).Success);
 
-        Assert.True(_store.RemettreElementListe(liste, SituationTypes.Famadihana).Success);
-        Assert.Contains(_store.Liste(liste), e => e.Cle == SituationTypes.Famadihana);
+        Assert.True(_store.RemettreElementListe(liste, SituationTypes.Accident).Success);
+        Assert.Contains(_store.Liste(liste), e => e.Cle == SituationTypes.Accident);
         Assert.Empty(ListesChoix.Supprimes(liste));
 
         Assert.True(_store.SupprimerElementListe(liste, SituationTypes.Bapteme).Success);
@@ -218,18 +218,34 @@ public class DataStoreListesTests : IDisposable
         Assert.Equal("Fiançailles", SituationTypes.Label(cle));
 
         // Choix d'origine : la traduction donnée remplace celle de l'application, pour cette langue seulement.
-        Assert.True(_store.ModifierElementListe(liste, SituationTypes.Famadihana, "", traductions: new() { [L.Mg] = "Famadihana (fanaterana razana)" }).Success);
-        Assert.Equal("Famadihana (fanaterana razana)", SituationTypes.Label(SituationTypes.Famadihana));
+        Assert.True(_store.ModifierElementListe(liste, SituationTypes.Accident, "", traductions: new() { [L.Mg] = "Loza (voina)" }).Success);
+        Assert.Equal("Loza (voina)", SituationTypes.Label(SituationTypes.Accident));
         L.Definir(L.Fr);
-        Assert.Equal("Famadihana", SituationTypes.Label(SituationTypes.Famadihana));
-        var reglage = _store.ReglageElement(liste, SituationTypes.Famadihana);
-        Assert.Equal("Famadihana", reglage.Francais);
-        Assert.Equal("Famadihana (fanaterana razana)", reglage.Traductions[L.Mg]);
+        Assert.Equal("Accident ou sinistre", SituationTypes.Label(SituationTypes.Accident));
+        var reglage = _store.ReglageElement(liste, SituationTypes.Accident);
+        Assert.Equal("Accident ou sinistre", reglage.Francais);
+        Assert.Equal("Loza (voina)", reglage.Traductions[L.Mg]);
 
         // Saisi en anglais, le libellé français reste la référence (pas de doublon, pas d'écrasement).
         L.Definir(L.En);
         Assert.True(_store.ModifierElementListe(liste, cle, "Fiançailles", "💍", traductions: new() { [L.En] = "Engagement party" }).Success);
         L.Definir(L.Fr);
         Assert.Equal("Fiançailles", SituationTypes.Label(cle));
+    }
+
+    [Fact]
+    public void ChoixRetireDeLApplication_IgnoreDansLesReglages()
+    {
+        // Réglages enregistrés avant le retrait de « famadihana » (supprimé ou seulement déplacé).
+        _store.Settings.Listes[ListesChoix.TypesSituation] = new ListeConfig
+        {
+            Elements = new() { new() { Cle = "famadihana", Supprime = true }, new() { Cle = SituationTypes.Deces } }
+        };
+        Assert.DoesNotContain(_store.Liste(ListesChoix.TypesSituation), e => e.Cle == "famadihana");
+        Assert.Empty(ListesChoix.Supprimes(ListesChoix.TypesSituation));
+        _store.Settings.Listes[ListesChoix.TypesSituation] = new ListeConfig { Elements = new() { new() { Cle = "famadihana" } } };
+        Assert.DoesNotContain(_store.Liste(ListesChoix.TypesSituation), e => e.Cle == "famadihana");
+        Assert.Equal(SituationTypes.Tous, _store.Liste(ListesChoix.TypesSituation).Select(e => e.Cle));
+        Assert.DoesNotContain("famadihana", SituationTypes.Tous);
     }
 }

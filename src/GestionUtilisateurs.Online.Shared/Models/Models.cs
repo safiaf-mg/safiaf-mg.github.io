@@ -709,14 +709,13 @@ public static class SituationTypes
     public const string Maladie = "maladie";
     public const string Accident = "accident";
     public const string Deces = "deces";
-    public const string Famadihana = "famadihana";
     public const string Autre = "autre";
 
     /// <summary>Tous les types, dans l'ordre de la liste de choix.</summary>
     public static readonly string[] Tous =
     {
         Visite, Accompagnement, EvenementImportant,
-        Naissance, Bapteme, Mariage, Maladie, Accident, Deces, Famadihana,
+        Naissance, Bapteme, Mariage, Maladie, Accident, Deces,
         Autre
     };
 
@@ -730,7 +729,6 @@ public static class SituationTypes
         Maladie => L.T("Maladie ou hospitalisation"),
         Accident => L.T("Accident ou sinistre"),
         Deces => L.T("Décès"),
-        Famadihana => L.T("Famadihana"),
         Autre => L.T("Autre"),
         _ => L.T("Visite nécessaire")
     };
@@ -745,7 +743,6 @@ public static class SituationTypes
         Maladie => "🏥",
         Accident => "🚑",
         Deces => "🕊️",
-        Famadihana => "🌿",
         Autre => "📌",
         _ => "🏠"
     };

@@ -4,6 +4,11 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 18 octobre 2026 (famadihana retiré)
+
+- Le type « Famadihana » est retiré des types de famangiana et situations,
+  définitivement : il n'est plus proposé et ne peut pas être remis.
+
 ## 18 octobre 2026 (listes de choix : supprimer et traduire)
 
 - « Listes de choix » : le bouton 🗑 Supprimer est aussi sur les choix
