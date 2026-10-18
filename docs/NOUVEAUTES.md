@@ -4,6 +4,15 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 18 octobre 2026 (nouvelle adresse)
+
+- Le site est maintenant à l'adresse **https://safiaf-mg.github.io/**
+  (organisation GitHub « safiaf-mg »). L'ancienne adresse ne fonctionne plus :
+  réinstallez l'application depuis la nouvelle et reconnectez-vous. Comptes et
+  données sont conservés.
+- La veille quotidienne ne s'arrête plus en erreur quand aucun ticket n'est
+  ouvert.
+
 ## 17 octobre 2026 (nouveau logo SAFIAF 1993)
 
 - Nouvelle version du logo SAFIAF 1993, plus nette, découpée en cercle :
