@@ -501,3 +501,8 @@
     .listes-elements .menu-order-item { flex-wrap: wrap; }
     .listes-elements .menu-order-actions { width: 100%; justify-content: flex-end; }
 }
+
+.listes-supprimes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.listes-traductions { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+.listes-aide { display: block; margin: -6px 0 12px; font-size: 12px; }
+@media (max-width: 480px) { .listes-traductions { grid-template-columns: 1fr; } }

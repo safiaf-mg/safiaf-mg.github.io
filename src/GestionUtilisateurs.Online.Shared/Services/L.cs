@@ -71,6 +71,9 @@ public static class L
 
     [ThreadStatic] private static bool _enFrancais;
 
+    /// <summary>Langue des textes calculés en ce moment (français pendant <see cref="EnFrancais"/>).</summary>
+    public static string LangueAffichee => _enFrancais ? Fr : Langue;
+
     /// <summary>Calcule un texte en français quelle que soit la langue (historique enregistré).</summary>
     public static string EnFrancais(Func<string> texte)
     {

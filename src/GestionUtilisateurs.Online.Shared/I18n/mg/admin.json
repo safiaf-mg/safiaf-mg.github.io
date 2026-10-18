@@ -499,5 +499,15 @@
   "Les choix de cette liste ne peuvent pas être masqués.": "Tsy azo afenina ireo safidy ao amin'ity lisitra ity.",
   "Gardez au moins un choix visible dans la liste.": "Tazony hiseho farafahakeliny safidy iray ao amin'ny lisitra.",
   "Un choix d'origine ne peut pas être supprimé : masquez-le.": "Tsy azo fafana ny safidy tany am-boalohany: afeno kosa.",
-  "« {0} » est utilisé par {1} fiche(s) : masquez-le plutôt.": "Ampiasain'ny fiche {1} ny « {0} »: afeno kosa."
+  "« {0} » est utilisé par {1} fiche(s) : masquez-le plutôt.": "Ampiasain'ny fiche {1} ny « {0} »: afeno kosa.",
+  "Ajoutez, renommez, réordonnez, masquez ou supprimez les choix. Un choix masqué n'est plus proposé dans les formulaires, mais les fiches qui l'utilisent le gardent. Un choix encore utilisé ne peut pas être supprimé.": "Ampio, ovay anarana, alaharo, afeno na fafao ireo safidy. Tsy atolotra intsony ao amin'ny taratasy fenoina ny safidy nafenina, fa mbola mitazona azy ireo fiche efa mampiasa azy. Tsy azo fafana ny safidy mbola ampiasaina.",
+  "Chaque membre voit le libellé dans sa langue. Laissé vide, c'est le texte français qui s'affiche.": "Samy mahita ny anarana amin'ny fiteniny ny mpikambana tsirairay. Raha avela ho foana, ny soratra frantsay no miseho.",
+  "Choix d'origine supprimés": "Safidy tany am-boalohany voafafa",
+  "Libellé en français *": "Anarana amin'ny teny frantsay *",
+  "Libellé en anglais": "Anarana amin'ny teny anglisy",
+  "Libellé en malgache": "Anarana amin'ny teny malagasy",
+  "On ne peut pas retirer de choix de cette liste.": "Tsy azo esorina ny safidy ao amin'ity lisitra ity.",
+  "Vide : même texte qu'en français": "Foana: soratra mitovy amin'ny frantsay",
+  "Vide : « {0} »": "Foana: « {0} »",
+  "« {0} » est de nouveau dans la liste.": "Tafaverina ao amin'ny lisitra ny « {0} »."
 }
