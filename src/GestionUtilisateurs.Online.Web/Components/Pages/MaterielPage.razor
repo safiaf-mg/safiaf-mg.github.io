@@ -129,9 +129,10 @@ else
             <div class="form-group">
                 <label for="ma-etat">@L.T("État")</label>
                 <select id="ma-etat" value="@_etat" @onchange="e => _etat = e.Value?.ToString() ?? MaterielEtats.Bon">
-                    <option value="@MaterielEtats.Bon">@L.T("Bon")</option>
-                    <option value="@MaterielEtats.Moyen">@L.T("Moyen")</option>
-                    <option value="@MaterielEtats.HorsService">@L.T("Hors service")</option>
+                    @foreach (var et in ListesChoix.Choix(ListesChoix.EtatsMateriel, _etat))
+                    {
+                        <option value="@et.Cle" selected="@(et.Cle == _etat)">@et.Libelle</option>
+                    }
                 </select>
             </div>
             <div class="form-group">

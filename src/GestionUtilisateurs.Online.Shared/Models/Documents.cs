@@ -58,7 +58,7 @@ public static class DocumentCategories
 
     public static readonly string[] Toutes = { Personnel, Travail, Factures, Contrats, Photos, Scans, Autre };
 
-    public static string Label(string categorie) => categorie switch
+    public static string LabelOrigine(string categorie) => categorie switch
     {
         Personnel => L.T("Personnel"),
         Travail => L.T("Travail"),
@@ -69,7 +69,7 @@ public static class DocumentCategories
         _ => L.T("Autre")
     };
 
-    public static string Icon(string categorie) => categorie switch
+    public static string IconOrigine(string categorie) => categorie switch
     {
         Personnel => "👤",
         Travail => "💼",
@@ -98,6 +98,9 @@ public static class DocumentCategories
         "application/pdf" => Travail,
         _ => Autre
     };
+    public static string Label(string categorie) => ListesChoix.LibellePerso(ListesChoix.CategoriesDocument, categorie) ?? LabelOrigine(categorie);
+
+    public static string Icon(string categorie) => ListesChoix.IconePerso(ListesChoix.CategoriesDocument, categorie) ?? (ListesChoix.EstAjoute(ListesChoix.CategoriesDocument, categorie) ? "📁" : IconOrigine(categorie));
 }
 
 /// <summary>Types de fichiers reconnus pour l'affichage et les filtres.</summary>

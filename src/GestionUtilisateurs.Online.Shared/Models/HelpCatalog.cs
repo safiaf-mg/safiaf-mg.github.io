@@ -153,6 +153,7 @@ public static class HelpCatalog
                     "Le thème et les conseils au premier usage sont personnels : chacun garde les siens, même l'administrateur.",
                     "« Ma langue » : français, anglais ou malgache, au choix de chacun ; elle se choisit aussi sur l'écran de connexion.",
                     "« Ordre du menu » (gestionnaires) réorganise les cartes du menu « … » pour toute la communauté.",
+                    "« Listes de choix » (gestionnaires) règle les choix des formulaires : ajouter, renommer, réordonner, masquer ou supprimer un type, un lien de famille, une priorité, une catégorie…",
                     "Les données sont sauvegardées chaque semaine sur le serveur ; l'export Excel reste disponible à tout moment."
                 }),
                 new HelpSection("Bon à savoir", new[]

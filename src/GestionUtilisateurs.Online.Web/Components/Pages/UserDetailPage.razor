@@ -70,7 +70,7 @@
         <div class="form-group">
             <label for="fam-type">@L.T("Lien")</label>
             <select id="fam-type" value="@_lienType" @onchange="e => _lienType = e.Value?.ToString() ?? LiensFamille.Parent">
-                @foreach (var (groupe, types) in LiensFamille.Groupes)
+                @foreach (var (groupe, types) in GroupesLiens())
                 {
                     <optgroup label="@L.T(groupe)">
                         @foreach (var type in types)
@@ -331,6 +331,18 @@ else
     private bool _decesOpen;
     private bool _lienOpen;
     private string _lienType = LiensFamille.Parent;
+
+    /// <summary>Liens proposés par groupe, dans l'ordre réglé ; les liens ajoutés vont dans le dernier groupe.</summary>
+    private IEnumerable<(string Groupe, List<string> Types)> GroupesLiens()
+    {
+        var choix = ListesChoix.Choix(ListesChoix.LiensDeFamille, _lienType);
+        var dernier = LiensFamille.Groupes[^1].Item1;
+        foreach (var (groupe, types) in LiensFamille.Groupes)
+        {
+            var dans = choix.Where(c => types.Contains(c.Cle) || (groupe == dernier && !c.DOrigine)).Select(c => c.Cle).ToList();
+            if (dans.Count > 0) yield return (groupe, dans);
+        }
+    }
     private string _lienSearch = "";
     private string? _lienChoix;
 

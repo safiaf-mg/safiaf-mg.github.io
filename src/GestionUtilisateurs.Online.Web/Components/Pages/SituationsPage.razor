@@ -174,9 +174,9 @@ else
             <div class="form-group">
                 <label for="si-type">@L.T("Type")</label>
                 <select id="si-type" value="@_type" @onchange="e => _type = e.Value?.ToString() ?? SituationTypes.Visite">
-                    @foreach (var t in SituationTypes.Tous)
+                    @foreach (var t in ListesChoix.Choix(ListesChoix.TypesSituation, _type))
                     {
-                        <option value="@t" selected="@(t == _type)">@SituationTypes.Icon(t) @SituationTypes.Label(t)</option>
+                        <option value="@t.Cle" selected="@(t.Cle == _type)">@SituationTypes.Icon(t.Cle) @t.Libelle</option>
                     }
                 </select>
             </div>
@@ -191,9 +191,10 @@ else
             <div class="form-group">
                 <label for="si-prio">@L.T("Priorité")</label>
                 <select id="si-prio" value="@_priorite" @onchange="e => _priorite = e.Value?.ToString() ?? CalendarEventTypes.PrioriteNormale">
-                    <option value="@CalendarEventTypes.PrioriteNormale">@L.T("Normale")</option>
-                    <option value="@CalendarEventTypes.PrioriteImportante">@L.T("Importante")</option>
-                    <option value="@CalendarEventTypes.PrioriteUrgente">@L.T("Urgente")</option>
+                    @foreach (var p in ListesChoix.Choix(ListesChoix.Priorites, _priorite))
+                    {
+                        <option value="@p.Cle" selected="@(p.Cle == _priorite)">@p.Libelle</option>
+                    }
                 </select>
             </div>
 
@@ -287,11 +288,14 @@ else
 }
 
 @code {
-    private static readonly (string Key, string Label)[] StatutChoices =
+    private static (string Key, string Label)[] StatutChoices => new[]
     {
-        ("", L.T("Tous")), (SituationStatuts.Ouvert, L.T("Ouverts")),
-        (SituationStatuts.EnCours, L.T("En cours")), (SituationStatuts.Resolu, L.T("Résolus"))
+        ("", L.T("Tous")), (SituationStatuts.Ouvert, Filtre(SituationStatuts.Ouvert, L.T("Ouverts"))),
+        (SituationStatuts.EnCours, Filtre(SituationStatuts.EnCours, L.T("En cours"))), (SituationStatuts.Resolu, Filtre(SituationStatuts.Resolu, L.T("Résolus")))
     };
+
+    /// <summary>Filtre au pluriel, ou le libellé réglé dans Paramètres › Listes de choix.</summary>
+    private static string Filtre(string statut, string pluriel) => ListesChoix.LibellePerso(ListesChoix.StatutsSituation, statut) ?? pluriel;
 
     private string _statut = "";
     private string _search = "";
@@ -398,12 +402,7 @@ else
     private string MemberName(string identifiant)
         => Store.FindUserByIdentifier(identifiant)?.NomComplet ?? identifiant;
 
-    private static string PriorityLabel(string p) => p switch
-    {
-        CalendarEventTypes.PrioriteUrgente => L.T("Urgente"),
-        CalendarEventTypes.PrioriteImportante => L.T("Importante"),
-        _ => L.T("Normale")
-    };
+    private static string PriorityLabel(string p) => CalendarEventTypes.PrioriteLabel(p);
 
     private void StartAdd()
     {

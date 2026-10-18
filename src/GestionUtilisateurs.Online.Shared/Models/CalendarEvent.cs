@@ -50,7 +50,27 @@ public static class CalendarEventTypes
     public const string StatutEnCours = "en_cours";
     public const string StatutTerminee = "terminee";
 
-    public static string Label(string type) => type switch
+    public static readonly string[] Tous = { Anniversaire, Reunion, Rappel, Tache, Evenement, Conge, Echeance, Autre };
+    public static readonly string[] PrioritesOrigine = { PrioriteNormale, PrioriteImportante, PrioriteUrgente };
+
+    /// <summary>Libellé affiché (réglable dans Paramètres › Listes de choix).</summary>
+    public static string Label(string type) => ListesChoix.LibellePerso(ListesChoix.TypesEvenement, type) ?? LabelOrigine(type);
+
+    /// <summary>Icône affichée (réglable dans Paramètres › Listes de choix).</summary>
+    public static string Icon(string type) => ListesChoix.IconePerso(ListesChoix.TypesEvenement, type)
+        ?? (ListesChoix.EstAjoute(ListesChoix.TypesEvenement, type) ? "📌" : IconOrigine(type));
+
+    /// <summary>Libellé d'une priorité (réglable dans Paramètres › Listes de choix).</summary>
+    public static string PrioriteLabel(string priorite) => ListesChoix.LibellePerso(ListesChoix.Priorites, priorite) ?? PrioriteLabelOrigine(priorite);
+
+    public static string PrioriteLabelOrigine(string priorite) => priorite switch
+    {
+        PrioriteUrgente => L.T("Urgente"),
+        PrioriteImportante => L.T("Importante"),
+        _ => L.T("Normale")
+    };
+
+    public static string LabelOrigine(string type) => type switch
     {
         Anniversaire => L.T("Anniversaire"),
         Reunion => L.T("Réunion"),
@@ -62,7 +82,7 @@ public static class CalendarEventTypes
         _ => L.T("Autre")
     };
 
-    public static string Icon(string type) => type switch
+    public static string IconOrigine(string type) => type switch
     {
         Anniversaire => "🎂",
         Reunion => "📅",

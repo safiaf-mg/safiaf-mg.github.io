@@ -144,7 +144,7 @@ public static class LiensFamille
     };
 
     /// <summary>Le lien vu depuis l'autre fiche (mon parent → je suis son enfant).</summary>
-    public static string Inverse(string type) => type switch
+    public static string Inverse(string type) => ListesChoix.InversePerso(type) ?? type switch
     {
         Parent => Enfant,
         Enfant => Parent,
@@ -168,7 +168,10 @@ public static class LiensFamille
     /// <summary>Vrai si l'autre membre est un ascendant (sert à éviter les boucles).</summary>
     public static bool EstAscendant(string type) => type is Parent or GrandParent or ArriereGrandParent;
 
-    public static string Libelle(string type) => type switch
+    /// <summary>Libellé affiché (réglable dans Paramètres › Listes de choix).</summary>
+    public static string Libelle(string type) => ListesChoix.LibellePerso(ListesChoix.LiensDeFamille, type) ?? LibelleOrigine(type);
+
+    public static string LibelleOrigine(string type) => type switch
     {
         Parent => L.T("Parent"),
         Enfant => L.T("Enfant"),
@@ -196,7 +199,7 @@ public static class LiensFamille
     };
 
     /// <summary>Titre de la ligne sur la fiche (au pluriel).</summary>
-    public static string Titre(string type) => type switch
+    public static string Titre(string type) => ListesChoix.LibellePerso(ListesChoix.LiensDeFamille, type) ?? type switch
     {
         Parent => L.T("Parents"),
         Enfant => L.T("Enfants"),
@@ -224,7 +227,7 @@ public static class LiensFamille
     };
 
     /// <summary>Texte de la liste de choix : « Son gendre ou sa belle-fille (conjoint de son enfant) ».</summary>
-    public static string Choix(string type) => type switch
+    public static string Choix(string type) => ListesChoix.LibellePerso(ListesChoix.LiensDeFamille, type) ?? type switch
     {
         Parent => L.T("Son parent (père, mère)"),
         Enfant => L.T("Son enfant"),
@@ -347,6 +350,8 @@ public class AppSettings
     public string AppName { get; set; } = "Gestion des utilisateurs";
     /// <summary>Paires de fiches (« idA|idB ») confirmées comme deux personnes différentes (homonymes).</summary>
     public List<string> PasDoublons { get; set; } = new();
+    /// <summary>Listes de choix réglées par les gestionnaires (clé : <see cref="ListesChoix"/>).</summary>
+    public Dictionary<string, ListeConfig> Listes { get; set; } = new();
     public string Theme { get; set; } = "light";
     public string Color { get; set; } = "#4f46e5";
     public int PageSize { get; set; } = 10;
@@ -483,19 +488,25 @@ public static class TacheStatuts
     public const string EnCours = "en_cours";
     public const string Terminee = "terminee";
 
-    public static string Label(string statut) => statut switch
+    public static string LabelOrigine(string statut) => statut switch
     {
         EnCours => L.T("En cours"),
         Terminee => L.T("Terminée"),
         _ => L.T("À faire")
     };
 
-    public static string Icon(string statut) => statut switch
+    public static string IconOrigine(string statut) => statut switch
     {
         EnCours => "🔄",
         Terminee => "✅",
         _ => "☑"
     };
+    /// <summary>Choix d'origine (voir <see cref="ListesChoix"/>).</summary>
+    public static readonly string[] Tous = { AFaire, EnCours, Terminee };
+
+    public static string Label(string statut) => ListesChoix.LibellePerso(ListesChoix.StatutsTache, statut) ?? LabelOrigine(statut);
+
+    public static string Icon(string statut) => ListesChoix.IconePerso(ListesChoix.StatutsTache, statut) ?? IconOrigine(statut);
 }
 
 /// <summary>Cotisation d'un membre (montant en Ariary).</summary>
@@ -518,11 +529,15 @@ public static class CotisationStatuts
     public const string Payee = "payee";
     public const string EnAttente = "en_attente";
 
-    public static string Label(string statut) => statut switch
+    public static string LabelOrigine(string statut) => statut switch
     {
         EnAttente => L.T("En attente"),
         _ => L.T("Payée")
     };
+    /// <summary>Choix d'origine (voir <see cref="ListesChoix"/>).</summary>
+    public static readonly string[] Tous = { Payee, EnAttente };
+
+    public static string Label(string statut) => ListesChoix.LibellePerso(ListesChoix.StatutsCotisation, statut) ?? LabelOrigine(statut);
 }
 
 /// <summary>Mouvement de trésorerie (entrée ou sortie, montants en Ariary).</summary>
@@ -542,17 +557,23 @@ public static class TresorerieTypes
     public const string Entree = "entree";
     public const string Sortie = "sortie";
 
-    public static string Label(string type) => type switch
+    public static string LabelOrigine(string type) => type switch
     {
         Sortie => L.T("Sortie"),
         _ => L.T("Entrée")
     };
 
-    public static string Icon(string type) => type switch
+    public static string IconOrigine(string type) => type switch
     {
         Sortie => "↗",
         _ => "↙"
     };
+    /// <summary>Choix d'origine (voir <see cref="ListesChoix"/>).</summary>
+    public static readonly string[] Tous = { Entree, Sortie };
+
+    public static string Label(string type) => ListesChoix.LibellePerso(ListesChoix.TypesTresorerie, type) ?? LabelOrigine(type);
+
+    public static string Icon(string type) => ListesChoix.IconePerso(ListesChoix.TypesTresorerie, type) ?? IconOrigine(type);
 }
 
 /// <summary>Matériel inventorié (quantité totale, disponibilité calculée des prêts actifs).</summary>
@@ -573,12 +594,16 @@ public static class MaterielEtats
     public const string Moyen = "moyen";
     public const string HorsService = "hors_service";
 
-    public static string Label(string etat) => etat switch
+    public static string LabelOrigine(string etat) => etat switch
     {
         Moyen => L.T("Moyen"),
         HorsService => L.T("Hors service"),
         _ => L.T("Bon")
     };
+    /// <summary>Choix d'origine (voir <see cref="ListesChoix"/>).</summary>
+    public static readonly string[] Tous = { Bon, Moyen, HorsService };
+
+    public static string Label(string etat) => ListesChoix.LibellePerso(ListesChoix.EtatsMateriel, etat) ?? LabelOrigine(etat);
 }
 
 /// <summary>Prêt de matériel (actif tant que DateRetour est vide).</summary>
@@ -618,19 +643,25 @@ public static class PresenceStatuts
     public const string Absent = "absent";
     public const string Excuse = "excuse";
 
-    public static string Label(string statut) => statut switch
+    public static string LabelOrigine(string statut) => statut switch
     {
         Absent => L.T("Absent"),
         Excuse => L.T("Excusé"),
         _ => L.T("Présent")
     };
 
-    public static string Icon(string statut) => statut switch
+    public static string IconOrigine(string statut) => statut switch
     {
         Absent => "✗",
         Excuse => "◐",
         _ => "✓"
     };
+    /// <summary>Choix d'origine (voir <see cref="ListesChoix"/>).</summary>
+    public static readonly string[] Tous = { Present, Absent, Excuse };
+
+    public static string Label(string statut) => ListesChoix.LibellePerso(ListesChoix.StatutsPresence, statut) ?? LabelOrigine(statut);
+
+    public static string Icon(string statut) => ListesChoix.IconePerso(ListesChoix.StatutsPresence, statut) ?? IconOrigine(statut);
 }
 
 /// <summary>Situation particulière d'un membre (visite, accompagnement, événement important…).</summary>
@@ -689,7 +720,7 @@ public static class SituationTypes
         Autre
     };
 
-    public static string Label(string type) => type switch
+    public static string LabelOrigine(string type) => type switch
     {
         Accompagnement => L.T("Accompagnement"),
         EvenementImportant => L.T("Événement important"),
@@ -704,7 +735,7 @@ public static class SituationTypes
         _ => L.T("Visite nécessaire")
     };
 
-    public static string Icon(string type) => type switch
+    public static string IconOrigine(string type) => type switch
     {
         Accompagnement => "🤝",
         EvenementImportant => "⭐",
@@ -718,6 +749,9 @@ public static class SituationTypes
         Autre => "📌",
         _ => "🏠"
     };
+    public static string Label(string type) => ListesChoix.LibellePerso(ListesChoix.TypesSituation, type) ?? LabelOrigine(type);
+
+    public static string Icon(string type) => ListesChoix.IconePerso(ListesChoix.TypesSituation, type) ?? (ListesChoix.EstAjoute(ListesChoix.TypesSituation, type) ? "📌" : IconOrigine(type));
 }
 
 public static class SituationStatuts
@@ -726,19 +760,25 @@ public static class SituationStatuts
     public const string EnCours = "en_cours";
     public const string Resolu = "resolu";
 
-    public static string Label(string statut) => statut switch
+    public static string LabelOrigine(string statut) => statut switch
     {
         EnCours => L.T("En cours"),
         Resolu => L.T("Résolu"),
         _ => L.T("Ouvert")
     };
 
-    public static string Icon(string statut) => statut switch
+    public static string IconOrigine(string statut) => statut switch
     {
         EnCours => "🔄",
         Resolu => "✅",
         _ => "📬"
     };
+    /// <summary>Choix d'origine (voir <see cref="ListesChoix"/>).</summary>
+    public static readonly string[] Tous = { Ouvert, EnCours, Resolu };
+
+    public static string Label(string statut) => ListesChoix.LibellePerso(ListesChoix.StatutsSituation, statut) ?? LabelOrigine(statut);
+
+    public static string Icon(string statut) => ListesChoix.IconePerso(ListesChoix.StatutsSituation, statut) ?? IconOrigine(statut);
 }
 
 /// <summary>Vote interne : options, bulletins (un par membre, modifiable tant qu'ouvert).</summary>

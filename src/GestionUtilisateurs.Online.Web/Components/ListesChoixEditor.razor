@@ -1,0 +1,209 @@
+@inject DataStore Store
+@inject AppState State
+
+@* Réglage d'une liste de choix (Paramètres › Listes de choix) : ajouter, renommer, réordonner, masquer, supprimer. *@
+<Modal Show="Show && Def != null" Title="@(Def == null ? "" : L.T(Def.Titre))" OnClose="Fermer" CssClass="listes-modal">
+    <ChildContent>
+        @if (Def != null)
+        {
+            var elements = Store.Liste(Def.Id);
+            <p class="muted">
+                @(Def.AjoutPermis
+                    ? L.T("Ajoutez, renommez, réordonnez, masquez ou supprimez les choix. Un choix masqué n'est plus proposé dans les formulaires, mais les fiches qui l'utilisent le gardent.")
+                    : L.T("Renommez ou réordonnez les choix. L'application s'appuie sur ces choix pour fonctionner : on ne peut pas en ajouter ni en retirer."))
+            </p>
+            <div class="menu-order-list listes-elements">
+                @for (var i = 0; i < elements.Count; i++)
+                {
+                    var e = elements[i];
+                    var idx = i;
+                    var n = Def.AjoutPermis && !e.DOrigine ? Store.UtilisationsElement(Def.Id, e.Cle) : 0;
+                    <div class="menu-order-item @(e.Masque ? "menu-hidden" : "") @(_edition == e.Cle ? "listes-en-edition" : "")" data-cle="@e.Cle" style="@(e.Masque ? "opacity:.55" : "")">
+                        @if (AvecIcones)
+                        {
+                            <span class="menu-order-icon" aria-hidden="true">@e.Icone</span>
+                        }
+                        <span class="menu-order-label">
+                            @e.Libelle
+                            @if (e.Masque)
+                            {
+                                <small class="muted"> @L.T("(masqué)")</small>
+                            }
+                            @if (!e.DOrigine)
+                            {
+                                <span class="listes-tag">@L.T("ajouté")</span>
+                                @if (Def.AvecInverse)
+                                {
+                                    <small class="listes-detail">@L.F("De l'autre côté : {0}", LibelleDe(elements, string.IsNullOrEmpty(e.Inverse) ? e.Cle : e.Inverse))</small>
+                                }
+                                @if (n > 0)
+                                {
+                                    <small class="listes-detail">@L.F("Utilisé par {0} fiche(s)", n)</small>
+                                }
+                            }
+                        </span>
+                        <div class="menu-order-actions">
+                            <button type="button" class="btn btn-secondary btn-sm menu-order-btn" disabled="@(idx == 0)" aria-label="@L.F("Monter {0}", e.Libelle)" @onclick="() => Deplacer(e.Cle, -1)">▲</button>
+                            <button type="button" class="btn btn-secondary btn-sm menu-order-btn" disabled="@(idx >= elements.Count - 1)" aria-label="@L.F("Descendre {0}", e.Libelle)" @onclick="() => Deplacer(e.Cle, 1)">▼</button>
+                            <button type="button" class="btn btn-secondary btn-sm menu-order-btn listes-modifier" aria-label="@L.F("Modifier {0}", e.Libelle)" title="@L.T("Modifier")" @onclick="() => Editer(e)">✏️</button>
+                            @if (Def.AjoutPermis)
+                            {
+                                <button type="button" class="btn btn-secondary btn-sm menu-order-btn listes-masquer" aria-label="@(e.Masque ? L.F("Afficher {0}", e.Libelle) : L.F("Masquer {0}", e.Libelle))" title="@(e.Masque ? L.T("Afficher") : L.T("Masquer"))" @onclick="() => Masquer(e)">@(e.Masque ? "🙈" : "👁")</button>
+                            }
+                            @if (!e.DOrigine)
+                            {
+                                <button type="button" class="btn btn-secondary btn-sm menu-order-btn listes-supprimer" aria-label="@L.F("Supprimer {0}", e.Libelle)" title="@L.T("Supprimer")" @onclick="() => _aSupprimer = e">🗑</button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (Def.AjoutPermis || _edition != null)
+            {
+                var enCours = _edition == null ? null : elements.FirstOrDefault(x => x.Cle == _edition);
+                <div class="divider-section">@(enCours == null ? L.T("Ajouter un choix") : L.F("Modifier « {0} »", enCours.Libelle))</div>
+                <div class="listes-form">
+                    <div class="form-group">
+                        <label for="liste-libelle">@L.T("Libellé *")</label>
+                        <input id="liste-libelle" type="text" maxlength="80" value="@_libelle" placeholder="@(enCours?.DOrigine == true ? L.T("Vide : libellé d'origine") : "")"
+                               @oninput="ev => _libelle = ev.Value?.ToString() ?? string.Empty" />
+                    </div>
+                    @if (AvecIcones)
+                    {
+                        <div class="form-group listes-icone">
+                            <label for="liste-icone">@L.T("Icône")</label>
+                            <input id="liste-icone" type="text" maxlength="16" value="@_icone" placeholder="@L.T("Un emoji, ex : 🎉")"
+                                   @oninput="ev => _icone = ev.Value?.ToString() ?? string.Empty" />
+                        </div>
+                    }
+                    @if (Def.AvecInverse && enCours?.DOrigine != true)
+                    {
+                        <div class="form-group">
+                            <label for="liste-inverse">@L.T("Vu depuis l'autre fiche")</label>
+                            <select id="liste-inverse" value="@_inverse" @onchange="ev => _inverse = ev.Value?.ToString() ?? string.Empty">
+                                <option value="" selected="@(_inverse == "")">@L.T("Le même lien (ex : cousin ↔ cousin)")</option>
+                                @foreach (var x in elements.Where(x => x.Cle != _edition))
+                                {
+                                    <option value="@x.Cle" selected="@(x.Cle == _inverse)">@x.Libelle</option>
+                                }
+                            </select>
+                            <small class="muted">@L.T("Exemple : si A est le parrain de B, alors B est le filleul de A.")</small>
+                        </div>
+                    }
+                    <span class="form-error">@_erreur</span>
+                    <div class="form-actions">
+                        @if (_edition != null)
+                        {
+                            <button type="button" class="btn btn-secondary" @onclick="AnnulerEdition">@L.T("Annuler la modification")</button>
+                        }
+                        <button type="button" class="btn btn-primary listes-valider" @onclick="Valider">@(_edition == null ? L.T("＋ Ajouter") : L.T("Enregistrer"))</button>
+                    </div>
+                </div>
+            }
+        }
+    </ChildContent>
+    <FooterContent>
+        <button type="button" class="btn btn-secondary" @onclick="() => _reinit = true">↺ @L.T("Rétablir les choix d'origine")</button>
+        <button type="button" class="btn btn-primary" @onclick="Fermer">@L.T("Fermer")</button>
+    </FooterContent>
+</Modal>
+
+<ConfirmDialog Show="_aSupprimer != null" Title="@L.T("Supprimer le choix")"
+               Message="@(_aSupprimer == null ? "" : L.F("Supprimer « {0} » de la liste ?", _aSupprimer.Libelle))"
+               ConfirmLabel="@L.T("Supprimer")" Danger="true"
+               OnConfirm="Supprimer" OnCancel="() => _aSupprimer = null" />
+
+<ConfirmDialog Show="_reinit" Title="@L.T("Rétablir les choix d'origine")"
+               Message="@L.T("Les libellés, icônes et l'ordre d'origine reviennent, et tous les choix d'origine sont de nouveau proposés. Les choix ajoutés restent, à la fin de la liste.")"
+               ConfirmLabel="@L.T("Rétablir")" OnConfirm="Reinitialiser" OnCancel="() => _reinit = false" />
+
+@code {
+    [Parameter] public bool Show { get; set; }
+    /// <summary>Identifiant de la liste (voir <see cref="ListesChoix"/>).</summary>
+    [Parameter] public string? ListeId { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private ListeDefinition? Def => ListeId == null ? null : ListesChoix.Definition(ListeId);
+    /// <summary>Seules les listes dont les choix ont une icône proposent de la changer.</summary>
+    private bool AvecIcones => Def?.Origine().Any(o => o.Icone.Length > 0) == true;
+
+    private string? _edition;
+    private string _libelle = "";
+    private string _icone = "";
+    private string _inverse = "";
+    private string _erreur = "";
+    private ChoixListe? _aSupprimer;
+    private bool _reinit;
+    private string? _ouverte;
+
+    protected override void OnParametersSet()
+    {
+        var ouverte = Show ? ListeId : null;
+        if (ouverte != _ouverte) AnnulerEdition();
+        _ouverte = ouverte;
+    }
+
+    private static string LibelleDe(IReadOnlyList<ChoixListe> elements, string cle)
+        => elements.FirstOrDefault(x => x.Cle == cle)?.Libelle ?? cle;
+
+    private Task Fermer() => OnClose.InvokeAsync();
+
+    private void AnnulerEdition()
+    {
+        _edition = null;
+        _libelle = _icone = _inverse = _erreur = "";
+    }
+
+    private void Editer(ChoixListe e)
+    {
+        _edition = e.Cle;
+        _libelle = e.Libelle;
+        _icone = e.Icone;
+        _inverse = e.Inverse;
+        _erreur = "";
+    }
+
+    private void Valider()
+    {
+        if (Def == null) return;
+        var res = _edition == null
+            ? Store.AjouterElementListe(Def.Id, _libelle, _icone, _inverse)
+            : Store.ModifierElementListe(Def.Id, _edition, _libelle, _icone, _inverse);
+        if (!res.Success) { _erreur = res.Error; return; }
+        State.NotifySuccess(_edition == null ? L.F("« {0} » ajouté à la liste.", _libelle.Trim()) : L.T("Choix modifié."));
+        AnnulerEdition();
+    }
+
+    private void Deplacer(string cle, int sens)
+    {
+        if (Def == null) return;
+        var res = Store.DeplacerElementListe(Def.Id, cle, sens);
+        if (!res.Success) State.NotifyError(res.Error);
+    }
+
+    private void Masquer(ChoixListe e)
+    {
+        if (Def == null) return;
+        var res = Store.MasquerElementListe(Def.Id, e.Cle, !e.Masque);
+        if (!res.Success) State.NotifyError(res.Error);
+    }
+
+    private void Supprimer()
+    {
+        if (Def == null || _aSupprimer == null) return;
+        var res = Store.SupprimerElementListe(Def.Id, _aSupprimer.Cle);
+        if (!res.Success) { _erreur = res.Error; State.NotifyError(res.Error); return; }
+        State.NotifySuccess(L.F("« {0} » supprimé de la liste.", _aSupprimer.Libelle));
+        if (_edition == _aSupprimer.Cle) AnnulerEdition();
+    }
+
+    private void Reinitialiser()
+    {
+        _reinit = false;
+        if (Def == null) return;
+        var res = Store.ReinitialiserListe(Def.Id);
+        if (res.Success) { AnnulerEdition(); State.NotifySuccess(L.T("Choix d'origine rétablis.")); }
+        else State.NotifyError(res.Error);
+    }
+}

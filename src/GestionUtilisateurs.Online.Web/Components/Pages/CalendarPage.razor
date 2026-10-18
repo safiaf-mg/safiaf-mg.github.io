@@ -156,8 +156,8 @@ else
         @foreach (var t in AllTypes)
         {
             <button class="type-option" @onclick="() => StartNew(t.Item1)">
-                <span class="type-icon" style="background:@Soft(t.Item2);color:@t.Item2">@CalendarEventTypes.Icon(t.Item1)</span>
-                <span class="type-label">@CalendarEventTypes.Label(t.Item1)</span>
+                <span class="type-icon" style="background:@Soft(CalendarEventTypes.Color(t.Item1));color:@CalendarEventTypes.Color(t.Item1)">@CalendarEventTypes.Icon(t.Item1)</span>
+                <span class="type-label">@t.Item2</span>
             </button>
         }
     </div>
@@ -393,7 +393,7 @@ else
     <div class="cal-filter-section">
         <div class="divider-section">@L.T("Types")</div>
         <div class="check-group">
-            @foreach (var (key, label) in AllTypes)
+            @foreach (var (key, label) in FilterTypes)
             {
                 <label class="form-check">
                     <input type="checkbox" checked="@_typeFilter.Contains(key)" @onchange="() => ToggleType(key)" />
@@ -528,17 +528,13 @@ else
     private CalendarEvent? _detailEvent;
     private EventDraft _draft = new();
 
-    private static readonly (string, string)[] AllTypes = new[]
-    {
-        (CalendarEventTypes.Anniversaire, CalendarEventTypes.Label(CalendarEventTypes.Anniversaire)),
-        (CalendarEventTypes.Reunion, CalendarEventTypes.Label(CalendarEventTypes.Reunion)),
-        (CalendarEventTypes.Rappel, CalendarEventTypes.Label(CalendarEventTypes.Rappel)),
-        (CalendarEventTypes.Tache, CalendarEventTypes.Label(CalendarEventTypes.Tache)),
-        (CalendarEventTypes.Evenement, CalendarEventTypes.Label(CalendarEventTypes.Evenement)),
-        (CalendarEventTypes.Conge, CalendarEventTypes.Label(CalendarEventTypes.Conge)),
-        (CalendarEventTypes.Echeance, CalendarEventTypes.Label(CalendarEventTypes.Echeance)),
-        (CalendarEventTypes.Autre, CalendarEventTypes.Label(CalendarEventTypes.Autre))
-    };
+    /// <summary>Types proposés (Paramètres › Listes de choix), plus le type de l'événement modifié.</summary>
+    private (string, string)[] AllTypes
+        => ListesChoix.Choix(ListesChoix.TypesEvenement, _showForm ? _draft.Type : null).Select(c => (c.Cle, c.Libelle)).ToArray();
+
+    /// <summary>Tous les types, masqués compris (filtre du calendrier).</summary>
+    private static (string, string)[] FilterTypes
+        => ListesChoix.Elements(ListesChoix.TypesEvenement).Select(c => (c.Cle, c.Libelle)).ToArray();
 
     private static readonly (string, string)[] RepetitionChoices = new[]
     {
@@ -549,20 +545,11 @@ else
         (CalendarEventTypes.RepetitionAnnuelle, L.T("Tous les ans"))
     };
 
-    private static readonly (string, string)[] PriorityChoices = new[]
-    {
-        (CalendarEventTypes.PrioriteNormale, L.T("Normale")),
-        (CalendarEventTypes.PrioriteImportante, L.T("Importante")),
-        (CalendarEventTypes.PrioriteUrgente, L.T("Urgente"))
-    };
+    private (string, string)[] PriorityChoices
+        => ListesChoix.Choix(ListesChoix.Priorites, _draft.Priorite).Select(c => (c.Cle, c.Libelle)).ToArray();
 
-    private static readonly (string, string)[] PriorityFilterChoices = new[]
-    {
-        ("", L.T("Toutes")),
-        (CalendarEventTypes.PrioriteNormale, L.T("Normale")),
-        (CalendarEventTypes.PrioriteImportante, L.T("Importante")),
-        (CalendarEventTypes.PrioriteUrgente, L.T("Urgente"))
-    };
+    private static (string, string)[] PriorityFilterChoices
+        => ListesChoix.Elements(ListesChoix.Priorites).Select(c => (c.Cle, c.Libelle)).Prepend(("", L.T("Toutes"))).ToArray();
 
     private static readonly (int, string)[] ReminderChoices = new[]
     {
@@ -574,12 +561,8 @@ else
         (1440, L.T("1 jour avant"))
     };
 
-    private static readonly (string, string)[] StatutChoices = new[]
-    {
-        (CalendarEventTypes.StatutAFaire, L.T("À faire")),
-        (CalendarEventTypes.StatutEnCours, L.T("En cours")),
-        (CalendarEventTypes.StatutTerminee, L.T("Terminée"))
-    };
+    private static (string, string)[] StatutChoices
+        => ListesChoix.Elements(ListesChoix.StatutsTache).Select(c => (c.Cle, c.Libelle)).ToArray();
 
     private static readonly string[] WeekDays = { L.T("Lun"), L.T("Mar"), L.T("Mer"), L.T("Jeu"), L.T("Ven"), L.T("Sam"), L.T("Dim") };
 
@@ -1354,17 +1337,9 @@ else
         _ => L.F("{0} min avant", minutes)
     };
 
-    private static string PriorityLabel(string p) => p switch
-    {
-        CalendarEventTypes.PrioriteImportante => L.T("Importante"),
-        CalendarEventTypes.PrioriteUrgente => L.T("⚠ Urgente"),
-        _ => ""
-    };
+    /// <summary>Priorité affichée sur la carte (rien pour « Normale »).</summary>
+    private static string PriorityLabel(string p) => string.IsNullOrEmpty(p) || p == CalendarEventTypes.PrioriteNormale ? ""
+        : (p == CalendarEventTypes.PrioriteUrgente ? "⚠ " : "") + CalendarEventTypes.PrioriteLabel(p);
 
-    private static string StatutLabel(string s) => s switch
-    {
-        CalendarEventTypes.StatutEnCours => L.T("En cours"),
-        CalendarEventTypes.StatutTerminee => L.T("Terminée"),
-        _ => L.T("À faire")
-    };
+    private static string StatutLabel(string s) => TacheStatuts.Label(s);
 }

@@ -4,6 +4,25 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 18 octobre 2026 (listes de choix)
+
+- Nouveau dans Paramètres : « Listes de choix » (gestionnaires et
+  administrateurs). Les listes proposées dans les formulaires se règlent
+  sans attendre une nouvelle version : types de famangiana et situations,
+  liens de famille, types d'événement, priorités, catégories de documents,
+  états du matériel.
+- Pour chaque liste : ajouter un choix, le renommer, changer son icône, le
+  monter ou le descendre, le masquer ou le supprimer. Un choix masqué n'est
+  plus proposé, mais les fiches qui l'utilisent le gardent. Un choix encore
+  utilisé ne se supprime pas : on le masque.
+- Un lien de famille ajouté indique comment il se lit depuis l'autre fiche
+  (le même lien, ou un autre lien).
+- Les statuts (tâches, suivis, cotisations, présence) et les mouvements de
+  trésorerie se renomment et se réordonnent ; l'application s'appuie sur eux,
+  on ne peut donc pas en ajouter ni en retirer.
+- « Rétablir les choix d'origine » remet une liste comme au départ, en gardant
+  les choix ajoutés.
+
 ## 18 octobre 2026 (famangiana)
 
 - Le menu « Situations particulières » s'appelle maintenant « Famangiana et
