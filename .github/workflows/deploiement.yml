@@ -37,7 +37,9 @@ jobs:
         run: |
           if [ "$EVENEMENT" != "schedule" ]; then echo "publier=true" >> "$GITHUB_OUTPUT"; exit 0; fi
           voulu=$(python3 .github/scripts/marque.py empreinte) || { echo "Nom et logo non lus : rien à faire."; echo "publier=false" >> "$GITHUB_OUTPUT"; exit 0; }
-          site="https://${GITHUB_REPOSITORY_OWNER,,}.github.io/${GITHUB_REPOSITORY#*/}/marque.txt"
+          # Dépôt <compte>.github.io : site à la racine ; sinon dans /<dépôt>/.
+          hote="${GITHUB_REPOSITORY_OWNER,,}.github.io"; depot="${GITHUB_REPOSITORY#*/}"
+          if [ "${depot,,}" = "$hote" ]; then site="https://$hote/marque.txt"; else site="https://$hote/$depot/marque.txt"; fi
           en_ligne=$(curl -sS --fail "$site?t=$(date +%s)" 2>/dev/null | tr -d '[:space:]' || true)
           echo "Site : ${en_ligne:-aucune}, réglages : $voulu"
           if [ "$voulu" = "$en_ligne" ]; then echo "publier=false" >> "$GITHUB_OUTPUT"; else echo "publier=true" >> "$GITHUB_OUTPUT"; fi
@@ -67,7 +69,7 @@ jobs:
           www=src/GestionUtilisateurs.Online.Web/wwwroot
           jq -n --arg url "$SUPABASE_URL" --arg key "$SUPABASE_ANON_KEY" \
             '{Supabase: {Url: $url, AnonKey: $key}}' > "$www/appsettings.json"
-          # Le site est servi depuis https://<compte>.github.io/<dépôt>/ :
+          # Le site est servi depuis https://<compte>.github.io/ (ou /<dépôt>/) :
           # le chemin de base est fixé avant la publication pour que les
           # empreintes du mode hors ligne restent valides.
           base="${BASE_PATH%/}/"

@@ -5,7 +5,7 @@ personnel pour chaque membre. L'application mobile hors ligne reste dans le
 dépôt [GestionUtilisateurs2](https://github.com/lucasRAN01/GestionUtilisateurs2)
 et n'est pas modifiée.
 
-🌐 **Site en ligne : <https://lucasran01.github.io/GestionCommunautaireOnline/>**
+🌐 **Site en ligne : <https://safiaf-mg.github.io/>**
 
 - **Sur ordinateur** : mise en page web (menu latéral, contenu élargi).
 - **Sur téléphone** : le même design que l'application mobile, installable

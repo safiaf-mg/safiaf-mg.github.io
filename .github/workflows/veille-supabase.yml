@@ -67,7 +67,7 @@ jobs:
           - Fichiers : ${FILES} % de la limite gratuite (1 Go)
 
           Ouvrez l'application > menu > **Capacité du serveur** pour voir le détail et libérer de l'espace."
-          number=$(gh issue list --state open --search "in:title \"$title\"" --json number -q '.[0].number' || true)
+          number=$(gh issue list --state open --search "in:title \"$title\"" --json number -q '.[0].number // empty' || true)
           if [ -n "$number" ]; then
             gh issue comment "$number" --body "$body"
           else
@@ -83,7 +83,7 @@ jobs:
           set -euo pipefail
           case "$PENDING" in ''|*[!0-9]*) PENDING=0 ;; esac
           read -r number title < <(gh issue list --state open --search 'in:title "en attente de validation"' \
-            --json number,title -q '.[0] | "\(.number) \(.title)"' || true) || true
+            --json number,title -q '.[0] // empty | "\(.number) \(.title)"' || true) || true
           if [ "$PENDING" -eq 0 ]; then
             if [ -n "${number:-}" ]; then
               gh issue close "$number" --comment "Plus aucun compte en attente. Merci !"
@@ -116,7 +116,7 @@ jobs:
           fi
           COUNT=$(jq 'length' demandes.json 2>/dev/null || echo 0)
           read -r number title < <(gh issue list --state open --search 'in:title "mot de passe oublié"' \
-            --json number,title -q '.[0] | "\(.number) \(.title)"' || true) || true
+            --json number,title -q '.[0] // empty | "\(.number) \(.title)"' || true) || true
           if [ "$COUNT" -eq 0 ]; then
             if [ -n "${number:-}" ]; then
               gh issue close "$number" --comment "Plus aucune demande en attente. Merci !"

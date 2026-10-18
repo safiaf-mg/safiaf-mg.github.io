@@ -50,9 +50,11 @@ la surveillance et les sauvegardes automatiques).
 1. Dans le dépôt GitHub : **Settings > Pages**.
 2. Sous **Build and deployment**, choisissez **Source : GitHub Actions**.
    Il n'y a rien d'autre à régler.
-3. L'adresse du site sera
-   `https://lucasran01.github.io/GestionCommunautaireOnline/` (affichée en
-   haut de cette même page après la première publication). Un nom de domaine
+3. L'adresse du site est `https://safiaf-mg.github.io/` : le dépôt s'appelle
+   `safiaf-mg.github.io` dans l'organisation `safiaf-mg`, ce qui place le site
+   à la racine (adresse affichée en haut de cette même page après la
+   publication). Un dépôt au nom ordinaire serait servi depuis
+   `https://<compte>.github.io/<dépôt>/`. Un nom de domaine
    personnel peut être ajouté plus tard dans **Custom domain**, gratuitement.
 
 GitHub Pages est gratuit pour un dépôt public et ne demande pas de carte
