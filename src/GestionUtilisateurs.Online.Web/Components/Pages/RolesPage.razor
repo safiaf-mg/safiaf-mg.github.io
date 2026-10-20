@@ -24,7 +24,7 @@ else
 
     @foreach (var group in Permissions.Toutes.GroupBy(d => d.Groupe))
     {
-        var defs = group.Where(Matches).ToList();
+        var defs = group.Where(Matches).Where(d => !(Store.OnlineMode && d.Key == Permissions.SyncUse)).ToList();
         if (defs.Count == 0) continue;
         <div class="card" style="margin-bottom:12px">
             <h3>@group.Key</h3>
@@ -44,8 +44,16 @@ else
                         {
                             var r = role; var k = def.Key;
                             <span class="perm-cell">
-                                <input type="checkbox" aria-label="@def.Label — @L.T(role)"
-                                       checked="@IsAllowed(r, k)" @onchange="() => Toggle(r, k)" />
+                                @if (SansEffet(r, k))
+                                {
+                                    <input type="checkbox" aria-label="@def.Label — @L.T(role)" disabled
+                                           title="@L.T("Ce droit ne s'applique pas à ce rôle.")" checked="false" />
+                                }
+                                else
+                                {
+                                    <input type="checkbox" aria-label="@def.Label — @L.T(role)"
+                                           checked="@IsAllowed(r, k)" @onchange="() => Toggle(r, k)" />
+                                }
                             </span>
                         }
                     </div>
@@ -56,6 +64,7 @@ else
 
     <div class="card">
         <span class="field-hint">@L.T("Le droit « Gérer les rôles et permissions » ne peut pas être retiré aux administrateurs (verrou anti-blocage).")</span>
+        <span class="field-hint">@L.T("Une case grisée ne s'applique pas à ce rôle. Un menu sans le droit correspondant n'apparaît plus pour ce rôle, ni dans le guide.")</span>
         <div class="form-actions" style="margin-top:10px">
             <button class="btn btn-secondary" @onclick="ResetDefaults">@L.T("Réinitialiser les défauts")</button>
             <button class="btn btn-primary" @onclick="Save" disabled="@_saving">@(_saving ? L.T("Enregistrement…") : L.T("Enregistrer"))</button>
@@ -72,6 +81,15 @@ else
     private bool _saving;
     private bool _confirmReset;
     private string _search = "";
+
+    /// <summary>
+    /// Cases sans effet, grisées pour que la grille dise vrai : les paramètres communs
+    /// sont enregistrés par le serveur pour les gestionnaires et administrateurs
+    /// seulement, et la page des rôles est réservée aux administrateurs.
+    /// </summary>
+    private static bool SansEffet(string role, string key)
+        => (key == Permissions.SettingsManage && role == Roles.Utilisateur)
+        || (key == Permissions.RolesManage && role != Roles.Administrateur);
 
     private bool Matches(Permissions.Definition def)
     {

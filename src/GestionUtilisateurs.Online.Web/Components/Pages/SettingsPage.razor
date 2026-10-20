@@ -104,7 +104,7 @@
     }
 </div>
 
-@if (Store.IsManager)
+@if (GereParametres)
 {
 <div class="card settings-card settings-card-menu @(IsCollapsed("menu") ? "collapsed" : "")">
     <span class="card-corner" aria-hidden="true"></span>
@@ -147,7 +147,7 @@
 </div>
 }
 
-@if (Store.IsManager)
+@if (GereParametres)
 {
 <div class="card settings-card settings-card-listes @(IsCollapsed("listes") ? "collapsed" : "")">
     <span class="card-corner" aria-hidden="true"></span>
@@ -256,7 +256,7 @@
     </div>
 }
 
-@if (Store.IsManager)
+@if (GereParametres)
 {
     <div class="card settings-card settings-card-pagesize @(IsCollapsed("pagesize") ? "collapsed" : "")">
         <span class="card-corner" aria-hidden="true"></span>
@@ -300,7 +300,7 @@
     </div>
 }
 
-@if (Store.IsAdmin)
+@if (Store.PeutOuvrir("fields"))
 {
     <div class="card settings-card settings-card-fields @(IsCollapsed("fields") ? "collapsed" : "")">
         <span class="card-corner" aria-hidden="true"></span>
@@ -316,7 +316,7 @@
     </div>
 }
 
-@if (Store.IsManager)
+@if (Store.Can(Permissions.ExportData) || Store.Can(Permissions.ImportData))
 {
     <div class="card settings-card settings-card-actions @(IsCollapsed("actions") ? "collapsed" : "")">
         <span class="card-corner" aria-hidden="true"></span>
@@ -325,7 +325,7 @@
             <h3>@L.T("Actions")</h3>
             <button type="button" class="section-toggle" aria-label="@L.T("Réduire ou agrandir la section Actions")" aria-expanded="@(!IsCollapsed("actions"))" @onclick='() => ToggleSection("actions")'>@(IsCollapsed("actions") ? "▸" : "▾")</button>
         </div>
-        <p class="muted">@L.T("L'export et l'import des utilisateurs sont accessibles à l'administrateur et au gestionnaire.")</p>
+        <p class="muted">@L.T("L'export et l'import suivent les droits « Exporter les données » et « Importer des données » de Rôles et permissions.")</p>
         @if (Store.OnlineMode)
         {
             <p class="field-hint">@L.T("Les données sont sauvegardées automatiquement sur le serveur chaque semaine. L'export Excel ci-dessous reste disponible à tout moment.")</p>
@@ -341,12 +341,18 @@
         </div>
         }
         <div class="form-actions">
-            <button class="btn btn-secondary" @onclick="ExportExcel">@L.T("⇩ Exporter Excel")</button>
-            @if (Store.IsManager)
+            @if (Store.Can(Permissions.ExportData))
+            {
+                <button class="btn btn-secondary" @onclick="ExportExcel">@L.T("⇩ Exporter Excel")</button>
+            }
+            @if (Store.Can(Permissions.ImportData) && Store.Can(Permissions.UsersManage))
             {
                 <button class="btn btn-secondary" @onclick="OpenRestore">@L.T("⇪ Importer Excel")</button>
             }
-            <button class="btn btn-secondary" @onclick="ExportNowAsync" disabled="@_exporting">@(_exporting ? L.T("Export…") : L.T("⤓ Exporter maintenant"))</button>
+            @if (Store.Can(Permissions.ExportData))
+            {
+                <button class="btn btn-secondary" @onclick="ExportNowAsync" disabled="@_exporting">@(_exporting ? L.T("Export…") : L.T("⤓ Exporter maintenant"))</button>
+            }
         </div>
     </div>
 }
@@ -505,25 +511,10 @@
     }
 
     /// <summary>Entrée visible pour le compte connecté (mêmes règles que le menu « … ») ?</summary>
-    private bool MenuVisible(string key) => key switch
-    {
-        "archive" => Store.IsAdmin,
-        "comptes" => Store.Can(Permissions.UsersManage),
-        "capacite" => Store.IsAdmin,
-        "data" => Store.IsAdmin && !Store.IsBaseAdmin,
-        "documents" => !Store.IsBaseAdmin,
-        "roles" => Store.Can(Permissions.RolesManage),
-        "messagerie" => Store.Can(Permissions.MessagerieUse),
-        "taches" => Store.Can(Permissions.TachesUse),
-        "finances" => Store.Can(Permissions.FinancesManage),
-        "materiel" => Store.Can(Permissions.MaterielManage),
-        "reunions" => Store.Can(Permissions.PresenceManage),
-        "rappels" => Store.Can(Permissions.RappelsUse),
-        "situations" => Store.Can(Permissions.SituationsManage),
-        "carte" => Store.Can(Permissions.CarteMembreView),
-        "journal" => Store.Can(Permissions.JournalMediaUse),
-        _ => true // community, votes, guide
-    };
+    /// <summary>Réglages communs (menu, listes, pagination) : gestionnaires ayant le droit « Gérer les paramètres ».</summary>
+    private bool GereParametres => Store.IsManager && Store.Can(Permissions.SettingsManage);
+
+    private bool MenuVisible(string key) => key == "data" ? Store.PeutOuvrir("data") && !Store.IsBaseAdmin : Store.PeutOuvrir(key);
 
     /// <summary>Déplace une entrée dans l'ordre visible (les entrées masquées gardent leur place).</summary>
     private void MoveMenuVisible(int visibleIndex, int delta)

@@ -512,5 +512,8 @@
   "« {0} » est de nouveau dans la liste.": "Tafaverina ao amin'ny lisitra ny « {0} ».",
   "Sans e-mail": "Tsy misy mailaka",
   "Sans e-mail, identifiant : {0}": "Tsy misy mailaka, anarana fidirana : {0}",
-  "{0} peut maintenant se connecter ({1}). Sans e-mail : donnez-lui son identifiant « {2} ».": "Afaka miditra izao i {0} ({1}). Tsy misy mailaka : omeo azy ny anarana fidirany “{2}”."
+  "{0} peut maintenant se connecter ({1}). Sans e-mail : donnez-lui son identifiant « {2} ».": "Afaka miditra izao i {0} ({1}). Tsy misy mailaka : omeo azy ny anarana fidirany “{2}”.",
+  "Ce droit ne s'applique pas à ce rôle.": "Tsy mihatra amin'ity andraikitra ity io alalana io.",
+  "L'export et l'import suivent les droits « Exporter les données » et « Importer des données » de Rôles et permissions.": "Ny fanondranana sy ny fanafarana dia manaraka ny alalana « Hanondrana ny angona » sy « Hanafatra angona » ao amin'ny Andraikitra sy alalana.",
+  "Une case grisée ne s'applique pas à ce rôle. Un menu sans le droit correspondant n'apparaît plus pour ce rôle, ni dans le guide.": "Tsy mihatra amin'ity andraikitra ity ny boaty fotsy. Tsy miseho intsony ho an'io andraikitra io ny menio tsy manana ny alalana mifanaraka aminy, na ao amin'ny torolalana aza."
 }

@@ -95,12 +95,23 @@
         // Le dernier écran montre le menu « Guide utilisateur », quelle que soit sa
         // place dans le menu ; Paramètres seulement s'il a été masqué du menu.
         var guide = !Store.IsMenuHidden("guide");
+        // Les exemples cités suivent le rôle : on ne montre que ce que le membre peut ouvrir.
+        var bas = new List<string> { L.T("Accueil"), Store.VoitListeMembres ? L.T("Utilisateurs") : L.T("Mes informations") };
+        if (Store.PeutOuvrir("calendar")) bas.Add(L.T("Calendrier"));
+        if (Store.PeutOuvrir("activity")) bas.Add(L.T("Activité"));
+        var menu = new (string Cle, string Libelle)[]
+        {
+            ("messagerie", L.T("Messagerie")), ("taches", L.T("Tâches et suivi")), ("votes", L.T("Votes et décisions")),
+            ("finances", L.T("Finances")), ("materiel", L.T("Matériel")), ("documents", L.T("Gestion documentaire")),
+            ("carte", L.T("Carte de membre")), ("rappels", L.T("Rappels intelligents"))
+        }.Where(m => Store.PeutOuvrir(m.Cle) && !Store.IsMenuHidden(m.Cle)).Select(m => m.Libelle).Take(4).ToList();
+        var exemples = menu.Count > 0 ? string.Join(", ", menu) : L.T("Guide utilisateur");
         if (desktop)
         {
             steps.Add(new("", L.T("En haut à gauche : le logo"),
                 L.T("Cliquez sur le logo pour afficher l'image en grand et parcourir l'histoire de votre communauté."), ".web-sidebar-logo", Side: true));
             steps.Add(new("", L.T("À gauche : le menu"),
-                L.T("Toutes les pages sont dans ce menu : Accueil, Utilisateurs, Calendrier, Finances, Messagerie, Paramètres…"), ".web-sidebar-nav", Side: true));
+                L.F("Toutes les pages sont dans ce menu : {0}…", string.Join(", ", bas.Concat(menu).Append(L.T("Paramètres")))), ".web-sidebar-nav", Side: true));
             steps.Add(new("", L.T("En haut à droite : votre avatar"),
                 L.T("Cliquez sur votre photo pour ouvrir Mes informations, changer votre mot de passe ou vous déconnecter."), ".avatar-button"));
             steps.Add(new("", L.T("Sur chaque écran : l'aide ⓘ"),
@@ -114,9 +125,9 @@
         else
         {
             steps.Add(new("", L.T("Tout se passe en bas"),
-                L.T("Regardez la barre du bas : Accueil, Utilisateurs, Calendrier et Activité, toujours à portée de pouce."), ".bottom-nav"));
+                L.F("Regardez la barre du bas : {0}, toujours à portée de pouce.", string.Join(", ", bas.Append(L.T("Paramètres")))), ".bottom-nav"));
             steps.Add(new("", L.T("Ici, le menu « ⋮ »"),
-                L.T("En haut à droite : Finances, matériel, messagerie, carte de membre, votes… Tout le reste se trouve derrière ce bouton."), "[aria-label=\"" + L.T("Plus d'options") + "\"]"));
+                L.F("En haut à droite : {0}… Tout le reste se trouve derrière ce bouton.", exemples), "[aria-label=\"" + L.T("Plus d'options") + "\"]"));
             steps.Add(new("", L.T("Juste à côté : votre avatar"),
                 L.T("Touchez votre photo en haut à droite pour ouvrir Mes informations, changer votre mot de passe ou vous déconnecter."), ".avatar-button"));
             steps.Add(new("", L.T("En haut à gauche : le logo"),

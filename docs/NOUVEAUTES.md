@@ -4,6 +4,21 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 20 octobre 2026 (accès selon le rôle)
+
+- Les menus, les pages, l'accueil et le guide suivent la grille « Rôles et
+  permissions » : un menu dont le rôle n'a pas le droit (par exemple
+  « Gestion documentaire » pour un membre) n'apparaît plus, ni sa fiche dans
+  le guide ni dans la visite de découverte.
+- Dans « Rôles et permissions », une case grisée signale un droit qui ne
+  s'applique pas à ce rôle.
+- L'export et l'import dans Paramètres suivent les droits « Exporter les
+  données » et « Importer des données ».
+- « Quitter l'aperçu » a de nouveau son icône sur téléphone.
+- À l'accueil, la carte « À traiter » propose « Tous les rappels (n) »
+  seulement s'il y a des rappels (les doublons se traitent dans
+  Utilisateurs).
+
 ## 20 octobre 2026 (téléphone +261 et mots de passe)
 
 - Téléphone : « +261 » est fixe, on saisit seulement les 9 chiffres du

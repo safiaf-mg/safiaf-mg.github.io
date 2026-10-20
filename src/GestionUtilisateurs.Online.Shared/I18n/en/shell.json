@@ -298,5 +298,9 @@
   "Sans e-mail, vous vous connecterez avec l'identifiant que l'administrateur vous donnera à la validation de votre compte.": "Without an email, you will sign in with the username the administrator gives you when your account is approved.",
   "Trop d'inscriptions sans e-mail en ce moment. Réessayez dans une heure.": "Too many sign-ups without an email right now. Try again in an hour.",
   "Votre demande est enregistrée. Après la validation par l'administrateur, connectez-vous avec l'identifiant qu'il vous donnera.": "Your request has been recorded. Once the administrator approves it, sign in with the username they give you.",
-  "ou": "or"
+  "ou": "or",
+  "Toutes les pages sont dans ce menu : {0}…": "All pages are in this menu: {0}…",
+  "Regardez la barre du bas : {0}, toujours à portée de pouce.": "Look at the bottom bar: {0}, always within thumb's reach.",
+  "En haut à droite : {0}… Tout le reste se trouve derrière ce bouton.": "Top right: {0}… Everything else is behind this button.",
+  "Tous les rappels ({0})": "All reminders ({0})"
 }
