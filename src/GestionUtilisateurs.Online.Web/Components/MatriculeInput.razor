@@ -1,0 +1,130 @@
+@* Matricule guidé par le format réglé (ex. « M-{NNNN} ») : le texte du format est figé,
+   on ne remplit que les cases (4 chiffres pour {NNNN}, l'année pour {AAAA}…). *@
+@if (_parties.Count == 0 || _libre)
+{
+    <input id="@Id" type="text" value="@Value" placeholder="@(string.IsNullOrEmpty(Exemple) ? L.T("Ex : M-0001") : Exemple)"
+           @oninput="OnLibreAsync" />
+    @if (_libre)
+    {
+        <span class="field-hint">
+            @L.F("Ce matricule ne suit pas le format {0}.", Format.Trim())
+            <button type="button" class="btn btn-secondary btn-sm mat-reformer" @onclick="PasserAuFormat">@L.T("Saisir au format")</button>
+        </span>
+    }
+}
+else
+{
+    <div class="mat-input" title="@L.F("Format : {0}", Format.Trim())">
+        @{ var k = 0; }
+        @foreach (var p in _parties)
+        {
+            if (!p.Saisie)
+            {
+                <span class="mat-fixe" aria-hidden="true">@p.Fixe</span>
+                continue;
+            }
+            var idx = k++;
+            <input id="@(idx == 0 ? Id : Id + "-" + idx)" type="text" maxlength="@p.Longueur"
+                   inputmode="@(p.Lettres ? "text" : "numeric")" autocomplete="off"
+                   class="@(p.Lettres ? "mat-lettres" : "")"
+                   style="width:calc(@(p.Longueur)ch + 30px)"
+                   placeholder="@Indice(p, idx)" aria-label="@Libelle(p)"
+                   value="@_saisies[idx]" @oninput="e => OnInputAsync(idx, p, e)" @onblur="() => OnBlur(idx, p)" />
+        }
+    </div>
+}
+
+@code {
+    /// <summary>Format réglé dans les Paramètres (vide : saisie libre).</summary>
+    [Parameter] public string Format { get; set; } = "";
+    /// <summary>Matricule complet enregistré, ou vide.</summary>
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string Id { get; set; } = "";
+    /// <summary>Matricule proposé (sert d'exemple dans les cases).</summary>
+    [Parameter] public string Exemple { get; set; } = "";
+
+    private List<PartieMatricule> _parties = new();
+    private List<string> _saisies = new();
+    private List<string> _exemple = new();
+    private bool _libre;
+    private string? _format;
+    private string? _dernier;
+
+    protected override void OnParametersSet()
+    {
+        if (Format != _format)
+        {
+            _format = Format;
+            _parties = DataStore.DecouperFormatMatricule(Format);
+            _dernier = null;
+        }
+        _exemple = DataStore.SaisiesMatricule(_parties, Exemple) ?? new();
+        if (Value == _dernier) return;
+        _dernier = Value;
+        var saisies = DataStore.SaisiesMatricule(_parties, Value);
+        _libre = _parties.Count > 0 && saisies == null;
+        _saisies = saisies ?? _parties.Where(p => p.Saisie).Select(_ => "").ToList();
+    }
+
+    private string Indice(PartieMatricule p, int idx)
+    {
+        if (idx < _exemple.Count && _exemple[idx].Length > 0) return _exemple[idx];
+        return p.Jeton switch
+        {
+            "AAAA" => DateTime.Today.ToString("yyyy"),
+            "AA" => DateTime.Today.ToString("yy"),
+            "MM" => DateTime.Today.ToString("MM"),
+            "INI" => "AB",
+            _ => "1".PadLeft(p.Longueur, '0')
+        };
+    }
+
+    private static string Libelle(PartieMatricule p) => p.Jeton switch
+    {
+        "AAAA" or "AA" => L.T("Année"),
+        "MM" => L.T("Mois"),
+        "INI" => L.T("Initiales"),
+        _ => L.F("Numéro ({0} chiffres)", p.Longueur)
+    };
+
+    private async Task OnInputAsync(int idx, PartieMatricule p, ChangeEventArgs e)
+    {
+        var brut = e.Value?.ToString() ?? "";
+        var propre = DataStore.NettoyerSaisieMatricule(p, brut);
+        if (propre != brut)
+        {
+            // Affiche d'abord la saisie brute pour que la case soit bien corrigée ensuite.
+            _saisies[idx] = brut;
+            await Task.Yield();
+        }
+        _saisies[idx] = propre;
+        await Emettre();
+    }
+
+    private async Task OnLibreAsync(ChangeEventArgs e)
+    {
+        // Saisie libre : on reste dans ce mode même si le texte finit par suivre le format.
+        _dernier = e.Value?.ToString() ?? "";
+        await ValueChanged.InvokeAsync(_dernier);
+    }
+
+    private void OnBlur(int idx, PartieMatricule p)
+    {
+        // Un numéro court est complété par des zéros en quittant la case (7 → 0007).
+        if (p.Numero && _saisies[idx].Length > 0) _saisies[idx] = _saisies[idx].PadLeft(p.Longueur, '0');
+    }
+
+    private async Task PasserAuFormat()
+    {
+        _libre = false;
+        _saisies = _parties.Where(p => p.Saisie).Select(_ => "").ToList();
+        await Emettre();
+    }
+
+    private async Task Emettre()
+    {
+        _dernier = DataStore.ComposerMatricule(_parties, _saisies);
+        await ValueChanged.InvokeAsync(_dernier);
+    }
+}

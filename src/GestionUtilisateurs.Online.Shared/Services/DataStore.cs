@@ -402,6 +402,9 @@ var usersNormalized = false;
 
     public IReadOnlyList<FieldDefinition> Fields => _fields.OrderBy(f => f.Ordre).ThenBy(f => f.Label).ToList();
 
+    /// <summary>Champs personnalisés seulement : l'identifiant est un champ par défaut de la fiche.</summary>
+    public IReadOnlyList<FieldDefinition> ChampsPersonnalises => Fields.Where(f => !f.SystemField).ToList();
+
     // ---------- Journal ----------
 
     public void LogActivity(string type, string description, string? actor = null)
@@ -1628,6 +1631,12 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         if (!string.IsNullOrWhiteSpace(draft.Matricule)
             && _users.Any(u => u.Id != existingId && (u.Matricule ?? "").Trim().Equals(draft.Matricule.Trim(), StringComparison.OrdinalIgnoreCase)))
             Add("matricule", L.T("Ce matricule existe déjà."));
+
+        // Matricule saisi ou changé : il suit le format réglé (un ancien matricule inchangé reste accepté).
+        var ancienMatricule = existingId == null ? null : _users.FirstOrDefault(u => u.Id == existingId)?.Matricule;
+        if (!string.Equals((draft.Matricule ?? "").Trim(), (ancienMatricule ?? "").Trim(), StringComparison.OrdinalIgnoreCase)
+            && VerifierMatriculeFormat(_settings.MatriculeFormat, draft.Matricule) is { } errMatricule)
+            Add("matricule", errMatricule);
 
         // Téléphone : format malgache « +261 » suivi de 9 chiffres (espaces éventuels).
         var phoneDigits = new string((draft.Telephone ?? "").Where(char.IsDigit).ToArray());

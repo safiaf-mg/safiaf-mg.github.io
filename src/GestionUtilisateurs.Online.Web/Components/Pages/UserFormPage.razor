@@ -21,7 +21,8 @@
     </div>
     <div class="form-group">
         <label for="uf-matricule">@L.T("Matricule (facultatif, unique)")</label>
-        <input id="uf-matricule" type="text" placeholder="@(string.IsNullOrEmpty(_matriculeAuto) ? L.T("Ex : M-0001") : _matriculeAuto)" value="@_model.Matricule" @oninput="e => _model.Matricule = e.Value?.ToString() ?? string.Empty" />
+        <MatriculeInput Id="uf-matricule" Format="@(Store.Settings.MatriculeFormat ?? "")" Exemple="@_matriculeAuto"
+                        Value="@_model.Matricule" ValueChanged="@(v => _model.Matricule = v)" />
         @if (!string.IsNullOrEmpty(_matriculeAuto))
         {
             <span class="field-hint">@L.F("Laissez vide pour attribuer automatiquement « {0} ».", _matriculeAuto)</span>
@@ -107,6 +108,21 @@
         </div>
     }
     <div class="form-group">
+        <label for="uf-identifiant">@L.T("Identifiant") @if (_isNew && !IsSimpleRole) { <span class="required">*</span> }</label>
+        @if (_isNew && IsSimpleRole)
+        {
+            @* Pour un simple utilisateur, l'identifiant est créé à l'enregistrement. *@
+            <input id="uf-identifiant" type="text" disabled placeholder="@L.T("Créé automatiquement à l'enregistrement")" />
+        }
+        else
+        {
+            <input id="uf-identifiant" type="text" disabled="@(!_isNew)" value="@_model.Identifiant"
+                   @oninput="e => _model.Identifiant = e.Value?.ToString() ?? string.Empty" />
+        }
+        <span class="field-hint">@L.T("Sert à se connecter ; il ne change plus après la création.")</span>
+        <span class="form-error">@Err("identifiant")</span>
+    </div>
+    <div class="form-group">
         <label for="uf-email">@L.T("Email (facultatif)")</label>
         <input id="uf-email" type="email" placeholder="exemple@domaine.fr" value="@_model.Email" @oninput="e => _model.Email = e.Value?.ToString() ?? string.Empty" />
         <span class="form-error">@Err("email")</span>
@@ -167,18 +183,7 @@
                     @f.Label @if (f.Requis) { <span class="required">*</span> }
                 </label>
 
-                @if (f.Id == FieldDefinition.FIELD_IDENTIFIANT)
-                {
-                    @if (!IsSimpleRole)
-                    {
-                        <input id="cf-@fid" type="text" disabled="@(!_isNew)" value="@_model.Identifiant"
-                               @oninput="e => _model.Identifiant = e.Value?.ToString() ?? string.Empty" />
-                        <span class="form-error">@Err("identifiant")</span>
-                    }
-                }
-                else
-                {
-                    @switch (f.Type)
+                @switch (f.Type)
                     {
                         case FieldType.Texte:
                         case FieldType.Email:
@@ -264,7 +269,6 @@
                             <span class="field-hint">@L.F("Contenu accepté : {0} — taille maximale 5 Mo.", f.Type == FieldType.Image ? L.T("image JPG, PNG, GIF, WEBP") : L.T("PDF, image, DOC, DOCX, TXT, ZIP…"))</span>
                             break;
                     }
-                }
 
                 <span class="form-error">@Err("field_" + fid)</span>
             </div>
@@ -339,6 +343,7 @@
     private void OnRoleChanged(ChangeEventArgs e)
     {
         _model.Role = e.Value?.ToString() ?? "Utilisateur";
+        if (_isNew && IsSimpleRole) _model.Identifiant = "";
         _model.ChangePasswordOnEdit = false;
         _model.Password = "";
         _model.ConfirmPassword = "";
@@ -368,7 +373,7 @@
     }
 
     private IReadOnlyList<FieldDefinition> ActiveFields()
-        => Store.Fields.Where(f => f.Actif).OrderBy(f => f.Ordre).ToList();
+        => Store.ChampsPersonnalises.Where(f => f.Actif).ToList();
 
     private string? Err(string key) => _errors.TryGetValue(key, out var m) ? m : null;
 

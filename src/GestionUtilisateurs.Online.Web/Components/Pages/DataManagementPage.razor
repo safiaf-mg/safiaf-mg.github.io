@@ -655,7 +655,7 @@ else
     private void Reload()
     {
         _users = Store.Users.ToList();
-        _fields = Store.Fields.ToList();
+        _fields = Store.ChampsPersonnalises.ToList();
         var s = Store.Settings;
         _appName = s.AppName;
         _theme = s.Theme;

@@ -331,5 +331,13 @@
   "Chaque identifiant devient le prénom du membre (deux prénoms : jean.pierre). Les homonymes reçoivent un numéro dans l'ordre d'inscription : lucas, lucas1, lucas2. Cotisations, messages, tâches et autres données suivent le nouvel identifiant.": "Ny anarana fidirana dia lasa ny fanampin'anaran'ny mpikambana (fanampin'anarana roa : jean.pierre). Ireo mitovy fanampin'anarana dia omena laharana araka ny filaharan'ny fisoratana anarana : lucas, lucas1, lucas2. Manaraka ny anarana fidirana vaovao ny latsakemboka, hafatra, asa ary angona hafa.",
   "Renommer {0} identifiant(s)": "Ovay ny anarana fidirana {0}",
   "{0} identifiant(s) renommé(s).": "Anarana fidirana {0} voaova.",
-  "Action réservée aux administrateurs.": "Ho an'ny mpitantana ihany."
+  "Action réservée aux administrateurs.": "Ho an'ny mpitantana ihany.",
+  "Ce matricule ne suit pas le format {0}.": "Tsy manaraka ny endrika {0} io laharana io.",
+  "Format : {0}": "Endrika: {0}",
+  "Initiales": "Litera voalohan'ny anarana",
+  "Le matricule doit suivre le format {0} : remplissez chaque case.": "Tsy maintsy manaraka ny endrika {0} ny laharana: fenoy ny efajoro tsirairay.",
+  "Numéro ({0} chiffres)": "Isa (tarehimarika {0})",
+  "Saisir au format": "Soraty araka ny endrika",
+  "Sert à se connecter ; il ne change plus après la création.": "Ampiasaina hidirana; tsy miova intsony rehefa voaforona.",
+  "Créé automatiquement à l'enregistrement": "Foronina ho azy rehefa voatahiry"
 }
