@@ -512,5 +512,8 @@
   "« {0} » est de nouveau dans la liste.": "“{0}” is back in the list.",
   "Sans e-mail": "No email",
   "Sans e-mail, identifiant : {0}": "No email, username: {0}",
-  "{0} peut maintenant se connecter ({1}). Sans e-mail : donnez-lui son identifiant « {2} ».": "{0} can now sign in ({1}). No email: give them their username “{2}”."
+  "{0} peut maintenant se connecter ({1}). Sans e-mail : donnez-lui son identifiant « {2} ».": "{0} can now sign in ({1}). No email: give them their username “{2}”.",
+  "Ce droit ne s'applique pas à ce rôle.": "This right does not apply to this role.",
+  "L'export et l'import suivent les droits « Exporter les données » et « Importer des données » de Rôles et permissions.": "Export and import follow the « Export data » and « Import data » rights in Roles and permissions.",
+  "Une case grisée ne s'applique pas à ce rôle. Un menu sans le droit correspondant n'apparaît plus pour ce rôle, ni dans le guide.": "A greyed-out box does not apply to this role. A menu without the matching right no longer appears for that role, nor in the guide."
 }

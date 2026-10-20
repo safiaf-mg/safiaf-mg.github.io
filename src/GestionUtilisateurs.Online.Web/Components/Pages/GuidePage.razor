@@ -83,13 +83,21 @@ else
     private HelpEntry? _selected;
     private string _search = "";
 
+    /// <summary>Modules du guide que le rôle du compte peut ouvrir (mêmes règles que le menu).</summary>
+    private List<HelpEntry> Accessibles => HelpCatalog.Entries.Where(e => e.Key switch
+    {
+        "users" => Store.VoitListeMembres,
+        "profile" => !Store.IsBaseAdmin,
+        _ => Store.PeutOuvrir(e.Key)
+    }).ToList();
+
     private List<HelpEntry> Filtered
     {
         get
         {
             var q = _search.Trim();
-            if (q.Length == 0) return HelpCatalog.Entries.ToList();
-            return HelpCatalog.Entries
+            if (q.Length == 0) return Accessibles;
+            return Accessibles
                 .Where(e => e.Title.Contains(q, StringComparison.OrdinalIgnoreCase)
                     || e.Summary.Contains(q, StringComparison.OrdinalIgnoreCase))
                 .ToList();
@@ -114,7 +122,7 @@ else
 
     private int EntriesIndex()
     {
-        var list = HelpCatalog.Entries.ToList();
+        var list = Accessibles;
         for (var i = 0; i < list.Count; i++)
             if (list[i].Key == _selected!.Key) return i;
         return -1;
@@ -122,7 +130,7 @@ else
 
     private HelpEntry StepBy(int delta)
     {
-        var entries = HelpCatalog.Entries;
+        var entries = Accessibles;
         var idx = _selected == null ? -1 : EntriesIndex();
         return entries[(idx + delta + entries.Count) % entries.Count];
     }

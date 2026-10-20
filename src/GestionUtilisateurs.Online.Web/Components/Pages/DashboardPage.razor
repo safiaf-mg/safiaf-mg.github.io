@@ -32,10 +32,13 @@
                 <span class="dash-kpi-label">@(mesTachesRetard > 0 ? L.F("Mes tâches ({0} en retard)", mesTachesRetard) : L.T("Mes tâches à faire"))</span>
             </div>
         }
-        <div class="dash-kpi" role="button" tabindex="0" @onclick='() => State.Navigate("calendar")'>
-            <span class="dash-kpi-value">📅 @evenementsAujourdhui</span>
-            <span class="dash-kpi-label">@L.T("Événements aujourd'hui")</span>
-        </div>
+        @if (Store.PeutOuvrir("calendar"))
+        {
+            <div class="dash-kpi" role="button" tabindex="0" @onclick='() => State.Navigate("calendar")'>
+                <span class="dash-kpi-value">📅 @evenementsAujourdhui</span>
+                <span class="dash-kpi-label">@L.T("Événements aujourd'hui")</span>
+            </div>
+        }
         @if (mesImpayes > 0)
         {
             <div class="dash-kpi dash-kpi-warn dash-kpi-static">
@@ -47,6 +50,8 @@
 </div>
 
 <div class="dash-two">
+    @if (Store.PeutOuvrir("calendar"))
+    {
     <div class="card dash-week">
         <div class="dash-card-head">
             <h3>📅 @L.T("Les 7 prochains jours")</h3>
@@ -72,15 +77,17 @@
             </ul>
         }
     </div>
+    }
 
     @if (Voit("rappels", Permissions.RappelsUse) || Store.Can(Permissions.UsersManage))
     {
         <div class="card dash-todo">
             <div class="dash-card-head">
                 <h3>🔔 @L.T("À traiter")</h3>
-                @if (Voit("rappels", Permissions.RappelsUse))
+                @* Le bouton mène aux rappels : il n'apparaît que s'il y en a (les doublons se règlent dans Utilisateurs). *@
+                @if (Voit("rappels", Permissions.RappelsUse) && rappelsCount > 0)
                 {
-                    <button type="button" class="btn btn-secondary btn-sm" @onclick='() => State.Navigate("rappels")'>@L.F("Tout voir ({0})", rappelsCount)</button>
+                    <button type="button" class="btn btn-secondary btn-sm" @onclick='() => State.Navigate("rappels")'>@L.F("Tous les rappels ({0})", rappelsCount)</button>
                 }
             </div>
             @if (doublons == 0 && Rappels.Count == 0)
@@ -116,12 +123,14 @@
     }
 </div>
 
+@if (Store.VoitListeMembres)
+{
 <div class="stats-grid">
     <StatCard Icon="☺" Value="@total.ToString()" Label="@L.T("Utilisateurs total")" OnClick='() => GoToUsers(null, null)' Clickable="@Store.IsManager" />
     <StatCard Icon="✓" Value="@actifs.ToString()" Label="@L.T("Actifs")" Kind="active" OnClick='() => GoToUsers("Actif", null)' Clickable="@Store.IsManager" />
     <StatCard Icon="✗" Value="@inactifs.ToString()" Label="@L.T("Inactifs")" Kind="inactive" OnClick='() => GoToUsers("Inactif", null)' Clickable="@Store.IsManager" />
     <StatCard Icon="★" Value="@admins.ToString()" Label="@L.T("Administrateurs")" OnClick='() => GoToUsers(null, "Administrateur")' Clickable="@Store.IsManager" />
-    <StatCard Icon="🗄" Value="@archives.ToString()" Label="@L.T("Archivés")" Kind="recent" OnClick='() => State.Navigate("archive")' Clickable="@Store.IsAdmin" />
+    <StatCard Icon="🗄" Value="@archives.ToString()" Label="@L.T("Archivés")" Kind="recent" OnClick='() => State.Navigate("archive")' Clickable="@Store.PeutOuvrir("archive")" />
     <StatCard Icon="✤" Value="@gestionnaires.ToString()" Label="@L.T("Gestionnaires")" Kind="recent" OnClick='() => GoToUsers(null, "Gestionnaire")' Clickable="@(Store.IsManager)" />
 </div>
 
@@ -155,6 +164,7 @@
         </div>
     }
 </div>
+}
 
 @if (Store.Can(Permissions.PresenceManage) && ReunionsCount > 0)
 {
@@ -174,6 +184,8 @@
     </div>
 }
 
+@if (Store.PeutOuvrir("activity"))
+{
 <div class="card">
     <h3>@L.T("Dernière activité")</h3>
     @if (Store.Activity.Count == 0)
@@ -199,6 +211,7 @@
         </div>
     }
 </div>
+}
 
 <PhotoViewer Current="@_viewer" OnClose="@(() => _viewer = null)" />
 

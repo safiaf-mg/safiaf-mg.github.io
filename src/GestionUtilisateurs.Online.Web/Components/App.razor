@@ -9,7 +9,7 @@
         @switch (State.CurrentPage)
         {
             case "users":
-                if (Store.IsManager) { <UsersPage /> }
+                if (Store.VoitListeMembres) { <UsersPage /> }
                 else { <ProfilePage /> }
                 break;
             case "profile":
@@ -144,32 +144,7 @@
         try { Store.TouchSession(); } catch { }
     }
 
-    private bool CanSee(string page) => page switch
-    {
-        "fields" => Store.IsAdmin,
-        "activity" => Store.IsManager,
-        "calendar" => true,
-        "documents" => true,
-        "archive" => Store.IsAdmin,
-        "data" => Store.IsAdmin,
-        "community" => true,
-        "sync" => false,
-        "comptes" => Store.Can(Permissions.UsersManage),
-        "capacite" => Store.IsAdmin,
-        "roles" => Store.Can(Permissions.RolesManage),
-        "messagerie" => Store.Can(Permissions.MessagerieUse),
-        "taches" => Store.Can(Permissions.TachesUse),
-        "finances" => Store.Can(Permissions.FinancesManage),
-        "materiel" => Store.Can(Permissions.MaterielManage),
-        "reunions" => Store.Can(Permissions.PresenceManage),
-        "rappels" => Store.Can(Permissions.RappelsUse),
-        "situations" => Store.Can(Permissions.SituationsManage),
-        "carte" => Store.Can(Permissions.CarteMembreView),
-        "votes" => true,
-        "journal" => Store.Can(Permissions.JournalMediaUse),
-        "settings" => !Store.IsBaseAdmin,
-        _ => true
-    };
+    private bool CanSee(string page) => Store.PeutOuvrir(page);
 
     private void OnSessionChanged()
     {
