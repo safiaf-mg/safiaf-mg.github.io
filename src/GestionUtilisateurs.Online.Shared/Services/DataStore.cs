@@ -1570,9 +1570,21 @@ public OperationResult SetUserActive(string userId, bool active)
         return p.StartsWith("+", StringComparison.Ordinal) ? "+" + digits : digits;
     }
 
-    /// <summary>Téléphone malgache : +261 suivi de 7 à 10 chiffres.</summary>
+    /// <summary>
+    /// Les 9 chiffres après +261, quelle que soit la saisie ou le collage :
+    /// « 034 12 345 67 », « +261 34 12 345 67 » ou « 341234567 ».
+    /// </summary>
+    public static string ChiffresTelephone(string? saisie)
+    {
+        var d = new string((saisie ?? "").Where(char.IsAsciiDigit).ToArray());
+        if (d.StartsWith("261", StringComparison.Ordinal) && d.Length > 9) d = d[3..];
+        d = d.TrimStart('0');
+        return d.Length > 9 ? d[..9] : d;
+    }
+
+    /// <summary>Téléphone malgache : +261 suivi des 9 chiffres du numéro (ex. +261341234567).</summary>
     public static bool IsPhoneValid(string phone)
-        => System.Text.RegularExpressions.Regex.IsMatch((phone ?? "").Trim(), @"^\+261\d{7,10}$");
+        => System.Text.RegularExpressions.Regex.IsMatch((phone ?? "").Trim(), @"^\+261\d{9}$");
 
     /// <summary>Valide le devenir d'un utilisateur. Retourne des erreurs (clé = champ virtuel, valeur = message).</summary>
     public Dictionary<string, string> ValidateUser(UserAccount draft, string? existingId, bool isNew, bool checkPassword = true, string confirmPassword = "", bool passwordProvided = false)
@@ -1617,13 +1629,13 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             && _users.Any(u => u.Id != existingId && (u.Matricule ?? "").Trim().Equals(draft.Matricule.Trim(), StringComparison.OrdinalIgnoreCase)))
             Add("matricule", L.T("Ce matricule existe déjà."));
 
-        // Téléphone : format malgache « +261 » (7 à 10 chiffres, espaces éventuels).
+        // Téléphone : format malgache « +261 » suivi de 9 chiffres (espaces éventuels).
         var phoneDigits = new string((draft.Telephone ?? "").Where(char.IsDigit).ToArray());
         if (phoneDigits.Length > 0)
         {
             var normalized = NormalizePhone(draft.Telephone);
             if (!IsPhoneValid(normalized))
-                Add("telephone", L.T("Le numéro doit être au format « +261 xx xxx xx » (ex. +261 32 12 345 67)."));
+                Add("telephone", L.T("Le numéro doit avoir 9 chiffres après +261 (ex. 341234567)."));
         }
 
         // En ligne, le mot de passe est celui du compte Supabase : rien à saisir sur la fiche.

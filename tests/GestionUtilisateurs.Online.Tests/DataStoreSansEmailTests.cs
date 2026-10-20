@@ -56,3 +56,25 @@ public class DataStoreSansEmailTests
         Assert.Equal("", store.FindUser(res.UserId!)!.Email);
     }
 }
+
+public class TelephoneMadagascarTests
+{
+    [Theory]
+    [InlineData("341234567", "341234567")]
+    [InlineData("034 12 345 67", "341234567")]
+    [InlineData("+261 34 12 345 67", "341234567")]
+    [InlineData("+261341234567", "341234567")]
+    [InlineData("34 12 345 67 89", "341234567")]
+    [InlineData("abc", "")]
+    [InlineData(null, "")]
+    public void ChiffresApres261(string? saisie, string attendu)
+        => Assert.Equal(attendu, DataStore.ChiffresTelephone(saisie));
+
+    [Theory]
+    [InlineData("+261341234567", true)]
+    [InlineData("+26134123456", false)]
+    [InlineData("+2613412345678", false)]
+    [InlineData("0341234567", false)]
+    public void NeufChiffresApres261(string tel, bool attendu)
+        => Assert.Equal(attendu, DataStore.IsPhoneValid(tel));
+}

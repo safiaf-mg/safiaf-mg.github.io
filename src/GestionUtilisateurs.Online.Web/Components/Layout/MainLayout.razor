@@ -245,11 +245,11 @@
             }
             <div class="form-group">
                 <label for="me-pwd">@L.T("Nouveau mot de passe")</label>
-                <input id="me-pwd" type="password" autocomplete="new-password" @bind="_pwd1" />
+                <MotDePasseInput Id="me-pwd" @bind-Value="_pwd1" Autocomplete="new-password" />
             </div>
             <div class="form-group">
                 <label for="me-pwd2">@L.T("Confirmer")</label>
-                <input id="me-pwd2" type="password" autocomplete="new-password" @bind="_pwd2" />
+                <MotDePasseInput Id="me-pwd2" @bind-Value="_pwd2" Autocomplete="new-password" />
                 <span class="field-hint">@L.T("8 caractères minimum.")</span>
             </div>
         </ChildContent>

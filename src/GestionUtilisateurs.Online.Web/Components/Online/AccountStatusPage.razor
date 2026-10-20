@@ -32,7 +32,7 @@
                     </div>
                     <div class="form-group">
                         <label for="st-tel">@L.T("Téléphone")</label>
-                        <input id="st-tel" type="tel" autocomplete="tel" @bind="_telephone" />
+                        <TelephoneInput Id="st-tel" @bind-Value="_telephone" />
                     </div>
                     @if (_erreur != null)
                     {
@@ -97,6 +97,11 @@
         if (string.IsNullOrWhiteSpace(_prenom) || string.IsNullOrWhiteSpace(_nom))
         {
             _erreur = L.T("Le prénom et le nom sont obligatoires.");
+            return;
+        }
+        if (_telephone.Length > 0 && !DataStore.IsPhoneValid(_telephone))
+        {
+            _erreur = L.T("Le numéro doit avoir 9 chiffres après +261 (ex. 341234567).");
             return;
         }
         _busy = true;

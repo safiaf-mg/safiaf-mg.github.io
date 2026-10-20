@@ -1,0 +1,39 @@
+@* Téléphone malgache : « +261 » fixe, puis les 9 chiffres du numéro (ex. 341234567). *@
+<div class="tel-input">
+    <span class="tel-prefix" aria-hidden="true">+261</span>
+    <input id="@Id" type="tel" inputmode="numeric" autocomplete="tel-national" placeholder="341234567"
+           aria-label="@L.T("Numéro de téléphone, 9 chiffres après +261")"
+           value="@_chiffres" @oninput="OnInputAsync" />
+</div>
+
+@code {
+    /// <summary>Numéro enregistré : « +261 » suivi de 9 chiffres, ou vide.</summary>
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string Id { get; set; } = "";
+
+    private string _chiffres = "";
+    private string? _dernier;
+
+    protected override void OnParametersSet()
+    {
+        if (Value == _dernier) return;
+        _dernier = Value;
+        _chiffres = DataStore.ChiffresTelephone(Value);
+    }
+
+    private async Task OnInputAsync(ChangeEventArgs e)
+    {
+        var brut = e.Value?.ToString() ?? "";
+        var propre = DataStore.ChiffresTelephone(brut);
+        if (propre != brut)
+        {
+            // Affiche d'abord la saisie brute pour que le champ soit bien corrigé ensuite.
+            _chiffres = brut;
+            await Task.Yield();
+        }
+        _chiffres = propre;
+        _dernier = propre.Length == 0 ? "" : "+261" + propre;
+        await ValueChanged.InvokeAsync(_dernier);
+    }
+}
