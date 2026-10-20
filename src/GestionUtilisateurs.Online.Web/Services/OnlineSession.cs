@@ -63,6 +63,8 @@ public sealed class OnlineSession : IDisposable
     public OnlineSessionState State { get; private set; } = OnlineSessionState.Starting;
     public OnlineProfile? Profile { get; private set; }
     public string? Error { get; private set; }
+    /// <summary>Message à afficher sur l'écran de connexion (retour de Google en erreur).</summary>
+    public string? AuthMessage { get; set; }
     public AdminStatus Admin { get; private set; } = new();
 
     /// <summary>Changement d'état (connexion, chargement, alertes…).</summary>
@@ -77,10 +79,24 @@ public sealed class OnlineSession : IDisposable
             SetState(OnlineSessionState.NotConfigured);
             return;
         }
+        var retour = await _api.RedirectErrorAsync();
+        if (!string.IsNullOrWhiteSpace(retour))
+            AuthMessage = retour.Contains("access_denied", StringComparison.OrdinalIgnoreCase)
+                ? L.T("Connexion avec Google annulée.")
+                : L.F("La connexion avec Google a échoué : {0}", retour);
         var user = await _api.GetSessionAsync();
         if (user == null) SetState(OnlineSessionState.SignedOut);
         else await EnterAsync(user);
     }
+
+    /// <summary>« Continuer avec Google » : la page part vers Google, puis revient connectée.</summary>
+    public async Task<string?> SignInWithGoogleAsync()
+    {
+        var res = await _api.SignInWithGoogleAsync();
+        return res.Ok ? null : L.F("La connexion avec Google a échoué : {0}", res.Error ?? "");
+    }
+
+    public Task<bool> GoogleActifAsync() => _api.GoogleActifAsync();
 
     public async Task<string?> SignInAsync(string email, string password)
     {
@@ -101,6 +117,51 @@ public sealed class OnlineSession : IDisposable
             return L.T("Inscription enregistrée, mais la confirmation par e-mail est activée dans Supabase. Désactivez-la (voir le guide de mise en ligne) pour que la validation se fasse par l'administrateur.");
         var user = await _api.GetSessionAsync();
         if (user != null) await EnterAsync(user);
+        return null;
+    }
+
+    /// <summary>
+    /// Inscription sans adresse e-mail (script SQL 0005) : le serveur crée le compte
+    /// avec une adresse technique, puis le membre est connecté. Après validation,
+    /// il se connecte avec l'identifiant de sa fiche.
+    /// </summary>
+    public async Task<string?> SignUpSansEmailAsync(string prenom, string nom, string telephone, string password)
+    {
+        var res = await _api.RpcAsync<string>("inscription_sans_email",
+            new { p_prenom = prenom.Trim(), p_nom = nom.Trim(), p_telephone = telephone.Trim(), p_password = password });
+        if (!res.Ok || string.IsNullOrEmpty(res.Data))
+        {
+            var m = res.Error ?? "";
+            if (m.Contains("trop_de_demandes", StringComparison.Ordinal))
+                return L.T("Trop d'inscriptions sans e-mail en ce moment. Réessayez dans une heure.");
+            if (m.Contains("inscription_sans_email", StringComparison.Ordinal) || m.Contains("schema cache", StringComparison.OrdinalIgnoreCase))
+                return L.T("L'inscription sans e-mail n'est pas encore activée. Demandez à l'administrateur, ou inscrivez-vous avec une adresse e-mail.");
+            return string.IsNullOrEmpty(m) ? L.T("Inscription impossible.") : L.T(m);
+        }
+        var login = await _api.SignInAsync(res.Data, password);
+        if (!login.Ok)
+            return L.T("Votre demande est enregistrée. Après la validation par l'administrateur, connectez-vous avec l'identifiant qu'il vous donnera.");
+        var user = await _api.GetSessionAsync();
+        if (user != null) await EnterAsync(user);
+        return null;
+    }
+
+    /// <summary>Le membre en attente complète ou corrige son prénom, son nom et son téléphone.</summary>
+    public async Task<string?> CompleteProfileAsync(string prenom, string nom, string telephone)
+    {
+        var res = await _api.RpcAsync<object>("complete_my_profile",
+            new { p_prenom = prenom.Trim(), p_nom = nom.Trim(), p_telephone = telephone.Trim() });
+        if (!res.Ok)
+            return res.Error!.Contains("complete_my_profile", StringComparison.Ordinal)
+                ? L.T("Cette fonction n'est pas encore activée. Donnez vos informations directement à l'administrateur.")
+                : L.T(res.Error);
+        if (Profile != null)
+        {
+            Profile.Prenom = prenom.Trim();
+            Profile.Nom = nom.Trim();
+            Profile.Telephone = telephone.Trim();
+            Changed?.Invoke();
+        }
         return null;
     }
 
@@ -154,10 +215,11 @@ public sealed class OnlineSession : IDisposable
     /// <summary>
     /// « Mot de passe oublié » depuis l'écran de connexion : la demande est
     /// transmise aux administrateurs, qui donnent un mot de passe provisoire.
+    /// Le membre saisit son e-mail ou son identifiant (script SQL 0005).
     /// </summary>
-    public async Task<string?> RequestPasswordHelpAsync(string email)
+    public async Task<string?> RequestPasswordHelpAsync(string emailOuIdentifiant)
     {
-        var res = await _api.RpcAsync<object>("request_password_help", new { p_email = email.Trim() });
+        var res = await _api.RpcAsync<object>("request_password_help", new { p_email = emailOuIdentifiant.Trim() });
         return res.Ok ? null : L.T("La demande n'a pas pu être envoyée. Contactez directement un administrateur de la communauté.");
     }
 

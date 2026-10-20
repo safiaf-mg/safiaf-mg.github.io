@@ -40,7 +40,7 @@ else
                                 <Avatar UserName="@profile.NomComplet" Seed="@profile.Email" Size="sm" />
                                 <div>
                                     <strong>@profile.NomComplet</strong>
-                                    <div class="text-muted online-account-meta">@profile.Email@(string.IsNullOrWhiteSpace(profile.Telephone) ? "" : " · " + profile.Telephone)</div>
+                                    <div class="text-muted online-account-meta">@profile.EmailAffiche@(string.IsNullOrWhiteSpace(profile.Telephone) ? "" : " · " + profile.Telephone)</div>
                                     <div class="text-muted online-account-meta">@L.F("Demande du {0}", Date(profile.MdpDemandeAt))</div>
                                 </div>
                             </div>
@@ -74,7 +74,7 @@ else
                                 <Avatar UserName="@profile.NomComplet" Seed="@profile.Email" Size="sm" />
                                 <div>
                                     <strong>@profile.NomComplet</strong>
-                                    <div class="text-muted online-account-meta">@profile.Email@(string.IsNullOrWhiteSpace(profile.Telephone) ? "" : " · " + profile.Telephone)</div>
+                                    <div class="text-muted online-account-meta">@profile.EmailAffiche@(string.IsNullOrWhiteSpace(profile.Telephone) ? "" : " · " + profile.Telephone)</div>
                                     <div class="text-muted online-account-meta">@L.F("Inscrit le {0}", Date(profile.CreatedAt))</div>
                                     @{ var fiches = FichesSimilaires(profile); }
                                     @if (fiches.Count > 0)
@@ -127,7 +127,7 @@ else
                                 {
                                     <span class="online-status-pill online-status-provisoire" title="@L.T("Le membre doit encore choisir son propre mot de passe.")">@L.T("Mot de passe provisoire")</span>
                                 }
-                                <div class="text-muted online-account-meta">@profile.Email · @L.T(profile.Role)</div>
+                                <div class="text-muted online-account-meta">@Contact(profile) · @L.T(profile.Role)</div>
                                 <div class="text-muted online-account-meta">@L.F("Dernière visite : {0}", Date(profile.LastSeenAt))</div>
                             </div>
                         </div>
@@ -236,9 +236,20 @@ else
         var error = await Accounts.ApproveAsync(profile, role, lien == NouvelleFiche ? null : lien);
         _busy = false;
         if (error != null) { State.NotifyError(error); return; }
-        State.NotifySuccess(L.F("{0} peut maintenant se connecter ({1}).", profile.NomComplet, L.T(role)));
+        var identifiant = Identifiant(profile);
+        State.NotifySuccess(profile.EstSansEmail && identifiant != null
+            ? L.F("{0} peut maintenant se connecter ({1}). Sans e-mail : donnez-lui son identifiant « {2} ».", profile.NomComplet, L.T(role), identifiant)
+            : L.F("{0} peut maintenant se connecter ({1}).", profile.NomComplet, L.T(role)));
         await LoadAsync();
     }
+
+    private string? Identifiant(OnlineProfile profile) => Store.Users.FirstOrDefault(u => u.Id == profile.Id)?.Identifiant;
+
+    /// <summary>E-mail du compte ; sans e-mail, l'identifiant de connexion à transmettre au membre.</summary>
+    private string Contact(OnlineProfile profile)
+        => !profile.EstSansEmail ? profile.Email
+            : Identifiant(profile) is { } id ? L.F("Sans e-mail, identifiant : {0}", id)
+            : L.T("Sans e-mail");
 
     private async Task RejectAsync(OnlineProfile profile)
     {

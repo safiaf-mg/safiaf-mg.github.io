@@ -9,7 +9,42 @@
         <p class="online-status-text">@Message</p>
         @if (Session.Profile != null)
         {
-            <p class="text-muted online-status-account">@L.F("Compte : {0}", Session.Profile.Email)</p>
+            <p class="text-muted online-status-account">@L.F("Compte : {0}", Session.Profile.EstSansEmail ? Session.Profile.NomComplet : Session.Profile.Email)</p>
+        }
+        @if (Session.State == OnlineSessionState.Pending && Session.Profile != null)
+        {
+            @if (_edition)
+            {
+                <div class="online-status-infos">
+                    @if (Incomplet)
+                    {
+                        <p class="text-muted">@L.T("Complétez vos informations : elles aident l'administrateur à vous reconnaître.")</p>
+                    }
+                    <div class="online-auth-row">
+                        <div class="form-group">
+                            <label for="st-prenom">@L.T("Prénom")</label>
+                            <input id="st-prenom" type="text" autocomplete="given-name" @bind="_prenom" />
+                        </div>
+                        <div class="form-group">
+                            <label for="st-nom">@L.T("Nom")</label>
+                            <input id="st-nom" type="text" autocomplete="family-name" @bind="_nom" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="st-tel">@L.T("Téléphone")</label>
+                        <input id="st-tel" type="tel" autocomplete="tel" @bind="_telephone" />
+                    </div>
+                    @if (_erreur != null)
+                    {
+                        <div class="login-global-error" role="alert">@_erreur</div>
+                    }
+                    <button type="button" class="btn btn-primary btn-block" disabled="@_busy" @onclick="EnregistrerAsync">@L.T("Enregistrer mes informations")</button>
+                </div>
+            }
+            else
+            {
+                <button type="button" class="login-forgot" @onclick="Editer">@L.T("Corriger mes informations")</button>
+            }
         }
         @if (Session.State is OnlineSessionState.Pending or OnlineSessionState.NoMemberRecord or OnlineSessionState.Error)
         {
@@ -26,6 +61,52 @@
 
 @code {
     private bool _busy;
+    private bool _edition;
+    private bool _ouvertAuto;
+    private string _prenom = "";
+    private string _nom = "";
+    private string _telephone = "";
+    private string? _erreur;
+
+    /// <summary>Inscription avec Google : le téléphone manque, le nom peut être mal découpé.</summary>
+    private bool Incomplet => Session.Profile is { } p
+        && (string.IsNullOrWhiteSpace(p.Prenom) || string.IsNullOrWhiteSpace(p.Nom) || string.IsNullOrWhiteSpace(p.Telephone));
+
+    protected override void OnParametersSet()
+    {
+        if (!_ouvertAuto && Session.State == OnlineSessionState.Pending && Incomplet)
+        {
+            _ouvertAuto = true;
+            Editer();
+        }
+    }
+
+    private void Editer()
+    {
+        var p = Session.Profile;
+        if (p == null) return;
+        _prenom = p.Prenom;
+        _nom = p.Nom;
+        _telephone = p.Telephone;
+        _erreur = null;
+        _edition = true;
+    }
+
+    private async Task EnregistrerAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_prenom) || string.IsNullOrWhiteSpace(_nom))
+        {
+            _erreur = L.T("Le prénom et le nom sont obligatoires.");
+            return;
+        }
+        _busy = true;
+        try
+        {
+            _erreur = await Session.CompleteProfileAsync(_prenom, _nom, _telephone);
+            if (_erreur == null) _edition = false;
+        }
+        finally { _busy = false; }
+    }
 
     private string Title => Session.State switch
     {

@@ -283,5 +283,20 @@
   "Voir l'application en tant que": "Hijery ny rindrankajy ho",
   "Quitter l'aperçu": "Hiala amin'ny topi-maso",
   "Aperçu en tant que {0}": "Topi-maso ho {0}",
-  "Vous voyez les menus et les boutons de ce rôle. Ce que vous faites pendant l'aperçu est réellement enregistré.": "Hitanao ny menio sy ny bokotra an'io andraikitra io. Voatahiry tokoa izay ataonao mandritra ny topi-maso."
+  "Vous voyez les menus et les boutons de ce rôle. Ce que vous faites pendant l'aperçu est réellement enregistré.": "Hitanao ny menio sy ny bokotra an'io andraikitra io. Voatahiry tokoa izay ataonao mandritra ny topi-maso.",
+  "Cette fonction n'est pas encore activée. Donnez vos informations directement à l'administrateur.": "Mbola tsy mandeha ity asa ity. Omeo mivantana ny mpitantana ny mombamomba anao.",
+  "Complétez vos informations : elles aident l'administrateur à vous reconnaître.": "Fenoy ny mombamomba anao : manampy ny mpitantana hahafantatra anao izany.",
+  "Connexion avec Google annulée.": "Nofoanana ny fidirana amin'ny Google.",
+  "Continuer avec Google": "Hanohy amin'ny Google",
+  "Corriger mes informations": "Hanitsy ny mombamomba ahy",
+  "Enregistrer mes informations": "Hitahiry ny mombamomba ahy",
+  "Je n'ai pas d'adresse e-mail": "Tsy manana adiresy mailaka aho",
+  "L'inscription sans e-mail n'est pas encore activée. Demandez à l'administrateur, ou inscrivez-vous avec une adresse e-mail.": "Mbola tsy mandeha ny fisoratana anarana tsy misy mailaka. Anontanio ny mpitantana, na misoratra anarana amin'ny adiresy mailaka.",
+  "La connexion avec Google a échoué : {0}": "Tsy nahomby ny fidirana amin'ny Google : {0}",
+  "Saisissez votre identifiant ou l'adresse e-mail de votre compte. Votre demande sera transmise à l'administrateur, qui vous donnera un mot de passe provisoire.": "Ampidiro ny anarana fidiranao na ny adiresy mailaka an'ny kaontinao. Halefa any amin'ny mpitantana ny fangatahanao, ary hanome teny miafina vonjimaika ho anao izy.",
+  "Sans e-mail, le numéro de téléphone est obligatoire.": "Raha tsy misy mailaka dia tsy maintsy asiana laharan-telefaona.",
+  "Sans e-mail, vous vous connecterez avec l'identifiant que l'administrateur vous donnera à la validation de votre compte.": "Raha tsy misy mailaka dia hiditra amin'ny anarana fidirana omen'ny mpitantana anao rehefa voaankatoa ny kaontinao ianao.",
+  "Trop d'inscriptions sans e-mail en ce moment. Réessayez dans une heure.": "Be loatra ny fisoratana anarana tsy misy mailaka amin'izao fotoana izao. Andramo indray afaka adiny iray.",
+  "Votre demande est enregistrée. Après la validation par l'administrateur, connectez-vous avec l'identifiant qu'il vous donnera.": "Voaray ny fangatahanao. Rehefa nankatoavin'ny mpitantana, midira amin'ny anarana fidirana homeny anao.",
+  "ou": "na"
 }

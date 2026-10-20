@@ -177,13 +177,68 @@ window.guOnline = (function () {
 
     // ---------- API ----------
 
+    // ---------- Retour de Google (connexion OAuth, flux PKCE) ----------
+
+    var supaUrl = '', supaKey = '', redirectErr = null;
+
+    async function finishRedirect() {
+        var q = new URLSearchParams(location.search);
+        var code = q.get('code');
+        var e = q.get('error_description') || q.get('error');
+        if (!code && !e) return;
+        if (code) {
+            try {
+                var r = await client.auth.exchangeCodeForSession(code);
+                if (r.error) redirectErr = err(r.error);
+            } catch (x) {
+                redirectErr = err(x);
+            }
+        } else {
+            redirectErr = (q.get('error') === 'access_denied' ? 'access_denied: ' : '') + e;
+        }
+        ['code', 'error', 'error_code', 'error_description', 'state'].forEach(function (k) { q.delete(k); });
+        var rest = q.toString();
+        history.replaceState(history.state, '', location.pathname + (rest ? '?' + rest : '') + location.hash);
+    }
+
     return {
-        init: function (url, anonKey) {
+        init: async function (url, anonKey) {
             if (!url || !anonKey || !window.supabase) return false;
+            supaUrl = url.replace(/\/+$/, '');
+            supaKey = anonKey;
             client = window.supabase.createClient(url, anonKey, {
-                auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storageKey: 'gu-online-auth' }
+                auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: 'pkce', storageKey: 'gu-online-auth' }
             });
+            await finishRedirect();
             return true;
+        },
+
+        // Erreur rapportée au retour de Google, rendue une seule fois.
+        redirectError: function () {
+            var e = redirectErr;
+            redirectErr = null;
+            return e;
+        },
+
+        // Le fournisseur Google est-il activé dans Supabase (Authentication > Providers) ?
+        googleActif: async function () {
+            try {
+                var r = await fetch(supaUrl + '/auth/v1/settings', { headers: { apikey: supaKey } });
+                if (!r.ok) return false;
+                var j = await r.json();
+                return !!(j.external && j.external.google);
+            } catch (_) {
+                return false;
+            }
+        },
+
+        // Part vers Google ; au retour, init() termine la connexion (code dans l'adresse).
+        signInGoogle: async function () {
+            var r = await client.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: location.origin + location.pathname, queryParams: { prompt: 'select_account' } }
+            });
+            return r.error ? { ok: false, error: err(r.error) } : { ok: true };
         },
 
         getSession: async function () {

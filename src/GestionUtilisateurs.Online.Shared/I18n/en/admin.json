@@ -509,5 +509,8 @@
   "On ne peut pas retirer de choix de cette liste.": "Choices cannot be removed from this list.",
   "Vide : même texte qu'en français": "Empty: same text as in French",
   "Vide : « {0} »": "Empty: “{0}”",
-  "« {0} » est de nouveau dans la liste.": "“{0}” is back in the list."
+  "« {0} » est de nouveau dans la liste.": "“{0}” is back in the list.",
+  "Sans e-mail": "No email",
+  "Sans e-mail, identifiant : {0}": "No email, username: {0}",
+  "{0} peut maintenant se connecter ({1}). Sans e-mail : donnez-lui son identifiant « {2} ».": "{0} can now sign in ({1}). No email: give them their username “{2}”."
 }

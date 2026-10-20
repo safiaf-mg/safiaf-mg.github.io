@@ -506,3 +506,25 @@
 .listes-traductions { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
 .listes-aide { display: block; margin: -6px 0 12px; font-size: 12px; }
 @media (max-width: 480px) { .listes-traductions { grid-template-columns: 1fr; } }
+
+/* Inscription sans e-mail et connexion avec Google */
+.online-auth-label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.form-group label.online-auth-sans-email {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-weight: 500; font-size: 12.5px; color: var(--text-muted); cursor: pointer;
+}
+.online-auth-sans-email input { width: 15px; height: 15px; margin: 0; accent-color: var(--accent); }
+.online-auth-or { display: flex; align-items: center; gap: 10px; margin: 10px 0; color: var(--text-muted); font-size: 12px; }
+.online-auth-or::before, .online-auth-or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.online-auth-google { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.online-auth-google svg { flex: none; }
+/* Avec le bouton Google, l'inscription tient toujours sur un écran. */
+.online-auth-main.is-signup .online-auth-or { margin: 6px 0; font-size: 11px; }
+.online-auth-main.is-signup .online-auth-google { padding-top: 8px; padding-bottom: 8px; min-height: 0; }
+.online-auth-main.is-signup.has-google .login-subtitle { display: none; }
+.online-auth-main.is-signup.has-google .online-auth-mobile-logo { width: 64px; height: 64px; border-radius: 18px; margin-bottom: 6px; }
+@media (min-width: 1024px) {
+    .online-auth-main.is-signup.has-google { padding-top: 14px; padding-bottom: 14px; }
+}
+.online-status-infos { text-align: left; margin: 4px 0 12px; }
+.online-status-infos > p { font-size: 13px; margin: 0 0 10px; }
