@@ -62,7 +62,7 @@ else
                 </div>
                 <div class="form-group">
                     <label for="dm-tel">@L.T("Téléphone")</label>
-                    <input id="dm-tel" type="tel" value="@_userDraft.Telephone" @oninput="e => _userDraft.Telephone = e.Value?.ToString() ?? string.Empty" />
+                    <TelephoneInput Id="dm-tel" Value="@_userDraft.Telephone" ValueChanged="@(v => _userDraft.Telephone = v)" />
                 </div>
                 <div class="form-group">
                     <label for="dm-role">@L.T("Rôle")</label>
@@ -707,7 +707,7 @@ else
         }
         if (!string.IsNullOrWhiteSpace(_userDraft.Telephone) && !DataStore.IsPhoneValid(_userDraft.Telephone))
         {
-            _userError = L.T("Le numéro de téléphone est invalide (format +261…).");
+            _userError = L.T("Le numéro doit avoir 9 chiffres après +261 (ex. 341234567).");
             return;
         }
 

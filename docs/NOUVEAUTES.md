@@ -4,6 +4,15 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 20 octobre 2026 (téléphone +261 et mots de passe)
+
+- Téléphone : « +261 » est fixe, on saisit seulement les 9 chiffres du
+  numéro (ex. 341234567), à l'inscription comme dans la fiche d'un membre.
+  Un numéro collé en « 034 12 345 67 » ou « +261 34 12 345 67 » est remis
+  en forme tout seul.
+- Chaque champ mot de passe a son propre œil pour afficher ou masquer ce qui
+  est saisi, y compris « Confirmer le mot de passe ».
+
 ## 20 octobre 2026 (inscription sans e-mail et avec Google)
 
 - Inscription sans adresse e-mail : cochez « Je n'ai pas d'adresse e-mail »,

@@ -251,5 +251,7 @@
   "Parent": "Ray na reny",
   "Enfant": "Zanaka",
   "Conjoint(e)": "Vady",
-  "Frère ou sœur": "Iray tampo"
+  "Frère ou sœur": "Iray tampo",
+  "Le numéro doit avoir 9 chiffres après +261 (ex. 341234567).": "Tokony hisy isa 9 aorian'ny +261 ny laharana (ohatra 341234567).",
+  "Numéro de téléphone, 9 chiffres après +261": "Laharan-telefaona, isa 9 aorian'ny +261"
 }

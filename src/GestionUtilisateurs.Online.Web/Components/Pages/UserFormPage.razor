@@ -113,11 +113,7 @@
     </div>
     <div class="form-group">
         <label for="uf-tel">@L.T("Téléphone (facultatif)")</label>
-        <div class="tel-input">
-            <span class="tel-prefix">+261</span>
-            <input id="uf-tel" type="tel" placeholder="xx xx xxx xx" value="@TelDigits"
-                   @oninput="e => OnTelInput(e.Value?.ToString() ?? string.Empty)" aria-label="@L.T("Numéro de téléphone")" />
-        </div>
+        <TelephoneInput Id="uf-tel" Value="@_model.Telephone" ValueChanged="@(v => _model.Telephone = v)" />
         <span class="form-error">@Err("telephone")</span>
     </div>
     <div class="form-group">
@@ -134,7 +130,7 @@
             <span class="field-hint">@L.T("Si un parent est déjà inscrit, vous pouvez aussi le relier dans la section « Famille » de la fiche.")</span>
             <span class="form-error">@Err("responsable")</span>
             <label for="uf-resp-tel" style="margin-top:8px">@L.T("Téléphone du responsable")</label>
-            <input id="uf-resp-tel" type="tel" placeholder="+261 xx xx xxx xx" value="@_model.ResponsableTelephone" @oninput="e => _model.ResponsableTelephone = e.Value?.ToString() ?? string.Empty" />
+            <TelephoneInput Id="uf-resp-tel" Value="@_model.ResponsableTelephone" ValueChanged="@(v => _model.ResponsableTelephone = v)" />
         </div>
     }
     @if (!IsSelfSimpleUser)
@@ -336,21 +332,6 @@
             if (u.Role == Roles.BaseAdmin) return Store.IsAdmin; // compte technique : admin/dba uniquement
             return Store.IsManager;
         }
-    }
-
-    private string TelDigits
-    {
-        get
-        {
-            var phone = _model.Telephone ?? "";
-            return phone.StartsWith("+261", StringComparison.Ordinal) ? phone.Substring(4) : phone;
-        }
-    }
-
-    private void OnTelInput(string raw)
-    {
-        var digits = new string((raw ?? "").Where(char.IsDigit).ToArray());
-        _model.Telephone = "+261" + digits;
     }
 
     private void OnStatutChange(ChangeEventArgs e) => _model.Actif = e.Value?.ToString() == "1";

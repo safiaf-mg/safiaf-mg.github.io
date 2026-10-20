@@ -78,7 +78,7 @@
                 </div>
                 <div class="form-group">
                     <label for="su-tel">@(_sansEmail ? L.T("Téléphone") : L.T("Téléphone (facultatif)"))</label>
-                    <input id="su-tel" type="tel" autocomplete="tel" @bind="_telephone" />
+                    <TelephoneInput Id="su-tel" @bind-Value="_telephone" />
                 </div>
             }
 
@@ -112,22 +112,16 @@
 
             <div class="form-group">
                 <label for="auth-password">@L.T("Mot de passe")</label>
-                <div class="password-input-wrapper">
-                    <input id="auth-password" type="@(_showPwd ? "text" : "password")"
-                           autocomplete="@(_signup ? "new-password" : "current-password")"
-                           placeholder="@(_signup ? L.T("8 caractères minimum") : L.T("Votre mot de passe"))"
-                           value="@_password" @oninput="e => _password = e.Value?.ToString() ?? string.Empty"
-                           @onkeydown="OnKeyDown" />
-                    <button type="button" class="password-toggle" @onclick="() => _showPwd = !_showPwd"
-                            aria-label="@(_showPwd ? L.T("Masquer le mot de passe") : L.T("Afficher le mot de passe"))">@(_showPwd ? "🙈" : "👁")</button>
-                </div>
+                <MotDePasseInput Id="auth-password" @bind-Value="_password" OnKeyDown="OnKeyDown"
+                                 Autocomplete="@(_signup ? "new-password" : "current-password")"
+                                 Placeholder="@(_signup ? L.T("8 caractères minimum") : L.T("Votre mot de passe"))" />
             </div>
 
             @if (_signup)
             {
                 <div class="form-group">
                     <label for="su-confirm">@L.T("Confirmer le mot de passe")</label>
-                    <input id="su-confirm" type="@(_showPwd ? "text" : "password")" autocomplete="new-password" @bind="_confirm" />
+                    <MotDePasseInput Id="su-confirm" @bind-Value="_confirm" Autocomplete="new-password" OnKeyDown="OnKeyDown" />
                 </div>
             }
 
@@ -241,7 +235,6 @@
 
     private bool _signup;
     private bool _busy;
-    private bool _showPwd;
     private bool _forgot;
     private bool _sansEmail;
     private bool _google;
@@ -293,7 +286,7 @@
 
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
-        if (e.Key == "Enter" && !_signup) await SubmitAsync();
+        if (e.Key == "Enter") await SubmitAsync();
     }
 
     private async Task SubmitAsync()
@@ -326,11 +319,9 @@
             return string.IsNullOrEmpty(_password) ? L.T("Saisissez votre mot de passe.") : null;
         }
         if (string.IsNullOrWhiteSpace(_prenom) || string.IsNullOrWhiteSpace(_nom)) return L.T("Le prénom et le nom sont obligatoires.");
-        if (_sansEmail)
-        {
-            if (_telephone.Count(char.IsDigit) < 6) return L.T("Sans e-mail, le numéro de téléphone est obligatoire.");
-        }
-        else if (!EmailValide(_email)) return L.T("Saisissez une adresse e-mail valide.");
+        if (_sansEmail && string.IsNullOrEmpty(_telephone)) return L.T("Sans e-mail, le numéro de téléphone est obligatoire.");
+        if (_telephone.Length > 0 && !DataStore.IsPhoneValid(_telephone)) return L.T("Le numéro doit avoir 9 chiffres après +261 (ex. 341234567).");
+        if (!_sansEmail && !EmailValide(_email)) return L.T("Saisissez une adresse e-mail valide.");
         if (string.IsNullOrEmpty(_password)) return L.T("Saisissez votre mot de passe.");
         if (_password.Length < 8) return L.T("Le mot de passe doit contenir au moins 8 caractères.");
         if (_password != _confirm) return L.T("Les deux mots de passe ne correspondent pas.");
