@@ -320,6 +320,50 @@ public static class HelpCatalog
                     "Slogan et citation du dos se personnalisent dans les Paramètres."
                 })
             }),
+        new("services", "Planning des services", "📅",
+            "Qui préside, prêche, lit, chante ou accueille à chaque culte.",
+            new[]
+            {
+                new HelpSection("Pour chaque membre", new[]
+                {
+                    "« Mes prochains services » montre vos tâches à venir.",
+                    "« Je confirme » prévient les responsables que vous serez là ; « Je ne peux pas » demande un remplaçant, avec un mot si vous le souhaitez.",
+                    "Le point rouge du menu compte les tâches que vous n'avez pas encore confirmées."
+                }),
+                new HelpSection("Pour ceux qui préparent le planning", new[]
+                {
+                    "« ＋ » prépare un culte : titre, date, heure, lieu, puis une ligne par tâche avec la personne choisie.",
+                    "« Copier à la semaine suivante » reprend le même service sept jours plus tard ; chacun confirme de nouveau.",
+                    "Un bandeau signale les remplaçants à trouver : ouvrez le service et choisissez une autre personne.",
+                    "La liste des tâches (prédication, lecture, chants…) se règle dans Paramètres › Listes de choix."
+                })
+            }),
+        new("prieres", "Intentions de prière", "🙏",
+            "Confiez vos intentions et priez les uns pour les autres.",
+            new[]
+            {
+                new HelpSection("Comment faire", new[]
+                {
+                    "Écrivez votre intention, puis choisissez « Partager avec les membres » ou « Seulement aux responsables ».",
+                    "« Ne pas afficher mon nom » cache votre nom aux autres membres.",
+                    "« Je prie aussi » montre à l'auteur que la communauté porte son intention.",
+                    "Quand la prière est exaucée, marquez-la « Exaucée » et partagez un témoignage.",
+                    "Une intention privée n'est lue que par les responsables ; vous retrouvez les vôtres dans « Mes intentions privées »."
+                })
+            }),
+        new("groupes", "Groupes et ministères", "⛪",
+            "Jeunesse, chorale, école du dimanche, mpiandry : chaque groupe avec ses responsables et ses membres.",
+            new[]
+            {
+                new HelpSection("Comment faire", new[]
+                {
+                    "« Mes groupes » montre les groupes dont vous faites partie ; « Tous » montre toute la communauté.",
+                    "Touchez un groupe pour voir ses membres, ses rencontres et la présence moyenne.",
+                    "« Écrire au groupe » envoie un message à tous ses membres par la messagerie.",
+                    "« Nouvelle rencontre » crée une réunion avec les membres du groupe ; la présence se note dans « Présence et réunions ».",
+                    "« ＋ » crée un groupe : nom, jour de rencontre, responsables et membres."
+                })
+            }),
         new("votes", "Votes et décisions", "🗳",
             "Soumettez une question à la communauté et recueillez les bulletins.",
             new[]

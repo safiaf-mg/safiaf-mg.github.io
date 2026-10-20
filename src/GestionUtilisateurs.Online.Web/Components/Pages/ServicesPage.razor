@@ -1,0 +1,316 @@
+@implements IDisposable
+@inject DataStore Store
+@inject AppState State
+
+<div class="page-head">
+    <p>@L.T("Qui préside, prêche, lit, chante ou accueille à chaque culte. Chacun confirme sa tâche ou demande un remplaçant.")</p>
+</div>
+
+@{
+    var mes = Store.MesServicesAVenir();
+}
+@if (mes.Count > 0)
+{
+    <div class="card service-mes" style="margin-bottom:12px">
+        <h3 style="margin:0 0 8px">@L.T("Mes prochains services")</h3>
+        @foreach (var (service, tache) in mes)
+        {
+            var s = service;
+            var a = tache;
+            <div class="service-ligne">
+                <span class="service-role-icon" aria-hidden="true">@RolesService.Icon(a.Role)</span>
+                <div class="service-ligne-main">
+                    <strong>@RolesService.Label(a.Role)</strong>
+                    <span class="text-muted">@JourService(s) · @s.Titre</span>
+                </div>
+                <Badge Text="@AffectationStatuts.Label(a.Statut)" Kind="@KindStatut(a.Statut)" />
+            </div>
+            <div class="form-actions" style="margin:4px 0 10px;flex-wrap:wrap">
+                @if (a.Statut != AffectationStatuts.Confirme)
+                {
+                    <button class="btn btn-secondary btn-sm" @onclick="() => Repondre(s, a, true)">✓ @L.T("Je confirme")</button>
+                }
+                @if (a.Statut != AffectationStatuts.Remplacement)
+                {
+                    <button class="btn btn-secondary btn-sm" @onclick="() => OuvrirEmpechement(s, a)">✗ @L.T("Je ne peux pas")</button>
+                }
+            </div>
+        }
+    </div>
+}
+
+@if (Store.Can(Permissions.ServicesManage) && Store.RemplacementsDemandes() is > 0 and var remplacements)
+{
+    <div class="quota-banner" role="status" style="margin-bottom:12px">
+        <span class="quota-banner-icon" aria-hidden="true">🔁</span>
+        <div class="quota-banner-main">
+            <strong>@L.F("{0} remplaçant(s) à trouver", remplacements)</strong>
+            <span>@L.T("Ouvrez le service concerné et choisissez une autre personne pour la tâche.")</span>
+        </div>
+    </div>
+}
+
+<div class="chips-row" role="tablist" aria-label="@L.T("Filtrer les services")">
+    <button type="button" class="chip @(!_passes ? "active" : "")" @onclick="() => _passes = false">@L.T("À venir")</button>
+    <button type="button" class="chip @(_passes ? "active" : "")" @onclick="() => _passes = true">@L.T("Passés")</button>
+</div>
+
+@if (Liste.Count == 0)
+{
+    <EmptyState Icon="📅" Title="@(_passes ? L.T("Aucun service passé") : L.T("Aucun service prévu"))"
+                Message="@(Store.Can(Permissions.ServicesManage) ? L.T("Préparez le prochain culte avec le bouton +.") : L.T("Le planning sera publié ici par les responsables."))" />
+}
+else
+{
+    @foreach (var service in Liste)
+    {
+        var s = service;
+        <div class="card" style="margin-bottom:12px">
+            <div class="inline-actions" style="justify-content:space-between;align-items:flex-start">
+                <div>
+                    <h3 style="margin:0">@s.Titre</h3>
+                    <div class="text-muted" style="font-size:13px;margin-top:2px">
+                        @JourService(s)@(string.IsNullOrWhiteSpace(s.Lieu) ? "" : " · " + s.Lieu)
+                    </div>
+                </div>
+            </div>
+            @if (s.Affectations.Count == 0)
+            {
+                <p class="muted" style="margin:8px 0 0">@L.T("Aucune tâche pour le moment.")</p>
+            }
+            @foreach (var a in s.Affectations)
+            {
+                var moi = a.Identifiant.Equals(Me, StringComparison.OrdinalIgnoreCase);
+                <div class="service-ligne @(moi ? "service-moi" : "")">
+                    <span class="service-role-icon" aria-hidden="true">@RolesService.Icon(a.Role)</span>
+                    <div class="service-ligne-main">
+                        <strong>@RolesService.Label(a.Role)</strong>
+                        <span class="@(a.Identifiant.Length == 0 ? "text-muted" : "")">@(a.Identifiant.Length == 0 ? L.T("À pourvoir") : Nom(a.Identifiant))</span>
+                        @if (!string.IsNullOrWhiteSpace(a.Remarque))
+                        {
+                            <span class="text-muted" style="font-size:12px">« @a.Remarque »</span>
+                        }
+                    </div>
+                    @if (a.Identifiant.Length > 0)
+                    {
+                        <Badge Text="@AffectationStatuts.Label(a.Statut)" Kind="@KindStatut(a.Statut)" />
+                    }
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(s.Notes))
+            {
+                <p class="muted" style="margin:8px 0 0">@s.Notes</p>
+            }
+            @if (Store.Can(Permissions.ServicesManage))
+            {
+                <div class="form-actions" style="margin-top:10px;flex-wrap:wrap">
+                    <button class="btn btn-secondary btn-sm" @onclick="() => OuvrirEdition(s)">✎ @L.T("Modifier")</button>
+                    <button class="btn btn-secondary btn-sm" @onclick="() => Dupliquer(s)">⧉ @L.T("Copier à la semaine suivante")</button>
+                    <button class="btn btn-danger-outline btn-sm" aria-label="@L.T("Supprimer")" @onclick="() => _aSupprimer = s">🗑</button>
+                </div>
+            }
+        </div>
+    }
+}
+
+@if (Store.Can(Permissions.ServicesManage))
+{
+    <button class="fab" aria-label="@L.T("Préparer un service")" @onclick="OuvrirAjout">+</button>
+}
+
+<Modal Title="@(_editId == null ? L.T("Nouveau service") : L.T("Modifier le service"))" Show="_editeur" OnClose="() => _editeur = false">
+    <ChildContent>
+        <div class="form-group">
+            <label for="sv-titre">@L.T("Titre") <span class="required">*</span></label>
+            <input id="sv-titre" type="text" value="@_titre" @oninput="e => _titre = e.Value?.ToString() ?? string.Empty" />
+        </div>
+        <div class="form-group">
+            <label for="sv-date">@L.T("Date *")</label>
+            <DateInput Id="sv-date" Value="@_date" ValueChanged="@(v => _date = v)" />
+        </div>
+        <div class="form-group">
+            <label for="sv-heure">@L.T("Heure")</label>
+            <input id="sv-heure" type="time" value="@_heure" @oninput="e => _heure = e.Value?.ToString() ?? string.Empty" />
+        </div>
+        <div class="form-group">
+            <label for="sv-lieu">@L.T("Lieu")</label>
+            <input id="sv-lieu" type="text" value="@_lieu" @oninput="e => _lieu = e.Value?.ToString() ?? string.Empty" />
+        </div>
+        <div class="form-group">
+            <label>@L.T("Tâches")</label>
+            @for (var i = 0; i < _lignes.Count; i++)
+            {
+                var idx = i;
+                var ligne = _lignes[idx];
+                <div class="service-edit-ligne">
+                    <div class="inline-actions" style="gap:6px">
+                        <select aria-label="@L.T("Tâche")" value="@ligne.Role" @onchange="e => ligne.Role = e.Value?.ToString() ?? string.Empty">
+                            <option value="">— @L.T("Sélectionnez") —</option>
+                            @foreach (var c in ListesChoix.Choix(ListesChoix.RolesService, ligne.Role))
+                            {
+                                <option value="@c.Cle">@((string.IsNullOrEmpty(c.Icone) ? "" : c.Icone + " ") + c.Libelle)</option>
+                            }
+                        </select>
+                        <button type="button" class="btn-icon opt-remove" aria-label="@L.T("Retirer la tâche")" @onclick="() => _lignes.RemoveAt(idx)">×</button>
+                    </div>
+                    <MemberPicker Value="@ligne.Identifiant" ValueChanged="@((string v) => ligne.Identifiant = v)" AllowEmpty="true"
+                                  Placeholder="@L.T("Qui ? (écrire pour chercher)")" />
+                </div>
+            }
+            <div class="form-actions" style="margin-top:8px">
+                <button type="button" class="btn btn-secondary btn-sm" @onclick="() => _lignes.Add(new AffectationService())">＋ @L.T("Ajouter une tâche")</button>
+            </div>
+            <span class="field-hint">@L.T("Les tâches se règlent dans Paramètres › Listes de choix › « Tâches des services ».")</span>
+        </div>
+        <div class="form-group">
+            <label for="sv-notes">@L.T("Notes")</label>
+            <textarea id="sv-notes" rows="2" placeholder="@L.T("Ex : thème, textes du jour, chants")" value="@_notes" @oninput="e => _notes = e.Value?.ToString() ?? string.Empty"></textarea>
+        </div>
+        <span class="form-error">@_erreur</span>
+    </ChildContent>
+    <FooterContent>
+        <button class="btn btn-secondary" @onclick="() => _editeur = false">@L.T("Annuler")</button>
+        <button class="btn btn-primary" @onclick="Enregistrer">@L.T("Enregistrer")</button>
+    </FooterContent>
+</Modal>
+
+<Modal Title="@L.T("Je ne peux pas")" Show="_empechement != null" OnClose="() => _empechement = null">
+    <ChildContent>
+        <p style="margin-top:0">@L.T("Les responsables verront qu'un remplaçant est demandé.")</p>
+        <div class="form-group">
+            <label for="sv-raison">@L.T("Un mot pour les responsables (facultatif)")</label>
+            <textarea id="sv-raison" rows="2" value="@_raison" @oninput="e => _raison = e.Value?.ToString() ?? string.Empty"></textarea>
+        </div>
+    </ChildContent>
+    <FooterContent>
+        <button class="btn btn-secondary" @onclick="() => _empechement = null">@L.T("Annuler")</button>
+        <button class="btn btn-primary" @onclick="ConfirmerEmpechement">@L.T("Demander un remplaçant")</button>
+    </FooterContent>
+</Modal>
+
+<ConfirmDialog Show="_aSupprimer != null" Title="@L.T("Supprimer le service")"
+               Message="@L.F("Supprimer « {0} » du {1} ?", _aSupprimer?.Titre ?? "", DataStore.FormatDateCourte(_aSupprimer?.Date))"
+               ConfirmLabel="@L.T("Supprimer")" Danger="true" OnConfirm="Supprimer" OnCancel="() => _aSupprimer = null" />
+
+@code {
+    private bool _passes;
+    private bool _editeur;
+    private string? _editId;
+    private string _titre = "", _date = "", _heure = "", _lieu = "", _notes = "", _erreur = "";
+    private List<AffectationService> _lignes = new();
+    private (ServiceCulte Service, AffectationService Tache)? _empechement;
+    private string _raison = "";
+    private ServiceCulte? _aSupprimer;
+
+    private string Me => Store.GetCurrentUser()?.Identifiant ?? "";
+
+    protected override void OnInitialized() => Store.DataChanged += Refresh;
+
+    private void Refresh() => _ = InvokeAsync(StateHasChanged);
+
+    private IReadOnlyList<ServiceCulte> Liste
+    {
+        get
+        {
+            var aujourdhui = DateTime.Today.ToString("yyyy-MM-dd");
+            var tous = Store.Services;
+            return _passes
+                ? tous.Where(s => string.CompareOrdinal(s.Date, aujourdhui) < 0).Reverse().ToList()
+                : tous.Where(s => string.CompareOrdinal(s.Date, aujourdhui) >= 0).ToList();
+        }
+    }
+
+    private string Nom(string identifiant) => Store.FindUserByIdentifier(identifiant)?.NomComplet ?? identifiant;
+
+    private static string JourService(ServiceCulte s)
+    {
+        var jour = DataStore.TryParseYmd(s.Date, out var d) ? L.DateLongue(d) : s.Date;
+        return string.IsNullOrWhiteSpace(s.Heure) ? jour : jour + " · " + s.Heure;
+    }
+
+    private static string KindStatut(string statut) => statut switch
+    {
+        AffectationStatuts.Confirme => "active",
+        AffectationStatuts.Remplacement => "inactive",
+        _ => "role"
+    };
+
+    private void Repondre(ServiceCulte s, AffectationService a, bool present, string? remarque = null)
+    {
+        var res = Store.RepondreAffectation(s.Id, a.Id, present, remarque);
+        if (res.Success) State.NotifySuccess(present ? L.T("Merci, votre présence est confirmée.") : L.T("C'est noté : un remplaçant est demandé."));
+        else State.NotifyError(res.Error);
+    }
+
+    private void OuvrirEmpechement(ServiceCulte s, AffectationService a)
+    {
+        _raison = "";
+        _empechement = (s, a);
+    }
+
+    private void ConfirmerEmpechement()
+    {
+        if (_empechement is not { } e) return;
+        _empechement = null;
+        Repondre(e.Service, e.Tache, false, _raison);
+    }
+
+    private static DateTime ProchainDimanche()
+    {
+        var d = DateTime.Today;
+        return d.AddDays(((int)DayOfWeek.Sunday - (int)d.DayOfWeek + 7) % 7);
+    }
+
+    private void OuvrirAjout()
+    {
+        _editId = null;
+        _titre = L.T("Culte du dimanche");
+        _date = ProchainDimanche().ToString("yyyy-MM-dd");
+        _heure = ""; _lieu = ""; _notes = ""; _erreur = "";
+        // Les tâches habituelles d'un culte, à attribuer.
+        _lignes = ListesChoix.Choix(ListesChoix.RolesService)
+            .Where(c => c.Cle != RolesService.EcoleDimanche && c.Cle != RolesService.Sonorisation)
+            .Select(c => new AffectationService { Role = c.Cle }).ToList();
+        _editeur = true;
+    }
+
+    private void OuvrirEdition(ServiceCulte s)
+    {
+        _editId = s.Id;
+        _titre = s.Titre; _date = s.Date; _heure = s.Heure; _lieu = s.Lieu; _notes = s.Notes; _erreur = "";
+        _lignes = s.Affectations.Select(a => new AffectationService { Id = a.Id, Role = a.Role, Identifiant = a.Identifiant }).ToList();
+        _editeur = true;
+    }
+
+    private void Enregistrer()
+    {
+        var draft = new ServiceCulte
+        {
+            Titre = _titre, Date = DataStore.ToYmd(_date), Heure = _heure, Lieu = _lieu, Notes = _notes,
+            Affectations = _lignes
+        };
+        var res = _editId == null ? Store.AjouterService(draft) : Store.ModifierService(_editId, draft);
+        if (!res.Success) { _erreur = res.Error; return; }
+        State.NotifySuccess(_editId == null ? L.T("Service ajouté au planning.") : L.T("Service enregistré."));
+        _editeur = false;
+    }
+
+    private void Dupliquer(ServiceCulte s)
+    {
+        var res = Store.DupliquerService(s.Id);
+        if (res.Success) State.NotifySuccess(L.T("Service copié à la semaine suivante."));
+        else State.NotifyError(res.Error);
+    }
+
+    private void Supprimer()
+    {
+        var s = _aSupprimer;
+        _aSupprimer = null;
+        if (s == null) return;
+        var res = Store.SupprimerService(s.Id);
+        if (res.Success) State.NotifySuccess(L.T("Service supprimé."));
+        else State.NotifyError(res.Error);
+    }
+
+    public void Dispose() => Store.DataChanged -= Refresh;
+}

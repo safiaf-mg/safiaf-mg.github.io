@@ -74,6 +74,10 @@ public partial class DataStore
         RemplacerListe(_situations, correspondance);
         RemplacerListe(_votes, correspondance);
         RemplacerListe(_journalMedia, correspondance);
+        RemplacerListe(_groupes, correspondance);
+        RemplacerListe(_services, correspondance);
+        RemplacerListe(_prieres, correspondance);
+        RemplacerListe(_prieresPrivees, correspondance);
         _community = Remplacer(_community, correspondance) ?? _community;
         _settings = Remplacer(_settings, correspondance) ?? _settings;
 
@@ -102,6 +106,10 @@ public partial class DataStore
         SaveSituations();
         SaveVotes();
         SaveJournalMedia();
+        SaveGroupes();
+        SaveServices();
+        SavePrieres();
+        SavePrieresPrivees();
         SaveCommunity();
         SaveSettings();
         LogActivity(ActivityTypes.Update, "Identifiants mis à la règle du prénom (" + plan.Count + ")");

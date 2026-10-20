@@ -101,7 +101,8 @@
         if (Store.PeutOuvrir("activity")) bas.Add(L.T("Activité"));
         var menu = new (string Cle, string Libelle)[]
         {
-            ("messagerie", L.T("Messagerie")), ("taches", L.T("Tâches et suivi")), ("votes", L.T("Votes et décisions")),
+            ("messagerie", L.T("Messagerie")), ("services", L.T("Planning des services")), ("prieres", L.T("Intentions de prière")),
+            ("taches", L.T("Tâches et suivi")), ("votes", L.T("Votes et décisions")),
             ("finances", L.T("Finances")), ("materiel", L.T("Matériel")), ("documents", L.T("Gestion documentaire")),
             ("carte", L.T("Carte de membre")), ("rappels", L.T("Rappels intelligents"))
         }.Where(m => Store.PeutOuvrir(m.Cle) && !Store.IsMenuHidden(m.Cle)).Select(m => m.Libelle).Take(4).ToList();

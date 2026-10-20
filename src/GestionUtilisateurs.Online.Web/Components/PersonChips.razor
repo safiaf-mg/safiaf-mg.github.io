@@ -1,0 +1,22 @@
+@inject DataStore Store
+
+@* Liste de membres sous forme de pastilles, chacune avec un bouton pour la retirer. *@
+@if (Liste.Count > 0)
+{
+    <div class="person-chips">
+        @foreach (var ident in Liste.ToList())
+        {
+            var id = ident;
+            var nom = Store.FindUserByIdentifier(id)?.NomComplet ?? id;
+            <span class="person-chip">
+                <span>@nom</span>
+                <button type="button" class="person-chip-remove" aria-label="@L.F("Retirer {0}", nom)" @onclick="() => Liste.Remove(id)">×</button>
+            </span>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>Identifiants affichés (la liste est modifiée sur place).</summary>
+    [Parameter] public List<string> Liste { get; set; } = new();
+}

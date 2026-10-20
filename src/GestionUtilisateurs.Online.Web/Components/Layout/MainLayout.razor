@@ -476,6 +476,9 @@
         "situations" => L.T("Famangiana"),
         "carte" => L.T("Carte membre"),
         "votes" => L.T("Votes"),
+        "services" => L.T("Planning des services"),
+        "prieres" => L.T("Intentions de prière"),
+        "groupes" => L.T("Groupes et ministères"),
         "journal" => L.T("Journal multimédia"),
         "guide" => L.T("Guide utilisateur"),
         _ => L.T(Store.Settings.AppName ?? "Gestion des utilisateurs")
@@ -593,6 +596,9 @@
         new("messagerie", L.T("Messagerie"), "✉", "menu-msg", () => Store.PeutOuvrir("messagerie"), () => Go("messagerie")),
         new("taches", L.T("Tâches et suivi"), "☑", "menu-tasks", () => Store.PeutOuvrir("taches"), () => Go("taches")),
         new("rappels", L.T("Rappels intelligents"), "⏰", "menu-rappels", () => Store.PeutOuvrir("rappels"), () => Go("rappels")),
+        new("services", L.T("Planning des services"), "📅", "menu-services", () => Store.PeutOuvrir("services"), () => Go("services")),
+        new("prieres", L.T("Intentions de prière"), "🙏", "menu-prieres", () => Store.PeutOuvrir("prieres"), () => Go("prieres")),
+        new("groupes", L.T("Groupes et ministères"), "⛪", "menu-groupes", () => Store.PeutOuvrir("groupes"), () => Go("groupes")),
         new("votes", L.T("Votes et décisions"), "🗳", "menu-votes", () => Store.PeutOuvrir("votes"), () => Go("votes")),
         new("reunions", L.T("Présence et réunions"), "👥", "menu-reunions", () => Store.PeutOuvrir("reunions"), () => Go("reunions")),
         new("documents", L.T("Gestion documentaire"), "📄", "menu-docs", () => Store.PeutOuvrir("documents"), () => Go("documents")),
@@ -700,6 +706,14 @@
                 case "votes":
                     n = Store.Votes.Count(v => v.EstOuvert
                         && !v.Bulletins.Any(b => b.VotantIdentifiant.Equals(me, StringComparison.OrdinalIgnoreCase)));
+                    break;
+                case "services":
+                    // Mes tâches à confirmer, plus les remplaçants à trouver pour ceux qui préparent le planning.
+                    n = Store.MesServicesAVenir(me).Count(x => x.Tache.Statut == AffectationStatuts.Prevu)
+                        + (Store.Can(Permissions.ServicesManage) ? Store.RemplacementsDemandes() : 0);
+                    break;
+                case "prieres":
+                    n = Store.PrieresPrivees.Count(p => !p.Exaucee && string.IsNullOrWhiteSpace(p.Suivi));
                     break;
                 case "finances":
                     n = Store.ImpayesCotisations().Count;
@@ -920,6 +934,9 @@
         "reunions" => "👥",
         "situations" => "🤝",
         "votes" => "🗳",
+        "groupes" => "⛪",
+        "services" => "📅",
+        "prieres" or "prieres_privees" => "🙏",
         "journal_media" => "🎞",
         "settings" => "⚙️",
         "session" => "🔑",
@@ -992,6 +1009,10 @@
         "reunions" => L.F("{0} réunion(s)", Store.Reunions.Count),
         "situations" => L.F("{0} suivi(s)", Store.Situations.Count),
         "votes" => L.F("{0} vote(s)", Store.Votes.Count),
+        "groupes" => L.F("{0} groupe(s)", Store.Groupes.Count),
+        "services" => L.F("{0} service(s)", Store.Services.Count),
+        "prieres" => L.F("{0} intention(s)", Store.Prieres.Count),
+        "prieres_privees" => L.F("{0} intention(s)", Store.PrieresPrivees.Count),
         "journal_media" => L.F("{0} média(s)", Store.JournalMedia.Count),
         "settings" => L.T("1 configuration"),
         "session" => Store.GetCurrentUser() == null ? L.T("aucune session") : L.T("1 session active"),

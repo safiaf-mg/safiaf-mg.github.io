@@ -228,6 +228,10 @@ public partial class DataStore
         _situations.Clear();
         _votes.Clear();
         _journalMedia.Clear();
+        _groupes.Clear();
+        _services.Clear();
+        _prieres.Clear();
+        _prieresPrivees.Clear();
         _initialized = false;
         EnsureInitialized();
         _session = session;
