@@ -1,0 +1,259 @@
+@implements IDisposable
+@inject DataStore Store
+@inject AppState State
+@inject OnlineSession Online
+
+<div class="page-head">
+    <p>@L.T("Confiez vos intentions de prière et portez celles des autres. Une intention privée n'est lue que par les responsables.")</p>
+</div>
+
+@if (Store.Can(Permissions.PrieresUse))
+{
+    <div class="card" style="margin-bottom:12px">
+        <h3 style="margin:0 0 8px">@L.T("Confier une intention")</h3>
+        <div class="form-group">
+            <label for="pr-texte" class="sr-only">@L.T("Votre intention de prière")</label>
+            <textarea id="pr-texte" rows="3" maxlength="2000" placeholder="@L.T("Pour qui, pour quoi souhaitez-vous que l'on prie ?")"
+                      value="@_texte" @oninput="e => _texte = e.Value?.ToString() ?? string.Empty"></textarea>
+        </div>
+        <div class="radio-row">
+            <label class="radio-option">
+                <input type="radio" name="pr-qui" checked="@(!_privee)" @onchange="() => _privee = false" />
+                <span>👥 @L.T("Partager avec les membres")</span>
+            </label>
+            <label class="radio-option">
+                <input type="radio" name="pr-qui" checked="@_privee" @onchange="() => _privee = true" />
+                <span>🔒 @L.T("Seulement aux responsables")</span>
+            </label>
+        </div>
+        <label class="checkbox-label" style="margin:8px 0">
+            <input type="checkbox" checked="@_anonyme" @onchange="e => _anonyme = e.Value is true" />
+            @L.T("Ne pas afficher mon nom")
+        </label>
+        <span class="form-error">@_erreur</span>
+        <div class="form-actions">
+            <button class="btn btn-primary" disabled="@_envoi" @onclick="Confier">🙏 @(_envoi ? L.T("Envoi…") : L.T("Confier"))</button>
+        </div>
+    </div>
+}
+
+<div class="chips-row" role="tablist" aria-label="@L.T("Filtrer les intentions")">
+    <button type="button" class="chip @(_onglet == "porter" ? "active" : "")" @onclick='() => _onglet = "porter"'>@L.F("À porter ({0})", Store.Prieres.Count(p => !p.Exaucee))</button>
+    <button type="button" class="chip @(_onglet == "exaucees" ? "active" : "")" @onclick='() => _onglet = "exaucees"'>@L.F("Exaucées ({0})", Store.Prieres.Count(p => p.Exaucee))</button>
+    @if (Store.Can(Permissions.PrieresManage))
+    {
+        <button type="button" class="chip @(_onglet == "privees" ? "active" : "")" @onclick='() => _onglet = "privees"'>🔒 @L.F("Privées ({0})", Store.PrieresPrivees.Count(p => !p.Exaucee))</button>
+    }
+    else if (Store.Can(Permissions.PrieresUse))
+    {
+        <button type="button" class="chip @(_onglet == "miennes" ? "active" : "")" @onclick="OuvrirMiennes">🔒 @L.T("Mes intentions privées")</button>
+    }
+</div>
+
+@if (_onglet == "miennes")
+{
+    @if (_miennes == null)
+    {
+        <p class="muted">@(_chargement ? L.T("Chargement…") : L.T("Vos intentions privées ne sont pas disponibles pour le moment."))</p>
+    }
+    else if (_miennes.Count == 0)
+    {
+        <EmptyState Icon="🔒" Title="@L.T("Aucune intention privée")" Message="@L.T("Celles que vous confiez seulement aux responsables apparaissent ici.")" />
+    }
+    else
+    {
+        @foreach (var p in _miennes)
+        {
+            <div class="card priere-card" style="margin-bottom:10px">
+                <p class="priere-texte">@p.Texte</p>
+                <div class="text-muted" style="font-size:12px">@DataStore.FormatDateCourte(p.Date)</div>
+                @if (p.Exaucee)
+                {
+                    <Badge Text="@L.T("Exaucée")" Kind="active" />
+                }
+            </div>
+        }
+    }
+}
+else
+{
+    var liste = _onglet switch
+    {
+        "exaucees" => Store.Prieres.Where(p => p.Exaucee).ToList(),
+        "privees" => Store.PrieresPrivees.ToList(),
+        _ => Store.Prieres.Where(p => !p.Exaucee).ToList()
+    };
+    @if (liste.Count == 0)
+    {
+        <EmptyState Icon="🙏" Title="@(_onglet == "exaucees" ? L.T("Aucune intention exaucée pour le moment") : L.T("Aucune intention"))"
+                    Message="@(_onglet == "exaucees" ? L.T("Quand une prière est exaucée, son témoignage s'affiche ici.") : L.T("Les intentions confiées apparaissent ici."))" />
+    }
+    @foreach (var intention in liste)
+    {
+        var p = intention;
+        var privee = _onglet == "privees";
+        var jePrie = p.Prieurs.Contains(Me, StringComparer.OrdinalIgnoreCase);
+        <div class="card priere-card @(p.Exaucee ? "priere-exaucee" : "")" style="margin-bottom:10px">
+            <p class="priere-texte">@p.Texte</p>
+            <div class="text-muted" style="font-size:12px">@Store.AuteurIntention(p) · @DataStore.FormatDateCourte(p.Date)</div>
+            @if (p.Exaucee)
+            {
+                <div class="priere-temoignage">
+                    <strong>✨ @L.T("Exaucée")</strong>@(string.IsNullOrWhiteSpace(p.DateExaucee) ? "" : " · " + DataStore.FormatDateCourte(p.DateExaucee))
+                    @if (!string.IsNullOrWhiteSpace(p.Temoignage))
+                    {
+                        <p style="margin:4px 0 0">@p.Temoignage</p>
+                    }
+                </div>
+            }
+            @if (privee)
+            {
+                <div class="form-group" style="margin-top:8px">
+                    <label for="pr-suivi-@p.Id">@L.T("Suivi (visible des responsables seulement)")</label>
+                    <textarea id="pr-suivi-@p.Id" rows="2" value="@SuiviDe(p)" @oninput="e => _suivis[p.Id] = e.Value?.ToString() ?? string.Empty"></textarea>
+                </div>
+            }
+            <div class="form-actions" style="margin-top:8px;flex-wrap:wrap">
+                @if (!privee && !p.Exaucee && Store.Can(Permissions.PrieresUse))
+                {
+                    <button class="btn btn-sm @(jePrie ? "btn-primary" : "btn-secondary")" @onclick="() => JePrie(p)">🙏 @(jePrie ? L.F("Je prie ({0})", p.Prieurs.Count) : L.F("Je prie aussi ({0})", p.Prieurs.Count))</button>
+                }
+                else if (!privee && p.Prieurs.Count > 0)
+                {
+                    <span class="text-muted" style="font-size:12px">@L.F("{0} personne(s) ont prié", p.Prieurs.Count)</span>
+                }
+                @if (privee)
+                {
+                    <button class="btn btn-secondary btn-sm" @onclick="() => EnregistrerSuivi(p)">@L.T("Enregistrer le suivi")</button>
+                }
+                @if (Store.PeutGererIntention(p))
+                {
+                    @if (p.Exaucee)
+                    {
+                        <button class="btn btn-secondary btn-sm" @onclick="() => Exaucer(p, false)">↺ @L.T("Remettre à porter")</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-secondary btn-sm" @onclick="() => OuvrirExaucee(p)">✨ @L.T("Exaucée")</button>
+                    }
+                    <button class="btn btn-danger-outline btn-sm" aria-label="@L.T("Supprimer")" @onclick="() => _aSupprimer = p">🗑</button>
+                }
+            </div>
+        </div>
+    }
+}
+
+<Modal Title="@L.T("Prière exaucée")" Show="_exaucee != null" OnClose="() => _exaucee = null">
+    <ChildContent>
+        <div class="form-group">
+            <label for="pr-temoignage">@L.T("Témoignage (facultatif)")</label>
+            <textarea id="pr-temoignage" rows="3" placeholder="@L.T("Partagez comment cette prière a été exaucée")" value="@_temoignage" @oninput="e => _temoignage = e.Value?.ToString() ?? string.Empty"></textarea>
+        </div>
+    </ChildContent>
+    <FooterContent>
+        <button class="btn btn-secondary" @onclick="() => _exaucee = null">@L.T("Annuler")</button>
+        <button class="btn btn-primary" @onclick="() => Exaucer(_exaucee!, true)">✨ @L.T("Marquer exaucée")</button>
+    </FooterContent>
+</Modal>
+
+<ConfirmDialog Show="_aSupprimer != null" Title="@L.T("Supprimer l'intention")"
+               Message="@L.T("Cette intention de prière sera supprimée. Continuer ?")"
+               ConfirmLabel="@L.T("Supprimer")" Danger="true" OnConfirm="Supprimer" OnCancel="() => _aSupprimer = null" />
+
+@code {
+    private string _texte = "";
+    private bool _privee;
+    private bool _anonyme;
+    private bool _envoi;
+    private string _erreur = "";
+    private string _onglet = "porter";
+    private List<IntentionPriere>? _miennes;
+    private bool _chargement;
+    private readonly Dictionary<string, string> _suivis = new();
+    private IntentionPriere? _exaucee;
+    private string _temoignage = "";
+    private IntentionPriere? _aSupprimer;
+
+    private string Me => Store.GetCurrentUser()?.Identifiant ?? "";
+
+    protected override void OnInitialized() => Store.DataChanged += Refresh;
+
+    private void Refresh() => _ = InvokeAsync(StateHasChanged);
+
+    private string SuiviDe(IntentionPriere p) => _suivis.TryGetValue(p.Id, out var s) ? s : p.Suivi;
+
+    private async Task Confier()
+    {
+        _erreur = "";
+        if (string.IsNullOrWhiteSpace(_texte)) { _erreur = L.T("Écrivez votre intention de prière."); return; }
+        if (_privee)
+        {
+            // Passe par le serveur : le membre n'a pas à lire les intentions des autres pour ajouter la sienne.
+            _envoi = true;
+            try
+            {
+                var err = await Online.DeposerIntentionPriveeAsync(_texte, _anonyme);
+                if (err != null) { _erreur = err; return; }
+            }
+            finally { _envoi = false; }
+            _miennes = null;
+            State.NotifySuccess(L.T("Votre intention est confiée aux responsables."));
+        }
+        else
+        {
+            var res = Store.PartagerIntention(_texte, _anonyme);
+            if (!res.Success) { _erreur = res.Error; return; }
+            State.NotifySuccess(L.T("Votre intention est partagée avec les membres."));
+        }
+        _texte = "";
+        _anonyme = false;
+    }
+
+    private async Task OuvrirMiennes()
+    {
+        _onglet = "miennes";
+        if (_miennes != null) return;
+        _chargement = true;
+        try { _miennes = await Online.MesIntentionsPriveesAsync(); }
+        finally { _chargement = false; }
+    }
+
+    private void JePrie(IntentionPriere p)
+    {
+        var res = Store.BasculerJePrie(p.Id);
+        if (!res.Success) State.NotifyError(res.Error);
+    }
+
+    private void OuvrirExaucee(IntentionPriere p)
+    {
+        _temoignage = "";
+        _exaucee = p;
+    }
+
+    private void Exaucer(IntentionPriere p, bool exaucee)
+    {
+        _exaucee = null;
+        var res = Store.MarquerExaucee(p.Id, exaucee, _temoignage);
+        if (res.Success) State.NotifySuccess(exaucee ? L.T("Gloire à Dieu ! L'intention est marquée exaucée.") : L.T("L'intention est de nouveau à porter."));
+        else State.NotifyError(res.Error);
+    }
+
+    private void EnregistrerSuivi(IntentionPriere p)
+    {
+        var res = Store.NoterSuiviPriere(p.Id, SuiviDe(p));
+        if (res.Success) { _suivis.Remove(p.Id); State.NotifySuccess(L.T("Suivi enregistré.")); }
+        else State.NotifyError(res.Error);
+    }
+
+    private void Supprimer()
+    {
+        var p = _aSupprimer;
+        _aSupprimer = null;
+        if (p == null) return;
+        var res = Store.SupprimerIntention(p.Id);
+        if (res.Success) State.NotifySuccess(L.T("Intention supprimée."));
+        else State.NotifyError(res.Error);
+    }
+
+    public void Dispose() => Store.DataChanged -= Refresh;
+}

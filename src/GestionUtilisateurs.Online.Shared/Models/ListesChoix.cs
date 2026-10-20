@@ -67,6 +67,7 @@ public static class ListesChoix
     public const string StatutsCotisation = "cotisations.statuts";
     public const string TypesTresorerie = "tresorerie.types";
     public const string StatutsPresence = "presence.statuts";
+    public const string RolesService = "services.roles";
 
     /// <summary>Réglages en cours (branché sur les paramètres de l'application au démarrage).</summary>
     public static Func<Dictionary<string, ListeConfig>?> Source { get; set; } = () => null;
@@ -98,6 +99,8 @@ public static class ListesChoix
             () => Origine(TresorerieTypes.Tous, TresorerieTypes.LabelOrigine, TresorerieTypes.IconOrigine)),
         new(StatutsPresence, "Statuts de présence", "Présence et réunions", false,
             () => Origine(PresenceStatuts.Tous, PresenceStatuts.LabelOrigine, PresenceStatuts.IconOrigine)),
+        new(RolesService, "Tâches des services", "Planning des services", true,
+            () => Origine(Models.RolesService.Tous, Models.RolesService.LabelOrigine, Models.RolesService.IconOrigine)),
     };
 
     public static ListeDefinition? Definition(string id) => Definitions.FirstOrDefault(d => d.Id == id);

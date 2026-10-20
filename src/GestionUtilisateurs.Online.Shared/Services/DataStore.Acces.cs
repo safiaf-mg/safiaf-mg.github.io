@@ -33,6 +33,9 @@ public partial class DataStore
         "situations" => Can(Permissions.SituationsManage),
         "carte" => Can(Permissions.CarteMembreView),
         "journal" => Can(Permissions.JournalMediaUse),
+        // Groupes et planning : chacun voit les siens ; la gestion suit les droits.
+        "groupes" or "services" => !IsBaseAdmin,
+        "prieres" => !IsBaseAdmin && (Can(Permissions.PrieresUse) || Can(Permissions.PrieresManage)),
         "sync" => false,
         _ => true
     };

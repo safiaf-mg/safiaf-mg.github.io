@@ -260,6 +260,26 @@ public partial class DataStore
             if (Meme(e.PersonneConcernee)) { e.PersonneConcernee = nouveau; evtChange = true; }
         }
 
+        // Vie spirituelle : groupes, services et intentions de prière.
+        var groupeChange = false;
+        foreach (var g in _groupes)
+        {
+            groupeChange |= Remplacer(g.Membres);
+            groupeChange |= Remplacer(g.Responsables);
+        }
+        var serviceChange = false;
+        foreach (var a in _services.SelectMany(s => s.Affectations).Where(a => Meme(a.Identifiant)))
+        {
+            a.Identifiant = nouveau;
+            serviceChange = true;
+        }
+        var priereChange = false;
+        foreach (var p in _prieres)
+        {
+            if (Meme(p.Auteur)) { p.Auteur = nouveau; priereChange = true; }
+            priereChange |= Remplacer(p.Prieurs);
+        }
+
         // Famille : les liens de la fiche retirée passent sur la fiche gardée.
         garder.Famille ??= new List<LienFamille>();
         foreach (var l in retirer.Famille ?? new List<LienFamille>())
@@ -286,6 +306,9 @@ public partial class DataStore
         if (msgChange) SaveMessages();
         if (reuChange) SaveReunions();
         if (voteChange) SaveVotes();
+        if (groupeChange) SaveGroupes();
+        if (serviceChange) SaveServices();
+        if (priereChange) SavePrieres();
         if (docChange) SaveDocuments();
         if (evtChange) SaveEvents();
         LogActivity(ActivityTypes.Update, "Fusion de la fiche " + ancien + " dans " + nouveau);

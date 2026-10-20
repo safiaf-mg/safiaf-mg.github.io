@@ -41,6 +41,10 @@ public partial class DataStore
     private const string K_SITUATIONS = "gu2:situations";
     private const string K_VOTES = "gu2:votes";
     private const string K_JOURNAL_MEDIA = "gu2:journal_media";
+    private const string K_GROUPES = "gu2:groupes";
+    private const string K_SERVICES = "gu2:services";
+    private const string K_PRIERES = "gu2:prieres";
+    private const string K_PRIERES_PRIVEES = "gu2:prieres_privees";
 
     public const int SESSION_DURATION_MINUTES = 30;
     public const string DEFAULT_PASSWORD = "motdepasse";
@@ -122,6 +126,10 @@ public partial class DataStore
     private readonly List<Situation> _situations = new();
     private readonly List<Vote> _votes = new();
     private readonly List<MediaItem> _journalMedia = new();
+    private readonly List<Groupe> _groupes = new();
+    private readonly List<ServiceCulte> _services = new();
+    private readonly List<IntentionPriere> _prieres = new();
+    private readonly List<IntentionPriere> _prieresPrivees = new();
     private AppSettings _settings = new();
     private SessionInfo? _session;
     private bool _initialized;
@@ -161,6 +169,10 @@ new ManagedDataSet("archives", "Archives des utilisateurs", "Comptes supprimés 
         new ManagedDataSet("situations", "Famangiana et situations", "Famangiana, visites, accompagnements et suivis, depuis le menu « … »."),
         new ManagedDataSet("votes", "Votes internes", "Votes et décisions internes, depuis le menu « … »."),
         new ManagedDataSet("journal_media", "Journal multimédia", "Photos, vidéos et audios, depuis le menu « … »."),
+        new ManagedDataSet("groupes", "Groupes et ministères", "Groupes, responsables et membres, depuis le menu « … »."),
+        new ManagedDataSet("services", "Planning des services", "Cultes et tâches confiées aux membres, depuis le menu « … »."),
+        new ManagedDataSet("prieres", "Intentions de prière", "Intentions partagées avec les membres, depuis le menu « … »."),
+        new ManagedDataSet("prieres_privees", "Intentions de prière privées", "Intentions confiées aux seuls responsables."),
         new ManagedDataSet("settings", "Paramètres", "Nom, thème, couleur, logo et préférences de l'application.")
     };
 
@@ -171,7 +183,8 @@ new ManagedDataSet("archives", "Archives des utilisateurs", "Comptes supprimés 
 
     public string[] ClientStorageKeys => new[]
     {
-        K_USERS, K_FIELDS, K_ACTIVITY, K_SESSION, K_SETTINGS, K_ARCHIVE, K_EVENTS, K_DOCUMENTS, K_FOLDERS, K_COMMUNITY, K_PERMISSIONS, K_SYNC, K_DEVICE, K_MESSAGES, K_TACHES, K_COTISATIONS, K_TRESORERIE, K_MATERIELS, K_PRETS, K_REUNIONS, K_SITUATIONS, K_VOTES, K_JOURNAL_MEDIA
+        K_USERS, K_FIELDS, K_ACTIVITY, K_SESSION, K_SETTINGS, K_ARCHIVE, K_EVENTS, K_DOCUMENTS, K_FOLDERS, K_COMMUNITY, K_PERMISSIONS, K_SYNC, K_DEVICE, K_MESSAGES, K_TACHES, K_COTISATIONS, K_TRESORERIE, K_MATERIELS, K_PRETS, K_REUNIONS, K_SITUATIONS, K_VOTES, K_JOURNAL_MEDIA,
+        K_GROUPES, K_SERVICES, K_PRIERES, K_PRIERES_PRIVEES
     };
 
     // ---------- Persistance interne ----------
@@ -252,6 +265,7 @@ new ManagedDataSet("archives", "Archives des utilisateurs", "Comptes supprimés 
             }
             _journalMedia.Clear();
             _journalMedia.AddRange(Deserialize<List<MediaItem>>(_storage.Get(K_JOURNAL_MEDIA)) ?? new List<MediaItem>());
+            ChargerVieSpirituelle();
 var usersNormalized = false;
             foreach (var user in _users)
             {
@@ -399,6 +413,10 @@ var usersNormalized = false;
     private void SaveSituations() => _storage.Set(K_SITUATIONS, Serialize(_situations));
     private void SaveVotes() => _storage.Set(K_VOTES, Serialize(_votes));
     private void SaveJournalMedia() => _storage.Set(K_JOURNAL_MEDIA, Serialize(_journalMedia));
+    private void SaveGroupes() => _storage.Set(K_GROUPES, Serialize(_groupes));
+    private void SaveServices() => _storage.Set(K_SERVICES, Serialize(_services));
+    private void SavePrieres() => _storage.Set(K_PRIERES, Serialize(_prieres));
+    private void SavePrieresPrivees() => _storage.Set(K_PRIERES_PRIVEES, Serialize(_prieresPrivees));
 
     public IReadOnlyList<FieldDefinition> Fields => _fields.OrderBy(f => f.Ordre).ThenBy(f => f.Label).ToList();
 
@@ -578,6 +596,10 @@ var usersNormalized = false;
         "situations" => Serialize(_situations),
         "votes" => Serialize(_votes),
         "journal_media" => Serialize(_journalMedia),
+        "groupes" => Serialize(_groupes),
+        "services" => Serialize(_services),
+        "prieres" => Serialize(_prieres),
+        "prieres_privees" => Serialize(_prieresPrivees),
         "settings" => Serialize(_settings),
         _ => ""
     };
@@ -870,6 +892,35 @@ case "settings":
                     _journalMedia.Clear();
                     _journalMedia.AddRange(media);
                     SaveJournalMedia();
+                    break;
+                }
+                case "groupes":
+                {
+                    var groupes = Deserialize<List<Groupe>>(json);
+                    if (groupes == null) return OperationResult.Fail(L.T("Les groupes sont invalides."));
+                    _groupes.Clear();
+                    _groupes.AddRange(groupes);
+                    SaveGroupes();
+                    break;
+                }
+                case "services":
+                {
+                    var services = Deserialize<List<ServiceCulte>>(json);
+                    if (services == null) return OperationResult.Fail(L.T("Le planning des services est invalide."));
+                    _services.Clear();
+                    _services.AddRange(services);
+                    SaveServices();
+                    break;
+                }
+                case "prieres":
+                case "prieres_privees":
+                {
+                    var prieres = Deserialize<List<IntentionPriere>>(json);
+                    if (prieres == null) return OperationResult.Fail(L.T("Les intentions de prière sont invalides."));
+                    var cible = key == "prieres" ? _prieres : _prieresPrivees;
+                    cible.Clear();
+                    cible.AddRange(prieres);
+                    if (key == "prieres") SavePrieres(); else SavePrieresPrivees();
                     break;
                 }
                 default:
@@ -2275,7 +2326,11 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             reunions = _reunions,
             situations = _situations,
             votes = _votes,
-            journalMedia = _journalMedia
+            journalMedia = _journalMedia,
+            groupes = _groupes,
+            services = _services,
+            prieres = _prieres,
+            prieresPrivees = _prieresPrivees
         });
     }
 
@@ -2473,6 +2528,10 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             "situations" => K_SITUATIONS,
             "votes" => K_VOTES,
             "journal_media" => K_JOURNAL_MEDIA,
+            "groupes" => K_GROUPES,
+            "services" => K_SERVICES,
+            "prieres" => K_PRIERES,
+            "prieres_privees" => K_PRIERES_PRIVEES,
             "settings" => K_SETTINGS,
             _ => ""
         };
@@ -2621,7 +2680,9 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             Models.Permissions.ExportData, Models.Permissions.ImportData, Models.Permissions.RolesManage,
             Models.Permissions.MessagerieUse, Models.Permissions.RappelsUse, Models.Permissions.CarteMembreView,
             Models.Permissions.VotesManage, Models.Permissions.FinancesManage, Models.Permissions.MaterielManage,
-            Models.Permissions.PresenceManage, Models.Permissions.SituationsManage
+            Models.Permissions.PresenceManage, Models.Permissions.SituationsManage,
+            Models.Permissions.GroupesManage, Models.Permissions.ServicesManage,
+            Models.Permissions.PrieresUse, Models.Permissions.PrieresManage
         };
         var manager = new[]
         {
@@ -2632,14 +2693,17 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             Models.Permissions.ExportData, Models.Permissions.ImportData,
             Models.Permissions.MessagerieUse, Models.Permissions.RappelsUse, Models.Permissions.CarteMembreView,
             Models.Permissions.VotesManage, Models.Permissions.FinancesManage, Models.Permissions.MaterielManage,
-            Models.Permissions.PresenceManage, Models.Permissions.SituationsManage
+            Models.Permissions.PresenceManage, Models.Permissions.SituationsManage,
+            Models.Permissions.GroupesManage, Models.Permissions.ServicesManage,
+            Models.Permissions.PrieresUse, Models.Permissions.PrieresManage
         };
         var user = new[]
         {
             Models.Permissions.CalendarUse,
             Models.Permissions.TachesUse, Models.Permissions.DocumentsUse, Models.Permissions.CommunityUse,
             Models.Permissions.JournalMediaUse, Models.Permissions.SettingsManage,
-            Models.Permissions.MessagerieUse, Models.Permissions.RappelsUse, Models.Permissions.CarteMembreView
+            Models.Permissions.MessagerieUse, Models.Permissions.RappelsUse, Models.Permissions.CarteMembreView,
+            Models.Permissions.PrieresUse
         };
         return new List<RolePermissionSet>
         {
@@ -5258,6 +5322,11 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
 
         _journalMedia.Clear();
 
+        _groupes.Clear();
+        _services.Clear();
+        _prieres.Clear();
+        _prieresPrivees.Clear();
+
         _sync = new SyncSnapshot { DeviceId = DeviceId };
 
         _session = null;
@@ -5281,6 +5350,10 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         SaveSituations();
         SaveVotes();
         SaveJournalMedia();
+        SaveGroupes();
+        SaveServices();
+        SavePrieres();
+        SavePrieresPrivees();
         SaveSyncSnapshot();
         SaveSettings();
         SaveSession();

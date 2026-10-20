@@ -143,6 +143,10 @@ script peut être relancé sans danger.
   script, la case « Je n'ai pas d'adresse e-mail » affiche un message
   « pas encore activée ». Pour Google, voir aussi
   [Connexion avec Google](#connexion-avec-google-facultatif).
+- `supabase/migrations/0006_vie_spirituelle.sql` (20 octobre 2026) :
+  planning des services, intentions de prière et groupes et ministères. Le
+  serveur garde les intentions confiées aux seuls responsables hors de portée
+  des membres. Sans ce script, ces trois pages ne peuvent rien enregistrer.
 
 ### Installer le site sur un téléphone
 

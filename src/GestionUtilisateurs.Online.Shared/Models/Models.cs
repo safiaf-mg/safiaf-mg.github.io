@@ -407,6 +407,9 @@ public static class AppMenus
         new MenuDef("messagerie", "Messagerie", "✉"),
         new MenuDef("taches", "Tâches et suivi", "☑"),
         new MenuDef("rappels", "Rappels intelligents", "⏰"),
+        new MenuDef("services", "Planning des services", "📅"),
+        new MenuDef("prieres", "Intentions de prière", "🙏"),
+        new MenuDef("groupes", "Groupes et ministères", "⛪"),
         new MenuDef("votes", "Votes et décisions", "🗳"),
         new MenuDef("reunions", "Présence et réunions", "👥"),
         new MenuDef("documents", "Gestion documentaire", "📄"),
@@ -633,6 +636,8 @@ public class Reunion
     /// <summary>Présence par identifiant : present / absent / excuse.</summary>
     public Dictionary<string, string> Presences { get; set; } = new();
     public string CompteRendu { get; set; } = "";
+    /// <summary>Groupe ou ministère dont c'est la rencontre (vide : réunion générale).</summary>
+    public string GroupeId { get; set; } = "";
     public string DateCreation { get; set; } = "";
     public string CreatedBy { get; set; } = "";
 }
@@ -926,6 +931,11 @@ public static class Permissions
     public const string CarteMembreView = "carte_membre.view";
     public const string VotesManage = "votes.manage";
     public const string JournalMediaUse = "journal_media.use";
+    // Vie spirituelle
+    public const string GroupesManage = "groupes.manage";
+    public const string ServicesManage = "services.manage";
+    public const string PrieresUse = "prieres.use";
+    public const string PrieresManage = "prieres.manage";
 
     public sealed record Definition(string Key, string Groupe, string Label)
     {
@@ -962,6 +972,10 @@ public static class Permissions
         new Definition(MaterielManage, "Gestion", "Gérer le matériel"),
         new Definition(PresenceManage, "Gestion", "Gérer présence et réunions"),
         new Definition(SituationsManage, "Gestion", "Suivre les famangiana et situations particulières"),
+        new Definition(GroupesManage, "Vie spirituelle", "Gérer les groupes et ministères"),
+        new Definition(ServicesManage, "Vie spirituelle", "Préparer le planning des services"),
+        new Definition(PrieresUse, "Vie spirituelle", "Confier et suivre les intentions de prière"),
+        new Definition(PrieresManage, "Vie spirituelle", "Lire les intentions de prière privées"),
     };
 }
 
@@ -1130,6 +1144,9 @@ public static class ActivityTypes
     public const string VoteChange = "vote_change";
     public const string VoteCast = "vote_cast";
     public const string MediaChange = "media_change";
+    public const string GroupeChange = "groupe_change";
+    public const string ServiceChange = "service_change";
+    public const string PriereChange = "priere_change";
 
     public static string Label(string type) => type switch
     {
@@ -1174,6 +1191,9 @@ public static class ActivityTypes
         VoteChange => L.T("Vote interne"),
         VoteCast => L.T("Vote exprimé"),
         MediaChange => L.T("Journal multimédia"),
+        GroupeChange => L.T("Groupes et ministères"),
+        ServiceChange => L.T("Planning des services"),
+        PriereChange => L.T("Intentions de prière"),
         _ => type
     };
 }

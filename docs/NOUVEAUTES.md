@@ -4,6 +4,24 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 20 octobre 2026 (vie spirituelle)
+
+- **Planning des services** (menu « … ») : qui préside, prêche, lit, chante
+  ou accueille à chaque culte. Chacun voit « Mes prochains services » et
+  répond « Je confirme » ou « Je ne peux pas » (un remplaçant est alors
+  demandé aux responsables). « Copier à la semaine suivante » reprend le même
+  culte. Les tâches se règlent dans Paramètres › Listes de choix.
+- **Intentions de prière** : une intention se partage avec les membres
+  (« Je prie aussi ») ou se confie seulement aux responsables. Elle peut être
+  anonyme, et marquée « Exaucée » avec un témoignage.
+- **Groupes et ministères** : chorale, jeunesse, école du dimanche…, avec
+  responsables et membres, « Écrire au groupe », « Nouvelle rencontre » et la
+  présence moyenne.
+- Quatre nouveaux droits dans « Rôles et permissions », groupe « Vie
+  spirituelle ». Par défaut, les membres confient des intentions ; les
+  gestionnaires préparent le planning, gèrent les groupes et lisent les
+  intentions privées.
+
 ## 20 octobre 2026 (identifiant et matricule au format)
 
 - Fiche d'un membre : l'« Identifiant » est un champ par défaut, dans la

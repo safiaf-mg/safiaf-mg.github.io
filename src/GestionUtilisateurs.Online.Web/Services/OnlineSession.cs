@@ -146,6 +146,34 @@ public sealed class OnlineSession : IDisposable
         return null;
     }
 
+    /// <summary>
+    /// Confie une intention de prière privée : le serveur l'ajoute sans que le
+    /// membre puisse lire celles des autres. Renvoie un message d'erreur, ou null.
+    /// </summary>
+    public async Task<string?> DeposerIntentionPriveeAsync(string texte, bool anonyme)
+    {
+        var res = await _api.RpcAsync<object>("deposer_intention_privee", new { p_texte = texte.Trim(), p_anonyme = anonyme });
+        if (!res.Ok)
+        {
+            var m = res.Error ?? "";
+            if (m.Contains("trop_de_demandes", StringComparison.Ordinal))
+                return L.T("Vous avez déjà confié plusieurs intentions privées cette heure-ci. Réessayez plus tard.");
+            if (m.Contains("deposer_intention_privee", StringComparison.Ordinal) || m.Contains("schema cache", StringComparison.OrdinalIgnoreCase))
+                return L.T("Les intentions privées ne sont pas encore activées. Demandez à l'administrateur d'exécuter le script 0006.");
+            return string.IsNullOrEmpty(m) ? L.T("Envoi impossible.") : L.T(m);
+        }
+        // Les responsables voient tout de suite la nouvelle intention.
+        try { if (await _storage.RefreshAsync()) ReloadStore(); } catch { }
+        return null;
+    }
+
+    /// <summary>Les intentions privées confiées par le membre connecté (null si indisponible).</summary>
+    public async Task<List<IntentionPriere>?> MesIntentionsPriveesAsync()
+    {
+        var res = await _api.RpcAsync<List<IntentionPriere>>("mes_intentions_privees");
+        return res.Ok ? res.Data ?? new List<IntentionPriere>() : null;
+    }
+
     /// <summary>Le membre en attente complète ou corrige son prénom, son nom et son téléphone.</summary>
     public async Task<string?> CompleteProfileAsync(string prenom, string nom, string telephone)
     {

@@ -1,0 +1,316 @@
+@implements IDisposable
+@inject DataStore Store
+@inject AppState State
+
+<div class="page-head">
+    <p>@L.T("Groupes et ministères de la communauté : responsables, membres, rencontres et présence.")</p>
+</div>
+
+<div class="search-box cal-search">
+    <span class="search-icon" aria-hidden="true">&#128269;</span>
+    <input type="search" placeholder="@L.T("Rechercher un groupe (nom, responsable, membre)…")" aria-label="@L.T("Rechercher un groupe")"
+           value="@_search" @oninput="e => _search = e.Value?.ToString() ?? string.Empty" />
+</div>
+
+<div class="chips-row" role="tablist" aria-label="@L.T("Filtrer les groupes")">
+    <button type="button" class="chip @(_mesGroupes ? "active" : "")" @onclick="() => _mesGroupes = true">@L.F("Mes groupes ({0})", Store.GroupesDe(Me).Count)</button>
+    <button type="button" class="chip @(!_mesGroupes ? "active" : "")" @onclick="() => _mesGroupes = false">@L.F("Tous ({0})", Store.Groupes.Count)</button>
+</div>
+
+@if (Filtered.Count == 0)
+{
+    <EmptyState Icon="⛪" Title="@(_mesGroupes ? L.T("Vous n'êtes dans aucun groupe") : L.T("Aucun groupe"))"
+                Message="@(Store.Can(Permissions.GroupesManage) ? L.T("Créez les groupes de la communauté avec le bouton +.") : L.T("Les responsables ajoutent les groupes et leurs membres."))" />
+}
+else
+{
+    @foreach (var groupe in Filtered)
+    {
+        var g = groupe;
+        var ouvert = _ouverts.Contains(g.Id);
+        var participants = DataStore.ParticipantsGroupe(g);
+        <div class="card groupe-card" style="margin-bottom:12px">
+            <div class="inline-actions" style="justify-content:space-between" role="button" tabindex="0"
+                 @onclick="() => Basculer(g.Id)" @onkeydown="k => OnKey(k, g.Id)">
+                <div>
+                    <h3 style="margin:0">@g.Nom</h3>
+                    <div class="text-muted" style="font-size:12px;margin-top:2px">
+                        @L.F("{0} membre(s)", participants.Count)@(string.IsNullOrWhiteSpace(g.Rencontre) ? "" : " · 🕒 " + g.Rencontre)
+                    </div>
+                </div>
+                @if (participants.Contains(Me, StringComparer.OrdinalIgnoreCase))
+                {
+                    <Badge Text="@(g.Responsables.Contains(Me, StringComparer.OrdinalIgnoreCase) ? L.T("Responsable") : L.T("Membre"))" Kind="active" />
+                }
+            </div>
+            @if (!string.IsNullOrWhiteSpace(g.Description))
+            {
+                <p class="muted" style="margin:8px 0 0">@g.Description</p>
+            }
+            @if (ouvert)
+            {
+                <div class="storage-line" style="margin-top:10px"><span>@L.T("Responsables")</span><strong>@Noms(g.Responsables)</strong></div>
+                <div class="form-group" style="margin-top:8px">
+                    <label>@L.T("Membres")</label>
+                    @if (g.Membres.Count == 0)
+                    {
+                        <span class="text-muted">@L.T("Aucun membre pour le moment.")</span>
+                    }
+                    else
+                    {
+                        <div class="person-chips">
+                            @foreach (var m in g.Membres)
+                            {
+                                <span class="person-chip"><span>@Nom(m)</span></span>
+                            }
+                        </div>
+                    }
+                </div>
+                var reunions = Store.ReunionsDuGroupe(g.Id);
+                var taux = Store.TauxPresenceGroupe(g.Id);
+                <div class="storage-line"><span>@L.T("Rencontres enregistrées")</span><strong>@reunions.Count</strong></div>
+                @if (taux is { } t)
+                {
+                    <div class="storage-line"><span>@L.T("Présence moyenne")</span><strong>@t.ToString("0", System.Globalization.CultureInfo.InvariantCulture) %</strong></div>
+                }
+                @if (reunions.Count > 0)
+                {
+                    <div class="storage-line"><span>@L.T("Dernière rencontre")</span><strong>@DataStore.FormatDateCourte(reunions[0].Date)</strong></div>
+                }
+                <div class="form-actions" style="margin-top:10px;flex-wrap:wrap">
+                    @if (Store.Can(Permissions.MessagerieUse) && (participants.Contains(Me, StringComparer.OrdinalIgnoreCase) || Store.Can(Permissions.GroupesManage)))
+                    {
+                        <button class="btn btn-secondary btn-sm" @onclick="() => OuvrirMessage(g)">✉ @L.T("Écrire au groupe")</button>
+                    }
+                    @if (Store.Can(Permissions.PresenceManage))
+                    {
+                        <button class="btn btn-secondary btn-sm" @onclick="() => OuvrirRencontre(g)">📋 @L.T("Nouvelle rencontre")</button>
+                    }
+                    @if (Store.Can(Permissions.GroupesManage))
+                    {
+                        <button class="btn btn-secondary btn-sm" @onclick="() => OuvrirEdition(g)">✎ @L.T("Modifier")</button>
+                        <button class="btn btn-danger-outline btn-sm" aria-label="@L.T("Supprimer")" @onclick="() => _aSupprimer = g">🗑</button>
+                    }
+                </div>
+                @if (Store.Can(Permissions.PresenceManage) && reunions.Count > 0)
+                {
+                    <span class="field-hint">@L.T("La feuille de présence de chaque rencontre se remplit dans « Présence et réunions ».")</span>
+                }
+            }
+        </div>
+    }
+}
+
+@if (Store.Can(Permissions.GroupesManage))
+{
+    <button class="fab" aria-label="@L.T("Ajouter un groupe")" @onclick="OuvrirAjout">+</button>
+}
+
+<Modal Title="@(_editId == null ? L.T("Nouveau groupe") : L.T("Modifier le groupe"))" Show="_editeur" OnClose="() => _editeur = false">
+    <ChildContent>
+        <div class="form-group">
+            <label for="gr-nom">@L.T("Nom du groupe") <span class="required">*</span></label>
+            <input id="gr-nom" type="text" placeholder="@L.T("Ex : Chorale, Jeunesse, Mpiandry")" value="@_nom" @oninput="e => _nom = e.Value?.ToString() ?? string.Empty" />
+        </div>
+        <div class="form-group">
+            <label for="gr-desc">@L.T("Description")</label>
+            <textarea id="gr-desc" rows="2" value="@_desc" @oninput="e => _desc = e.Value?.ToString() ?? string.Empty"></textarea>
+        </div>
+        <div class="form-group">
+            <label for="gr-rencontre">@L.T("Jour de rencontre")</label>
+            <input id="gr-rencontre" type="text" placeholder="@L.T("Ex : Samedi 15 h")" value="@_rencontre" @oninput="e => _rencontre = e.Value?.ToString() ?? string.Empty" />
+        </div>
+        <div class="form-group">
+            <label>@L.T("Responsables")</label>
+            <PersonChips Liste="_responsables" />
+            <MemberPicker Value="" ValueChanged="@((string v) => Ajouter(_responsables, v))" Placeholder="@L.T("Ajouter un responsable…")" />
+        </div>
+        <div class="form-group">
+            <label>@L.T("Membres")</label>
+            <PersonChips Liste="_membres" />
+            <MemberPicker Value="" ValueChanged="@((string v) => Ajouter(_membres, v))" Placeholder="@L.T("Ajouter un membre…")" />
+        </div>
+        <span class="form-error">@_erreur</span>
+    </ChildContent>
+    <FooterContent>
+        <button class="btn btn-secondary" @onclick="() => _editeur = false">@L.T("Annuler")</button>
+        <button class="btn btn-primary" @onclick="Enregistrer">@L.T("Enregistrer")</button>
+    </FooterContent>
+</Modal>
+
+<Modal Title="@L.F("Message à « {0} »", _cible?.Nom ?? "")" Show="_message" OnClose="() => _message = false">
+    <ChildContent>
+        <div class="form-group">
+            <label for="gr-msg">@L.F("Envoyé aux {0} autres membres du groupe par la messagerie.", _cible == null ? 0 : DataStore.ParticipantsGroupe(_cible).Count(x => !x.Equals(Me, StringComparison.OrdinalIgnoreCase)))</label>
+            <textarea id="gr-msg" rows="4" value="@_texte" @oninput="e => _texte = e.Value?.ToString() ?? string.Empty"></textarea>
+        </div>
+        <span class="form-error">@_erreur</span>
+    </ChildContent>
+    <FooterContent>
+        <button class="btn btn-secondary" @onclick="() => _message = false">@L.T("Annuler")</button>
+        <button class="btn btn-primary" @onclick="Envoyer">✉ @L.T("Envoyer")</button>
+    </FooterContent>
+</Modal>
+
+<Modal Title="@L.F("Rencontre : {0}", _cible?.Nom ?? "")" Show="_rencontreModal" OnClose="() => _rencontreModal = false">
+    <ChildContent>
+        <div class="form-group">
+            <label for="gr-date">@L.T("Date *")</label>
+            <DateInput Id="gr-date" Value="@_date" ValueChanged="@(v => _date = v)" />
+        </div>
+        <div class="form-group">
+            <label for="gr-heure">@L.T("Heure")</label>
+            <input id="gr-heure" type="time" value="@_heure" @oninput="e => _heure = e.Value?.ToString() ?? string.Empty" />
+        </div>
+        <div class="form-group">
+            <label for="gr-lieu">@L.T("Lieu")</label>
+            <input id="gr-lieu" type="text" value="@_lieu" @oninput="e => _lieu = e.Value?.ToString() ?? string.Empty" />
+        </div>
+        <span class="field-hint">@L.T("Les responsables et les membres du groupe sont ajoutés comme participants. La présence se note ensuite dans « Présence et réunions ».")</span>
+        <span class="form-error">@_erreur</span>
+    </ChildContent>
+    <FooterContent>
+        <button class="btn btn-secondary" @onclick="() => _rencontreModal = false">@L.T("Annuler")</button>
+        <button class="btn btn-primary" @onclick="CreerRencontre">@L.T("Créer la rencontre")</button>
+    </FooterContent>
+</Modal>
+
+<ConfirmDialog Show="_aSupprimer != null" Title="@L.T("Supprimer le groupe")"
+               Message="@L.F("Supprimer le groupe « {0} » ? Ses rencontres restent dans « Présence et réunions ».", _aSupprimer?.Nom ?? "")"
+               ConfirmLabel="@L.T("Supprimer")" Danger="true" OnConfirm="Supprimer" OnCancel="() => _aSupprimer = null" />
+
+@code {
+    private string _search = "";
+    private bool _mesGroupes = true;
+    private readonly HashSet<string> _ouverts = new();
+
+    private bool _editeur;
+    private string? _editId;
+    private string _nom = "", _desc = "", _rencontre = "";
+    private List<string> _responsables = new(), _membres = new();
+    private string _erreur = "";
+
+    private Groupe? _cible;
+    private bool _message;
+    private string _texte = "";
+    private bool _rencontreModal;
+    private string _date = "", _heure = "", _lieu = "";
+    private Groupe? _aSupprimer;
+
+    private string Me => Store.GetCurrentUser()?.Identifiant ?? "";
+
+    protected override void OnInitialized()
+    {
+        Store.DataChanged += Refresh;
+        // Sans groupe à soi, on montre directement tous les groupes.
+        if (Store.GroupesDe(Me).Count == 0) _mesGroupes = false;
+    }
+
+    private void Refresh() => _ = InvokeAsync(StateHasChanged);
+
+    private IReadOnlyList<Groupe> Filtered => (_mesGroupes ? Store.GroupesDe(Me) : Store.Groupes)
+        .Where(g =>
+        {
+            var q = _search.Trim();
+            if (q.Length == 0) return true;
+            var texte = g.Nom + " " + g.Description + " " + string.Join(" ", DataStore.ParticipantsGroupe(g).Select(Nom));
+            return texte.Contains(q, StringComparison.CurrentCultureIgnoreCase);
+        }).ToList();
+
+    private string Nom(string identifiant) => Store.FindUserByIdentifier(identifiant)?.NomComplet ?? identifiant;
+
+    private string Noms(IEnumerable<string> liste)
+    {
+        var noms = liste.Select(Nom).ToList();
+        return noms.Count == 0 ? "—" : string.Join(", ", noms);
+    }
+
+    private void Basculer(string id)
+    {
+        if (!_ouverts.Add(id)) _ouverts.Remove(id);
+    }
+
+    private void OnKey(KeyboardEventArgs k, string id)
+    {
+        if (k.Key is "Enter" or " ") Basculer(id);
+    }
+
+    private static void Ajouter(List<string> liste, string identifiant)
+    {
+        if (!string.IsNullOrWhiteSpace(identifiant) && !liste.Contains(identifiant, StringComparer.OrdinalIgnoreCase))
+            liste.Add(identifiant);
+    }
+
+    private void OuvrirAjout()
+    {
+        _editId = null;
+        _nom = _desc = _rencontre = "";
+        _responsables = new List<string>();
+        _membres = new List<string>();
+        _erreur = "";
+        _editeur = true;
+    }
+
+    private void OuvrirEdition(Groupe g)
+    {
+        _editId = g.Id;
+        _nom = g.Nom; _desc = g.Description; _rencontre = g.Rencontre;
+        _responsables = g.Responsables.ToList();
+        _membres = g.Membres.ToList();
+        _erreur = "";
+        _editeur = true;
+    }
+
+    private void Enregistrer()
+    {
+        var draft = new Groupe { Nom = _nom, Description = _desc, Rencontre = _rencontre, Responsables = _responsables, Membres = _membres };
+        var res = _editId == null ? Store.AjouterGroupe(draft) : Store.ModifierGroupe(_editId, draft);
+        if (!res.Success) { _erreur = res.Error; return; }
+        State.NotifySuccess(_editId == null ? L.T("Groupe créé.") : L.T("Groupe enregistré."));
+        _editeur = false;
+    }
+
+    private void OuvrirMessage(Groupe g)
+    {
+        _cible = g; _texte = ""; _erreur = "";
+        _message = true;
+    }
+
+    private void Envoyer()
+    {
+        if (_cible == null) return;
+        var res = Store.EcrireAuGroupe(_cible.Id, _texte);
+        if (!res.Success) { _erreur = res.Error; return; }
+        State.NotifySuccess(L.T("Message envoyé au groupe."));
+        _message = false;
+    }
+
+    private void OuvrirRencontre(Groupe g)
+    {
+        _cible = g; _erreur = "";
+        _date = DateTime.Today.ToString("yyyy-MM-dd");
+        _heure = ""; _lieu = "";
+        _rencontreModal = true;
+    }
+
+    private void CreerRencontre()
+    {
+        if (_cible == null) return;
+        var res = Store.NouvelleReunionGroupe(_cible.Id, DataStore.ToYmd(_date), _heure, _lieu);
+        if (!res.Success) { _erreur = res.Error; return; }
+        State.NotifySuccess(L.T("Rencontre créée dans « Présence et réunions »."));
+        _rencontreModal = false;
+    }
+
+    private void Supprimer()
+    {
+        var g = _aSupprimer;
+        _aSupprimer = null;
+        if (g == null) return;
+        var res = Store.SupprimerGroupe(g.Id);
+        if (res.Success) State.NotifySuccess(L.T("Groupe supprimé."));
+        else State.NotifyError(res.Error);
+    }
+
+    public void Dispose() => Store.DataChanged -= Refresh;
+}

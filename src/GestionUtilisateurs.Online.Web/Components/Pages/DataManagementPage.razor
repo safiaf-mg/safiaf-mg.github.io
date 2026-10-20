@@ -427,6 +427,18 @@ else
                 {
                     <button class="btn btn-secondary" @onclick='() => State.Navigate("situations")'>@L.T("🤝 Ouvrir les situations")</button>
                 }
+                else if (_selectedKey == "groupes")
+                {
+                    <button class="btn btn-secondary" @onclick='() => State.Navigate("groupes")'>@L.T("⛪ Ouvrir les groupes")</button>
+                }
+                else if (_selectedKey == "services")
+                {
+                    <button class="btn btn-secondary" @onclick='() => State.Navigate("services")'>@L.T("📅 Ouvrir le planning")</button>
+                }
+                else if (_selectedKey is "prieres" or "prieres_privees")
+                {
+                    <button class="btn btn-secondary" @onclick='() => State.Navigate("prieres")'>@L.T("🙏 Ouvrir les intentions")</button>
+                }
                 else if (_selectedKey == "votes")
                 {
                     <button class="btn btn-secondary" @onclick='() => State.Navigate("votes")'>@L.T("🗳 Ouvrir les votes")</button>
