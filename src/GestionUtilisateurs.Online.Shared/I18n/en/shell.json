@@ -283,5 +283,20 @@
   "Voir l'application en tant que": "View the app as",
   "Quitter l'aperçu": "Exit preview",
   "Aperçu en tant que {0}": "Preview as {0}",
-  "Vous voyez les menus et les boutons de ce rôle. Ce que vous faites pendant l'aperçu est réellement enregistré.": "You see this role's menus and buttons. What you do during the preview is really saved."
+  "Vous voyez les menus et les boutons de ce rôle. Ce que vous faites pendant l'aperçu est réellement enregistré.": "You see this role's menus and buttons. What you do during the preview is really saved.",
+  "Cette fonction n'est pas encore activée. Donnez vos informations directement à l'administrateur.": "This feature is not enabled yet. Give your details directly to the administrator.",
+  "Complétez vos informations : elles aident l'administrateur à vous reconnaître.": "Complete your details: they help the administrator recognise you.",
+  "Connexion avec Google annulée.": "Google sign-in cancelled.",
+  "Continuer avec Google": "Continue with Google",
+  "Corriger mes informations": "Correct my details",
+  "Enregistrer mes informations": "Save my details",
+  "Je n'ai pas d'adresse e-mail": "I don't have an email address",
+  "L'inscription sans e-mail n'est pas encore activée. Demandez à l'administrateur, ou inscrivez-vous avec une adresse e-mail.": "Signing up without an email is not enabled yet. Ask the administrator, or sign up with an email address.",
+  "La connexion avec Google a échoué : {0}": "Google sign-in failed: {0}",
+  "Saisissez votre identifiant ou l'adresse e-mail de votre compte. Votre demande sera transmise à l'administrateur, qui vous donnera un mot de passe provisoire.": "Enter your username or your account's email address. Your request will be sent to the administrator, who will give you a temporary password.",
+  "Sans e-mail, le numéro de téléphone est obligatoire.": "Without an email, a phone number is required.",
+  "Sans e-mail, vous vous connecterez avec l'identifiant que l'administrateur vous donnera à la validation de votre compte.": "Without an email, you will sign in with the username the administrator gives you when your account is approved.",
+  "Trop d'inscriptions sans e-mail en ce moment. Réessayez dans une heure.": "Too many sign-ups without an email right now. Try again in an hour.",
+  "Votre demande est enregistrée. Après la validation par l'administrateur, connectez-vous avec l'identifiant qu'il vous donnera.": "Your request has been recorded. Once the administrator approves it, sign in with the username they give you.",
+  "ou": "or"
 }

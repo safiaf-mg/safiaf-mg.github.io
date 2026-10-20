@@ -4,6 +4,20 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 20 octobre 2026 (inscription sans e-mail et avec Google)
+
+- Inscription sans adresse e-mail : cochez « Je n'ai pas d'adresse e-mail »,
+  donnez votre téléphone. Après la validation, l'administrateur vous donne
+  votre identifiant pour vous connecter. Demande l'exécution du script
+  `0005` (voir le guide de mise en ligne).
+- « Mot de passe oublié ? » accepte aussi l'identifiant.
+- L'adresse e-mail saisie à l'inscription doit avoir une forme valide
+  (nom@domaine.extension).
+- « Continuer avec Google » à la connexion et à l'inscription, dès que
+  Google est activé dans Supabase (guide de mise en ligne).
+- Un compte en attente peut compléter ou corriger son prénom, son nom et son
+  téléphone.
+
 ## 18 octobre 2026 (famadihana retiré)
 
 - Le type « Famadihana » est retiré des types de famangiana et situations,

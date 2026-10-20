@@ -136,6 +136,13 @@ script peut être relancé sans danger.
   l'e-mail. Le serveur ne révèle l'e-mail d'un compte que si le mot de passe
   est juste, et bloque un identifiant 15 minutes après 5 essais faux. Sans ce
   script, l'écran de connexion demande d'utiliser l'e-mail.
+- `supabase/migrations/0005_inscription_sans_email_et_google.sql` (20 octobre
+  2026) : inscription sans adresse e-mail (étudiants, membres sans e-mail),
+  « Mot de passe oublié » avec l'identifiant, prénom et nom repris du compte
+  Google, et correction de ses informations par le membre en attente. Sans ce
+  script, la case « Je n'ai pas d'adresse e-mail » affiche un message
+  « pas encore activée ». Pour Google, voir aussi
+  [Connexion avec Google](#connexion-avec-google-facultatif).
 
 ### Installer le site sur un téléphone
 
@@ -178,6 +185,60 @@ les fichiers exportés hors du téléphone.
    - À la connexion suivante, l'application oblige le membre à choisir son
      propre mot de passe.
    - **Nouveau mot de passe** reste disponible pour tout compte actif.
+6. Membre sans adresse e-mail (script `0005_inscription_sans_email_et_google.sql`) :
+   - À l'inscription, il coche **Je n'ai pas d'adresse e-mail** ; son
+     téléphone devient obligatoire.
+   - Sa demande arrive en attente comme les autres, avec la mention
+     « Sans e-mail ».
+   - À la validation, l'application affiche son **identifiant** (par exemple
+     « fara ») : transmettez-le-lui. Il se connecte ensuite avec cet
+     identifiant et son mot de passe, sur n'importe quel appareil.
+   - S'il oublie son mot de passe, il saisit son identifiant dans
+     **Mot de passe oublié ?**.
+
+## Connexion avec Google (facultatif)
+
+Le bouton **Continuer avec Google** permet de s'inscrire et de se connecter
+avec un compte Gmail, sans créer de mot de passe. C'est gratuit (Google et
+Supabase), sans carte bancaire. Le bouton reste caché tant que Google n'est
+pas activé dans Supabase. Les comptes Google arrivent **en attente** comme les
+autres : l'administrateur les valide dans **Comptes en ligne**.
+
+1. Dans Supabase, ouvrez **Authentication > Sign In / Providers > Google** et
+   copiez l'adresse **Callback URL (for OAuth)**
+   (`https://xxxx.supabase.co/auth/v1/callback`). Ne fermez pas cette page.
+2. Ouvrez <https://console.cloud.google.com> avec un compte Google et créez
+   un projet (par exemple « SAFIAF »).
+3. Menu **Google Auth Platform** (ou *API et services > Écran de
+   consentement OAuth*) :
+   - **Branding** : nom de l'application (SAFIAF), e-mail d'assistance, logo
+     facultatif ;
+   - **Audience** : *External* (Externe), puis **Publish app** (Publier
+     l'application). Sans cette publication, seuls les comptes ajoutés comme
+     testeurs peuvent se connecter. Les informations demandées (nom, e-mail)
+     ne demandent pas de vérification par Google.
+4. **Clients > Create client** (Créer un client) :
+   - type **Web application** (Application Web) ;
+   - **Authorized JavaScript origins** : `https://safiaf-mg.github.io` ;
+   - **Authorized redirect URIs** : l'adresse copiée à l'étape 1.
+
+   Google affiche alors un **Client ID** et un **Client secret**.
+5. De retour dans Supabase (**Google**, étape 1) : activez **Enable Sign in
+   with Google**, collez le **Client ID** et le **Client secret**, puis
+   **Save**.
+6. **Authentication > URL Configuration** :
+   - **Site URL** : `https://safiaf-mg.github.io` ;
+   - **Redirect URLs > Add URL** : `https://safiaf-mg.github.io/**`.
+7. Rechargez le site : le bouton **Continuer avec Google** apparaît sous
+   **Se connecter** et sous **Créer mon compte**.
+
+> Le **Client secret** reste dans Supabase : ne le mettez ni dans le code, ni
+> dans GitHub, ni dans un message.
+
+Un membre qui a déjà un compte avec la même adresse Gmail retrouve son compte
+en passant par Google. Après une inscription avec Google, l'écran d'attente
+lui demande son téléphone et lui permet de corriger son prénom et son nom
+(script 0005).
 
 ---
 

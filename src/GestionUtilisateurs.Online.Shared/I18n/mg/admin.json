@@ -509,5 +509,8 @@
   "On ne peut pas retirer de choix de cette liste.": "Tsy azo esorina ny safidy ao amin'ity lisitra ity.",
   "Vide : même texte qu'en français": "Foana: soratra mitovy amin'ny frantsay",
   "Vide : « {0} »": "Foana: « {0} »",
-  "« {0} » est de nouveau dans la liste.": "Tafaverina ao amin'ny lisitra ny « {0} »."
+  "« {0} » est de nouveau dans la liste.": "Tafaverina ao amin'ny lisitra ny « {0} ».",
+  "Sans e-mail": "Tsy misy mailaka",
+  "Sans e-mail, identifiant : {0}": "Tsy misy mailaka, anarana fidirana : {0}",
+  "{0} peut maintenant se connecter ({1}). Sans e-mail : donnez-lui son identifiant « {2} ».": "Afaka miditra izao i {0} ({1}). Tsy misy mailaka : omeo azy ny anarana fidirany “{2}”."
 }

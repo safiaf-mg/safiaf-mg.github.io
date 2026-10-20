@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.JSInterop;
+using GestionUtilisateurs.Shared.Models;
 using GestionUtilisateurs.Shared.Services;
 
 namespace GestionUtilisateurs.Online.Web.Services;
@@ -46,6 +47,9 @@ public sealed class OnlineProfile
     [JsonPropertyName("mdp_provisoire")] public bool MdpProvisoire { get; set; }
 
     public string NomComplet => (Nom.ToUpperInvariant() + " " + Prenom).Trim();
+    /// <summary>Compte créé sans adresse e-mail : l'adresse technique n'est jamais affichée.</summary>
+    public bool EstSansEmail => SansEmail.EstTechnique(Email);
+    public string EmailAffiche => EstSansEmail ? L.T("Sans e-mail") : Email;
     public bool IsActive => Statut == OnlineStatuts.Actif;
 }
 
@@ -133,6 +137,23 @@ public class OnlineApi
 
     public Task<OnlineResult> SignUpAsync(string email, string password, string prenom, string nom, string telephone)
         => _js.InvokeAsync<OnlineResult>("guOnline.signUp", email.Trim(), password, prenom.Trim(), nom.Trim(), telephone.Trim()).AsTask();
+
+    /// <summary>Connexion avec Google : la page part vers Google puis revient sur le site.</summary>
+    public Task<OnlineResult> SignInWithGoogleAsync() => _js.InvokeAsync<OnlineResult>("guOnline.signInGoogle").AsTask();
+
+    /// <summary>Le fournisseur Google est-il activé dans Supabase ?</summary>
+    public async Task<bool> GoogleActifAsync()
+    {
+        try { return await _js.InvokeAsync<bool>("guOnline.googleActif"); }
+        catch (JSException) { return false; }
+    }
+
+    /// <summary>Erreur rapportée au retour de Google (connexion annulée…), une seule fois.</summary>
+    public async Task<string?> RedirectErrorAsync()
+    {
+        try { return await _js.InvokeAsync<string?>("guOnline.redirectError"); }
+        catch (JSException) { return null; }
+    }
 
     public Task SignOutAsync() => _js.InvokeVoidAsync("guOnline.signOut").AsTask();
 

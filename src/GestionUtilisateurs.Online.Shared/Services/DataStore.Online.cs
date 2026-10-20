@@ -138,6 +138,7 @@ public partial class DataStore
     {
         if (string.IsNullOrWhiteSpace(accountId))
             return new UserOperationResult { Success = false, Error = L.T("Compte introuvable.") };
+        email = SansEmail.Reelle(email);
 
         // Relier le compte à une fiche déjà saisie (même personne) au lieu d'en créer une seconde.
         var cible = string.IsNullOrWhiteSpace(relierAFicheId) ? null : _users.FirstOrDefault(u => u.Id == relierAFicheId);
@@ -198,7 +199,7 @@ public partial class DataStore
     /// e-mail, téléphone) : on propose de relier le compte à l'une d'elles.
     /// </summary>
     public IReadOnlyList<(UserAccount Fiche, string Raison)> FichesPourInscription(string prenom, string nom, string email, string telephone)
-        => DoublonsPossibles(new UserAccount { Prenom = prenom ?? "", Nom = nom ?? "", Email = email ?? "", Telephone = telephone ?? "" })
+        => DoublonsPossibles(new UserAccount { Prenom = prenom ?? "", Nom = nom ?? "", Email = SansEmail.Reelle(email), Telephone = telephone ?? "" })
             .Where(x => !EstCompteEnLigne(x.Fiche))
             .OrderByDescending(x => x.Raison.Contains("e-mail"))
             .ToList();
