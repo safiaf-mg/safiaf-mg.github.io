@@ -141,7 +141,7 @@ else
 <Modal Title="@L.F("Message à « {0} »", _cible?.Nom ?? "")" Show="_message" OnClose="() => _message = false">
     <ChildContent>
         <div class="form-group">
-            <label for="gr-msg">@L.F("Envoyé aux {0} autres membres du groupe par la messagerie.", _cible == null ? 0 : DataStore.ParticipantsGroupe(_cible).Count(x => !x.Equals(Me, StringComparison.OrdinalIgnoreCase)))</label>
+            <label for="gr-msg">@L.F("Envoyé aux {0} autres membres, dans la discussion « {1} » de la Messagerie.", _cible == null ? 0 : DataStore.ParticipantsGroupe(_cible).Count(x => !x.Equals(Me, StringComparison.OrdinalIgnoreCase)), _cible?.Nom ?? "")</label>
             <textarea id="gr-msg" rows="4" value="@_texte" @oninput="e => _texte = e.Value?.ToString() ?? string.Empty"></textarea>
         </div>
         <span class="form-error">@_erreur</span>
@@ -281,7 +281,7 @@ else
         if (_cible == null) return;
         var res = Store.EcrireAuGroupe(_cible.Id, _texte);
         if (!res.Success) { _erreur = res.Error; return; }
-        State.NotifySuccess(L.T("Message envoyé au groupe."));
+        State.NotifySuccess(L.F("Message envoyé dans la discussion « {0} ».", _cible.Nom));
         _message = false;
     }
 

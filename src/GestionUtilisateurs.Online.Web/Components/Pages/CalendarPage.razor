@@ -9,6 +9,18 @@
     </p>
 </div>
 
+@if (Store.Can(Permissions.CalendarUse) && Store.DoublonsCalendrier().Count is var doublons and > 0)
+{
+    <div class="quota-banner" role="status" style="margin-bottom:12px">
+        <span class="quota-banner-icon" aria-hidden="true">⧉</span>
+        <div class="quota-banner-main">
+            <strong>@L.F("{0} événement(s) en double", doublons)</strong>
+            <span>@L.T("Même titre, même jour et même heure. Le premier enregistré est gardé.")</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" @onclick="() => _confirmDoublons = true">@L.T("Supprimer les doublons")</button>
+    </div>
+}
+
 <div class="cal-toolbar">
     <div class="search-box cal-search">
         <span class="search-icon" aria-hidden="true">&#128269;</span>
@@ -503,11 +515,26 @@ else
     </FooterContent>
 </Modal>
 
+<ConfirmDialog Show="_confirmDoublons" Title="@L.T("Supprimer les doublons")"
+               Message="@L.F("{0} événement(s) en double seront supprimés ; l'original de chacun reste dans le calendrier.", Store.DoublonsCalendrier().Count)"
+               ConfirmLabel="@L.T("Supprimer")" Danger="true" OnConfirm="SupprimerDoublons" OnCancel="() => _confirmDoublons = false" />
+
 <ConfirmDialog Show="_deleteTarget != null" Title="@L.T("Supprimer l'événement")"
                Message="@(_deleteTarget == null ? "" : L.F("Supprimer « {0} » du calendrier ?", _deleteTarget.Titre))"
                ConfirmLabel="@L.T("Supprimer")" Danger="true" OnConfirm="ConfirmDelete" OnCancel="() => _deleteTarget = null" />
 
 @code {
+    private bool _confirmDoublons;
+
+    private void SupprimerDoublons()
+    {
+        _confirmDoublons = false;
+        var n = Store.DoublonsCalendrier().Count;
+        var res = Store.SupprimerDoublonsCalendrier();
+        if (res.Success) State.NotifySuccess(L.F("{0} doublon(s) supprimé(s).", n));
+        else State.NotifyError(res.Error);
+    }
+
     private static readonly CultureInfo Fr = CultureInfo.GetCultureInfo("fr-FR");
 
     private string _view = "mois";

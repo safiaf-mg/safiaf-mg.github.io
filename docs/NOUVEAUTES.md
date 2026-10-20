@@ -4,6 +4,24 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 20 octobre 2026 (discussions de groupe et doublons)
+
+- Messagerie : « Nouveau groupe » crée une discussion nommée avec plusieurs
+  membres. « Écrire au groupe » d'un groupe et ministère écrit toujours dans la
+  même discussion, au nom du groupe.
+- Une conversation peut être supprimée (🗑 en haut) : elle quitte votre liste
+  et revient seulement si quelqu'un y écrit de nouveau. Un administrateur peut
+  aussi la supprimer pour tout le monde.
+- Intentions de prière : « Seulement à mes groupes » confie l'intention à un
+  ou plusieurs de vos groupes ; seuls leurs membres la voient.
+- Ajouts en double refusés partout : un événement, une réunion, une tâche, un
+  matériel, un vote, un service, une opération de trésorerie… identique à un
+  élément existant n'est plus ajouté, avec un message qui le signale.
+- Calendrier : un bandeau signale les événements en double déjà présents et
+  « Supprimer les doublons » ne garde que le premier.
+- Correction : quand un identifiant change, les groupes et les intentions de
+  prière suivent.
+
 ## 20 octobre 2026 (vie spirituelle)
 
 - **Planning des services** (menu « … ») : qui préside, prêche, lit, chante

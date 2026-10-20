@@ -106,7 +106,7 @@ public static class RolesService
     public static string Icon(string role) => ListesChoix.IconePerso(ListesChoix.RolesService, role) ?? IconOrigine(role);
 }
 
-/// <summary>Intention de prière. Partagée : visible des membres ; privée : réservée aux responsables.</summary>
+/// <summary>Intention de prière. Partagée : visible des membres (ou de certains groupes) ; privée : réservée aux responsables.</summary>
 public class IntentionPriere
 {
     public string Id { get; set; } = "";
@@ -118,6 +118,8 @@ public class IntentionPriere
     /// <summary>Compte en ligne de l'auteur (intentions privées, rempli par le serveur).</summary>
     public string AuteurUid { get; set; } = "";
     public bool Anonyme { get; set; }
+    /// <summary>Groupes et ministères à qui l'intention est confiée (vide : tous les membres).</summary>
+    public List<string> GroupeIds { get; set; } = new();
     public string Date { get; set; } = "";
     /// <summary>Identifiants des membres qui ont dit « Je prie ».</summary>
     public List<string> Prieurs { get; set; } = new();
