@@ -225,7 +225,8 @@ public partial class DataStore
             if (Meme(m.Expediteur)) { m.Expediteur = nouveau; touche = true; }
             touche |= Remplacer(m.Destinataires);
             touche |= Remplacer(m.LuPar);
-            if (touche && m.ConversationId != ConversationAnnonces)
+            touche |= Remplacer(m.MasquePour);
+            if (touche && EstConversationParParticipants(m.ConversationId))
                 m.ConversationId = ConversationIdFor(m.Destinataires.Append(m.Expediteur));
             msgChange |= touche;
         }

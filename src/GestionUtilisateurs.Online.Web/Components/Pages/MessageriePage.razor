@@ -13,6 +13,7 @@ else if (_conversation == null)
     </div>
     <div class="form-actions" style="margin-bottom:10px">
         <button class="btn btn-primary btn-sm" @onclick="ShowNewMessage">✉ @L.T("Nouveau message")</button>
+        <button class="btn btn-secondary btn-sm" @onclick="ShowNouveauGroupe">👥 @L.T("Nouveau groupe")</button>
         <button class="btn btn-secondary btn-sm" @onclick="ShowAnnonce">📢 @L.T("Annonce")</button>
     </div>
     <div class="search-box cal-search">
@@ -41,7 +42,7 @@ else if (_conversation == null)
                 var dernier = conv.Dernier;
                 var nonLus = conv.NonLus;
                 <div class="user-card" @onclick="() => OpenConversation(cid)">
-                    <span class="field-type-icon" aria-hidden="true">@(cid == DataStore.ConversationAnnonces ? "📢" : "💬")</span>
+                    <span class="field-type-icon" aria-hidden="true">@ConversationIcon(cid)</span>
                     <div class="user-card-main">
                         <div class="user-card-name">@ConversationTitle(cid)</div>
                         <div class="user-card-sub">@(dernier.Supprime ? "🗑 " + L.T("Message supprimé") : Truncate(dernier.Texte, 80))</div>
@@ -60,7 +61,14 @@ else
 {
     <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
         <button class="btn btn-secondary btn-sm" @onclick="CloseConversation">← @L.T("Conversations")</button>
-        <h2 style="margin:0;font-size:18px;font-weight:700">@ConversationTitle(_conversation)</h2>
+        <div style="flex:1;min-width:0">
+            <h2 style="margin:0;font-size:18px;font-weight:700">@ConversationIcon(_conversation) @ConversationTitle(_conversation)</h2>
+            @if (DataStore.EstDiscussionDeGroupe(_conversation))
+            {
+                <div class="text-muted" style="font-size:12px">@ParticipantsLabel(_conversation)</div>
+            }
+        </div>
+        <button type="button" class="btn-icon danger" aria-label="@L.T("Supprimer la conversation")" title="@L.T("Supprimer la conversation")" @onclick="() => _supprimerConv = true">🗑</button>
     </div>
     <div class="msg-thread">
         @foreach (var m in _messages)
@@ -99,12 +107,20 @@ else
     </div>
 }
 
-<Modal Title="@(_annonce ? L.T("Publier une annonce") : L.T("Nouveau message"))" Show="_showNew" OnClose="() => _showNew = false">
+<Modal Title="@(_annonce ? L.T("Publier une annonce") : _groupe ? L.T("Nouveau groupe") : L.T("Nouveau message"))" Show="_showNew" OnClose="() => _showNew = false">
     <ChildContent>
+        @if (_groupe)
+        {
+            <div class="form-group">
+                <label for="msg-grp-nom">@L.T("Nom du groupe *")</label>
+                <input id="msg-grp-nom" type="text" maxlength="80" placeholder="@L.T("Ex : Comité de la kermesse")"
+                       value="@_nomGroupe" @oninput="e => _nomGroupe = e.Value?.ToString() ?? string.Empty" />
+            </div>
+        }
         @if (!_annonce)
         {
             <div class="form-group">
-                <label>@L.T("Destinataires")</label>
+                <label>@(_groupe ? L.T("Membres du groupe") : L.T("Destinataires"))</label>
                 <div class="search-box cal-search cal-opt-search">
                     <span class="search-icon" aria-hidden="true">&#128269;</span>
                     <input type="search" placeholder="@L.T("Écrire pour chercher un membre…")" aria-label="@L.T("Chercher un membre")"
@@ -123,7 +139,7 @@ else
                         <div class="cal-no-events">@L.F("Aucun membre trouvé pour « {0} ».", _destSearch)</div>
                     }
                 </div>
-                <span class="field-hint">@L.T("Sans destinataire : le message part en annonce (tout le monde).")</span>
+                <span class="field-hint">@(_groupe ? L.F("{0} membre(s) choisi(s), au moins deux.", _dest.Count) : L.T("Sans destinataire : le message part en annonce (tout le monde)."))</span>
             </div>
         }
         else
@@ -139,6 +155,24 @@ else
     <FooterContent>
         <button class="btn btn-secondary" @onclick="() => _showNew = false">@L.T("Annuler")</button>
         <button class="btn btn-primary" @onclick="SendNew">@L.T("Envoyer")</button>
+    </FooterContent>
+</Modal>
+
+<Modal Title="@L.T("Supprimer la conversation")" Show="_supprimerConv" OnClose="() => _supprimerConv = false">
+    <ChildContent>
+        <p style="margin-top:0">@L.T("La conversation disparaît de votre liste. Elle reviendra si quelqu'un y écrit de nouveau, avec les nouveaux messages seulement.")</p>
+        @if (Store.IsAdmin)
+        {
+            <p class="text-muted" style="font-size:13px">@L.T("Administrateur : « Pour tout le monde » efface définitivement tous ses messages, pour tous les participants.")</p>
+        }
+    </ChildContent>
+    <FooterContent>
+        <button class="btn btn-secondary" @onclick="() => _supprimerConv = false">@L.T("Annuler")</button>
+        @if (Store.IsAdmin)
+        {
+            <button class="btn btn-danger-outline" @onclick="() => SupprimerConversation(true)">@L.T("Pour tout le monde")</button>
+        }
+        <button class="btn btn-danger" @onclick="() => SupprimerConversation(false)">@L.T("Supprimer pour moi")</button>
     </FooterContent>
 </Modal>
 
@@ -170,6 +204,9 @@ else
     private string _search = "";
     private bool _showNew;
     private bool _annonce;
+    private bool _groupe;
+    private string _nomGroupe = "";
+    private bool _supprimerConv;
     private HashSet<string> _dest = new();
     private string _newTexte = "";
     private string _newError = "";
@@ -229,15 +266,24 @@ else
     {
         _showNew = true;
         _annonce = false;
+        _groupe = false;
         _newTexte = "";
         _newError = "";
         _dest = new HashSet<string>();
+    }
+
+    private void ShowNouveauGroupe()
+    {
+        ShowNewMessage();
+        _groupe = true;
+        _nomGroupe = "";
     }
 
     private void ShowAnnonce()
     {
         _showNew = true;
         _annonce = true;
+        _groupe = false;
         _newTexte = "";
         _newError = "";
         _dest = new HashSet<string>();
@@ -262,9 +308,23 @@ else
         _messages = Store.GetMessages(_conversation ?? "").ToList();
     }
 
+    private string ConversationIcon(string cid)
+        => cid == DataStore.ConversationAnnonces ? "📢"
+            : Store.GroupeDeConversation(cid) != null ? "⛪"
+            : DataStore.EstDiscussionDeGroupe(cid) ? "👥" : "💬";
+
+    private string ParticipantsLabel(string cid)
+        => string.Join(", ", Store.ParticipantsConversation(cid)
+            .Select(p => p.Equals(Me, StringComparison.OrdinalIgnoreCase) ? L.T("vous") : Store.FindUserByIdentifier(p)?.NomComplet ?? p));
+
     private string ConversationTitle(string cid)
     {
-        if (cid == DataStore.ConversationAnnonces) return "📢 " + L.T("Annonces");
+        if (cid == DataStore.ConversationAnnonces) return L.T("Annonces");
+        if (DataStore.EstDiscussionDeGroupe(cid))
+        {
+            var nom = Store.NomDiscussion(cid);
+            return nom.Length > 0 ? nom : L.T("Discussion");
+        }
         var parts = cid.StartsWith("mp:", StringComparison.OrdinalIgnoreCase)
             ? cid[3..].Split('+', StringSplitOptions.RemoveEmptyEntries)
             : new[] { cid };
@@ -289,10 +349,12 @@ else
     private void SendNew()
     {
         _newError = "";
-        var res = Store.SendMessage(_annonce ? new List<string>() : _dest.ToList(), _newTexte);
+        var res = _groupe
+            ? Store.CreerDiscussionDeGroupe(_nomGroupe, _dest, _newTexte)
+            : Store.SendMessage(_annonce ? new List<string>() : _dest.ToList(), _newTexte);
         if (!res.Success) { _newError = res.Error; return; }
         _showNew = false;
-        State.NotifySuccess(_annonce ? L.T("Annonce publiée.") : L.T("Message envoyé."));
+        State.NotifySuccess(_annonce ? L.T("Annonce publiée.") : _groupe ? L.F("Groupe « {0} » créé.", _nomGroupe.Trim()) : L.T("Message envoyé."));
         RefreshList();
     }
 
@@ -304,24 +366,20 @@ else
     private void SendReply()
     {
         if (_conversation == null || string.IsNullOrWhiteSpace(_reply)) return;
-        List<string> dest;
-        if (_conversation == DataStore.ConversationAnnonces)
-        {
-            dest = new List<string>();
-        }
-        else
-        {
-            var members = Store.GetMessages(_conversation)
-                .SelectMany(m => m.Destinataires.Append(m.Expediteur))
-                .Where(p => !p.Equals(Me, StringComparison.OrdinalIgnoreCase))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            dest = members;
-        }
-        var res = Store.SendMessage(dest, _reply);
+        var res = Store.RepondreConversation(_conversation, _reply);
         if (!res.Success) { State.NotifyError(res.Error); return; }
         _reply = "";
         LoadThread();
+    }
+
+    private void SupprimerConversation(bool pourTous)
+    {
+        _supprimerConv = false;
+        if (_conversation == null) return;
+        var res = Store.SupprimerConversation(_conversation, pourTous);
+        if (!res.Success) { State.NotifyError(res.Error); return; }
+        State.NotifySuccess(L.T("Conversation supprimée."));
+        CloseConversation();
     }
 
     private void AskDelete(Message m) => _deleteTarget = m;

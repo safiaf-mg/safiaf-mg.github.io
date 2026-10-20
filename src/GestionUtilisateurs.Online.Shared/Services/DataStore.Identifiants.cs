@@ -81,7 +81,7 @@ public partial class DataStore
         _community = Remplacer(_community, correspondance) ?? _community;
         _settings = Remplacer(_settings, correspondance) ?? _settings;
 
-        foreach (var m in _messages.Where(m => m.ConversationId != ConversationAnnonces))
+        foreach (var m in _messages.Where(m => EstConversationParParticipants(m.ConversationId)))
             m.ConversationId = ConversationIdFor(m.Destinataires.Append(m.Expediteur));
 
         // Les préférences de chaque membre (langue, thème) sont rangées dans son
@@ -140,7 +140,7 @@ public partial class DataStore
         "identifiant", "membreIdentifiant", "votantIdentifiant", "assignes", "expediteur",
         "destinataires", "luPar", "supprimePar", "participants", "personneConcernee",
         "personnesConcernees", "createdBy", "modifiePar", "deletedBy", "responsable",
-        "utilisateurId", "guideVu"
+        "utilisateurId", "guideVu", "membres", "responsables", "auteur", "prieurs", "masquePour"
     };
 
     /// <summary>Dictionnaires dont les clés sont des identifiants de membres.</summary>

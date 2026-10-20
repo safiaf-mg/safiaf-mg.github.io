@@ -236,7 +236,9 @@ public static class HelpCatalog
                 {
                     "« ＋ Nouveau message » choisit un ou plusieurs destinataires.",
                     "Le canal « Annonces » s'adresse à toute la communauté.",
+                    "« Nouveau groupe » crée une discussion à son nom avec plusieurs membres ; « Écrire au groupe » d'un groupe et ministère écrit dans la discussion de ce groupe.",
                     "Touchez une conversation pour la lire et répondre.",
+                    "🗑 en haut d'une conversation la retire de votre liste ; elle revient si quelqu'un y écrit de nouveau.",
                     "Le compteur sur le menu « … » signale les conversations non lues."
                 })
             }),

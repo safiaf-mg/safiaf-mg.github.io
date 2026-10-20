@@ -449,7 +449,8 @@ public class CommunityStory
 public class Message
 {
     public string Id { get; set; } = "";
-    /// <summary>Identifiant de conversation : paire triée pour un duo, liste triée pour un groupe, « annonces » pour le canal général.</summary>
+    /// <summary>Identifiant de conversation : paire triée pour un duo, liste triée pour un groupe sans nom,
+    /// « grp:… » pour une discussion de groupe nommée, « annonces » pour le canal général.</summary>
     public string ConversationId { get; set; } = "";
     public string Expediteur { get; set; } = "";
     /// <summary>Destinataires (identifiants). Vide = canal « Annonces » (tout le monde).</summary>
@@ -466,6 +467,10 @@ public class Message
     public string? SupprimeLe { get; set; }
     /// <summary>Identifiants ayant lu le message.</summary>
     public List<string> LuPar { get; set; } = new();
+    /// <summary>Nom de la discussion de groupe (conversations « grp: »), vide sinon.</summary>
+    public string NomGroupe { get; set; } = "";
+    /// <summary>Membres qui ont retiré cette conversation de leur liste.</summary>
+    public List<string> MasquePour { get; set; } = new();
 }
 
 /// <summary>Tâche avec suivi (statut, priorité, échéance, assignés).</summary>

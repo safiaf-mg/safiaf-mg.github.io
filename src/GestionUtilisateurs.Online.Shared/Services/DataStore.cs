@@ -235,6 +235,8 @@ new ManagedDataSet("archives", "Archives des utilisateurs", "Comptes supprimés 
                 m.Destinataires ??= new List<string>();
                 m.LuPar ??= new List<string>();
                 m.DateModification ??= "";
+                m.NomGroupe ??= "";
+                m.MasquePour ??= new List<string>();
             }
             _taches.Clear();
             _taches.AddRange(Deserialize<List<Tache>>(_storage.Get(K_TACHES)) ?? new List<Tache>());
@@ -1214,6 +1216,7 @@ public OperationResult SetUserActive(string userId, bool active)
             return OperationResult.Fail(L.T("Le titre de l'événement est obligatoire."));
         if (string.IsNullOrWhiteSpace(draft.Date))
             return OperationResult.Fail(L.T("La date de l'événement est obligatoire."));
+        if (EvenementEnDouble(draft) is { } doublonEvt) return doublonEvt;
 
         draft.Id = Guid.NewGuid().ToString("N");
         if (string.IsNullOrEmpty(draft.DateCreation))
@@ -1238,6 +1241,7 @@ public OperationResult SetUserActive(string userId, bool active)
             return OperationResult.Fail(L.T("Le titre de l'événement est obligatoire."));
         if (string.IsNullOrWhiteSpace(draft.Date))
             return OperationResult.Fail(L.T("La date de l'événement est obligatoire."));
+        if (EvenementEnDouble(draft, eventId) is { } doublonEvt) return doublonEvt;
 
         var existing = _events[idx];
         var oldTitle = existing.Titre;
@@ -1371,6 +1375,9 @@ public OperationResult SetUserActive(string userId, bool active)
             return OperationResult.Fail(L.T("Le dossier de destination est introuvable."));
         if (!string.IsNullOrWhiteSpace(draft.UtilisateurId) && FindUserByIdentifier(draft.UtilisateurId) == null)
             return OperationResult.Fail(L.T("L'utilisateur associé est introuvable."));
+        if (_documents.Any(d => (d.FolderId ?? "") == (draft.FolderId ?? "") && d.Taille == draft.Taille && CleDoublon(d.Titre) == CleDoublon(draft.Titre)
+                                && string.Equals(d.UtilisateurId ?? "", draft.UtilisateurId ?? "", StringComparison.OrdinalIgnoreCase)))
+            return OperationResult.Fail(L.F("Le document « {0} » est déjà à cet emplacement.", draft.Titre));
 
         draft.Id = Guid.NewGuid().ToString("N");
         var now = DateTimeOffset.Now.ToString("O");
@@ -2603,6 +2610,8 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
     public OperationResult AddCommunityChapter(string titre, string texte, string dateIso, string? imageDataUrl)
     {
         if (string.IsNullOrWhiteSpace(titre)) return OperationResult.Fail(L.T("Le titre du chapitre est obligatoire."));
+        if (_community.Chapitres.Any(c => CleDoublon(c.Titre) == CleDoublon(titre)))
+            return OperationResult.Fail(L.F("Le chapitre « {0} » existe déjà.", titre.Trim()));
         _community.Chapitres.Add(new CommunityChapter
         {
             Id = Guid.NewGuid().ToString("N"),
@@ -3828,8 +3837,11 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         return members.Count == 0 ? ConversationAnnonces : "mp:" + string.Join("+", members).ToLowerInvariant();
     }
 
-    public OperationResult SendMessage(List<string> destinataires, string texte)
+    /// <param name="conversationId">Discussion de groupe nommée (« grp:… ») ; sinon la conversation suit les participants.</param>
+    /// <param name="nomGroupe">Nom affiché de la discussion de groupe.</param>
+    public OperationResult SendMessage(List<string> destinataires, string texte, string? conversationId = null, string? nomGroupe = null)
     {
+        var groupe = conversationId != null && conversationId.StartsWith(PrefixeGroupe, StringComparison.Ordinal);
         var me = GetCurrentUser()?.Identifiant ?? "inconnu";
         var members = (destinataires ?? new List<string>())
             .Select(d => (d ?? "").Trim())
@@ -3842,18 +3854,21 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         var inconnus = members.Where(d => FindUserByIdentifier(d) == null).ToList();
         if (inconnus.Count > 0)
         {
-            var conv = ConversationIdFor(members.Append(me));
+            var conv = groupe ? conversationId! : ConversationIdFor(members.Append(me));
             var existe = _messages.Any(m => m.ConversationId == conv);
             if (!existe || inconnus.Count == members.Count)
                 return OperationResult.Fail(L.F("Destinataire introuvable : « {0} ». Ce membre a peut-être été supprimé.", inconnus[0]));
         }
         if (string.IsNullOrWhiteSpace(texte))
             return OperationResult.Fail(L.T("Le message est vide."));
+        if (groupe && members.Count == 0)
+            return OperationResult.Fail(L.T("Ce groupe n'a pas encore d'autres membres."));
         members.Add(me);
         var message = new Message
         {
             Id = Guid.NewGuid().ToString("N"),
-            ConversationId = members.Count <= 1 ? ConversationAnnonces : ConversationIdFor(members),
+            ConversationId = groupe ? conversationId! : members.Count <= 1 ? ConversationAnnonces : ConversationIdFor(members),
+            NomGroupe = groupe ? (nomGroupe ?? "").Trim() : "",
             Expediteur = me,
             Destinataires = members.Where(m => !m.Equals(me, StringComparison.OrdinalIgnoreCase)).ToList(),
             Texte = texte.Trim(),
@@ -3873,9 +3888,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
     {
         var me = (identifiant ?? "").Trim();
         return _messages
-            .Where(m => m.ConversationId == ConversationAnnonces
-                || m.Expediteur.Equals(me, StringComparison.OrdinalIgnoreCase)
-                || m.Destinataires.Any(d => d.Equals(me, StringComparison.OrdinalIgnoreCase)))
+            .Where(m => VisiblePour(m, me))
             .GroupBy(m => m.ConversationId)
             .Select(g => (g.Key, Dernier: g.OrderByDescending(m => m.Date).First(),
                 NonLus: g.Count(m => !m.Supprime && !m.LuPar.Any(l => l.Equals(me, StringComparison.OrdinalIgnoreCase)))))
@@ -3883,17 +3896,20 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             .ToList();
     }
 
+    /// <summary>Messages de la conversation, sans ceux que le membre connecté a retirés de sa liste.</summary>
     public IReadOnlyList<Message> GetMessages(string conversationId)
-        => _messages.Where(m => m.ConversationId == conversationId).OrderBy(m => m.Date).ToList();
+    {
+        var me = GetCurrentUser()?.Identifiant ?? "";
+        return _messages.Where(m => m.ConversationId == conversationId && !MasquePourMoi(m, me))
+            .OrderBy(m => m.Date).ToList();
+    }
 
     public int UnreadCount(string identifiant)
     {
         var me = (identifiant ?? "").Trim();
         return _messages.Count(m =>
             !m.Supprime
-            && (m.ConversationId == ConversationAnnonces
-                || m.Expediteur.Equals(me, StringComparison.OrdinalIgnoreCase)
-                || m.Destinataires.Any(d => d.Equals(me, StringComparison.OrdinalIgnoreCase)))
+            && VisiblePour(m, me)
             && !m.LuPar.Any(l => l.Equals(me, StringComparison.OrdinalIgnoreCase)));
     }
 
@@ -4017,6 +4033,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         }
         if (!string.IsNullOrWhiteSpace(draft.Echeance) && !TryParseYmd(draft.Echeance, out _))
             return OperationResult.Fail(L.T("L'échéance doit être au format JJ/MM/AAAA."));
+        if (TacheEnDouble(draft) is { } doublonTache) return doublonTache;
         draft.Id = Guid.NewGuid().ToString("N");
         draft.Statut = Models.TacheStatuts.AFaire;
         draft.DateCreation = DateTimeOffset.Now.ToString("O");
@@ -4038,6 +4055,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             return OperationResult.Fail(L.T("Le titre de la tâche est obligatoire."));
         if (!string.IsNullOrWhiteSpace(draft.Echeance) && !TryParseYmd(draft.Echeance, out _))
             return OperationResult.Fail(L.T("L'échéance doit être au format JJ/MM/AAAA."));
+        if (existing.Statut != Models.TacheStatuts.Terminee && TacheEnDouble(draft, id) is { } doublonTache) return doublonTache;
         draft.Assignes = (draft.Assignes ?? new List<string>())
             .Select(a => (a ?? "").Trim()).Where(a => a.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -4404,6 +4422,10 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
                 return EncaisserCotisation(attente.Id, draft.Date, ajouterTresorerie);
             }
         }
+        if (_cotisations.Any(c => c.Statut == draft.Statut && c.Montant == draft.Montant && c.Date == draft.Date
+                                  && c.Periode == draft.Periode && CleDoublon(c.Motif) == CleDoublon(draft.Motif)
+                                  && string.Equals((c.MembreIdentifiant ?? "").Trim(), draft.MembreIdentifiant, StringComparison.OrdinalIgnoreCase)))
+            return OperationResult.Fail(L.F("Cette cotisation de {0} ({1}) est déjà enregistrée le {2}.", draft.MembreIdentifiant, draft.Periode, DateAffichee(draft.Date)));
         draft.Id = Guid.NewGuid().ToString("N");
         draft.CreatedBy = GetCurrentUser()?.Identifiant ?? "inconnu";
         _cotisations.Add(draft);
@@ -4562,6 +4584,9 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         else if (!TryParseYmd(draft.Date, out _))
             return OperationResult.Fail(L.T("La date doit être au format JJ/MM/AAAA."));
         else draft.Date = ToYmd(draft.Date);
+        if (_tresorerie.Any(t => t.Type == draft.Type && t.Montant == draft.Montant && t.Date == draft.Date
+                                 && CleDoublon(t.Motif) == CleDoublon(draft.Motif)))
+            return OperationResult.Fail(L.F("Cette opération (« {0} », {1}) est déjà enregistrée le {2}.", draft.Motif, FormatMontant(draft.Montant), DateAffichee(draft.Date)));
         draft.Id = Guid.NewGuid().ToString("N");
         draft.CreatedBy = GetCurrentUser()?.Identifiant ?? "inconnu";
         _tresorerie.Add(draft);
@@ -4622,6 +4647,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         draft.Responsable = (draft.Responsable ?? "").Trim();
         if (!string.IsNullOrWhiteSpace(draft.Responsable) && FindUserByIdentifier(draft.Responsable) == null)
             return OperationResult.Fail(L.F("Responsable introuvable : « {0} ».", draft.Responsable));
+        if (MaterielEnDouble(draft) is { } doublonMat) return doublonMat;
         draft.Id = Guid.NewGuid().ToString("N");
         _materiels.Add(draft);
         SaveMateriels();
@@ -4637,6 +4663,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         draft.Nom = (draft.Nom ?? "").Trim();
         if (string.IsNullOrWhiteSpace(draft.Nom))
             return OperationResult.Fail(L.T("Le nom du matériel est obligatoire."));
+        if (MaterielEnDouble(draft, id) is { } doublonMat) return doublonMat;
         var nouvelleQuantite = Math.Max(1, draft.QuantiteTotale);
         var enPret = _prets
             .Where(p => p.MaterielId == id && string.IsNullOrWhiteSpace(p.DateRetour))
@@ -4679,6 +4706,10 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         if (quantite < 1) return OperationResult.Fail(L.T("La quantité doit être d'au moins 1."));
         if (quantite > DisponibleMateriel(materielId))
             return OperationResult.Fail(L.F("Stock insuffisant : {0} disponible(s).", DisponibleMateriel(materielId)));
+        var aujourdhui = DateTime.Today.ToString("yyyy-MM-dd");
+        if (_prets.Any(p => p.MaterielId == materielId && p.DatePret == aujourdhui && string.IsNullOrWhiteSpace(p.DateRetour)
+                            && p.Quantite == quantite && string.Equals(p.MembreIdentifiant, membreIdentifiant.Trim(), StringComparison.OrdinalIgnoreCase)))
+            return OperationResult.Fail(L.F("Ce prêt de « {0} » est déjà enregistré aujourd'hui.", mat.Nom));
         _prets.Add(new PretMateriel
         {
             Id = Guid.NewGuid().ToString("N"),
@@ -4745,6 +4776,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
                 return OperationResult.Fail(L.F("Participant introuvable : « {0} ».", p));
         }
         draft.Presences ??= new Dictionary<string, string>();
+        if (ReunionEnDouble(draft) is { } doublonReu) return doublonReu;
         draft.Id = Guid.NewGuid().ToString("N");
         draft.DateCreation = DateTimeOffset.Now.ToString("O");
         draft.CreatedBy = GetCurrentUser()?.Identifiant ?? "inconnu";
@@ -4765,6 +4797,8 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             return OperationResult.Fail(L.T("Le titre de la réunion est obligatoire."));
         if (string.IsNullOrWhiteSpace(draft.Date) || !TryParseYmd(draft.Date, out _))
             return OperationResult.Fail(L.T("La date doit être au format JJ/MM/AAAA."));
+        if (ReunionEnDouble(new Reunion { Titre = draft.Titre, Date = ToYmd(draft.Date), HeureDebut = draft.HeureDebut }, id) is { } doublonReu)
+            return doublonReu;
         var participants = (draft.Participants ?? new List<string>())
             .Select(p => (p ?? "").Trim()).Where(p => p.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -4946,6 +4980,10 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         if (NormaliserFamangiana(draft) is { } erreur) return OperationResult.Fail(erreur);
         draft.Description = (draft.Description ?? "").Trim();
         draft.MembreIdentifiant = draft.MembreIdentifiant.Trim();
+        if (_situations.Any(x => x.Statut == Models.SituationStatuts.Ouvert && x.Type == draft.Type
+                                 && CleDoublon(x.Titre) == CleDoublon(draft.Titre)
+                                 && string.Equals(x.MembreIdentifiant, draft.MembreIdentifiant, StringComparison.OrdinalIgnoreCase)))
+            return OperationResult.Fail(L.F("La situation « {0} » est déjà ouverte pour ce membre.", draft.Titre));
         draft.Id = Guid.NewGuid().ToString("N");
         draft.Statut = Models.SituationStatuts.Ouvert;
         draft.DateCreation = DateTimeOffset.Now.ToString("O");
@@ -5050,6 +5088,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         if (!string.IsNullOrWhiteSpace(draft.DateCloture) && !TryParseYmd(draft.DateCloture, out _))
             return OperationResult.Fail(L.T("La date de clôture doit être au format JJ/MM/AAAA."));
         draft.DateCloture = string.IsNullOrWhiteSpace(draft.DateCloture) ? "" : ToYmd(draft.DateCloture);
+        if (VoteEnDouble(draft) is { } doublonVote) return doublonVote;
         draft.Id = Guid.NewGuid().ToString("N");
         draft.Statut = Models.VoteStatuts.Ouvert;
         draft.Bulletins = new List<Models.Bulletin>();
@@ -5071,6 +5110,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         draft.Titre = (draft.Titre ?? "").Trim();
         if (string.IsNullOrWhiteSpace(draft.Titre))
             return OperationResult.Fail(L.T("Le titre du vote est obligatoire."));
+        if (VoteEnDouble(draft, id) is { } doublonVote) return doublonVote;
         var options = (draft.Options ?? new List<string>())
             .Select(o => (o ?? "").Trim()).Where(o => o.Length > 0)
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -5201,6 +5241,8 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         else if (!TryParseYmd(draft.Date, out _))
             return OperationResult.Fail(L.T("La date doit être au format JJ/MM/AAAA."));
         else draft.Date = ToYmd(draft.Date);
+        if (_journalMedia.Any(m => m.Taille == draft.Taille && m.Type == draft.Type && CleDoublon(m.Titre) == CleDoublon(draft.Titre)))
+            return OperationResult.Fail(L.F("« {0} » est déjà dans le journal.", draft.Titre));
         draft.Id = Guid.NewGuid().ToString("N");
         draft.DateCreation = DateTimeOffset.Now.ToString("O");
         draft.CreatedBy = GetCurrentUser()?.Identifiant ?? "inconnu";

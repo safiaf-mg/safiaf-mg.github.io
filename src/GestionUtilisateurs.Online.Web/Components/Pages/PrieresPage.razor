@@ -18,14 +18,34 @@
         </div>
         <div class="radio-row">
             <label class="radio-option">
-                <input type="radio" name="pr-qui" checked="@(!_privee)" @onchange="() => _privee = false" />
+                <input type="radio" name="pr-qui" checked="@(_qui == "membres")" @onchange='() => _qui = "membres"' />
                 <span>👥 @L.T("Partager avec les membres")</span>
             </label>
+            @if (MesGroupes.Count > 0)
+            {
+                <label class="radio-option">
+                    <input type="radio" name="pr-qui" checked="@(_qui == "groupes")" @onchange='() => _qui = "groupes"' />
+                    <span>⛪ @L.T("Seulement à mes groupes")</span>
+                </label>
+            }
             <label class="radio-option">
-                <input type="radio" name="pr-qui" checked="@_privee" @onchange="() => _privee = true" />
+                <input type="radio" name="pr-qui" checked="@(_qui == "responsables")" @onchange='() => _qui = "responsables"' />
                 <span>🔒 @L.T("Seulement aux responsables")</span>
             </label>
         </div>
+        @if (_qui == "groupes")
+        {
+            <div class="check-group" style="margin-top:6px" role="group" aria-label="@L.T("Groupes qui porteront l'intention")">
+                @foreach (var g in MesGroupes)
+                {
+                    var gid = g.Id;
+                    <label class="form-check">
+                        <input type="checkbox" checked="@_groupes.Contains(gid)" @onchange="() => BasculerGroupe(gid)" />
+                        @g.Nom
+                    </label>
+                }
+            </div>
+        }
         <label class="checkbox-label" style="margin:8px 0">
             <input type="checkbox" checked="@_anonyme" @onchange="e => _anonyme = e.Value is true" />
             @L.T("Ne pas afficher mon nom")
@@ -95,7 +115,7 @@ else
         var jePrie = p.Prieurs.Contains(Me, StringComparer.OrdinalIgnoreCase);
         <div class="card priere-card @(p.Exaucee ? "priere-exaucee" : "")" style="margin-bottom:10px">
             <p class="priere-texte">@p.Texte</p>
-            <div class="text-muted" style="font-size:12px">@Store.AuteurIntention(p) · @DataStore.FormatDateCourte(p.Date)</div>
+            <div class="text-muted" style="font-size:12px">@Store.AuteurIntention(p) · @DataStore.FormatDateCourte(p.Date)@(p.GroupeIds.Count == 0 ? "" : " · ⛪ " + string.Join(", ", Store.GroupesIntention(p)))</div>
             @if (p.Exaucee)
             {
                 <div class="priere-temoignage">
@@ -162,7 +182,8 @@ else
 
 @code {
     private string _texte = "";
-    private bool _privee;
+    private string _qui = "membres";
+    private readonly HashSet<string> _groupes = new();
     private bool _anonyme;
     private bool _envoi;
     private string _erreur = "";
@@ -176,6 +197,13 @@ else
 
     private string Me => Store.GetCurrentUser()?.Identifiant ?? "";
 
+    private IReadOnlyList<Groupe> MesGroupes => Store.GroupesDe(Me);
+
+    private void BasculerGroupe(string id)
+    {
+        if (!_groupes.Add(id)) _groupes.Remove(id);
+    }
+
     protected override void OnInitialized() => Store.DataChanged += Refresh;
 
     private void Refresh() => _ = InvokeAsync(StateHasChanged);
@@ -186,7 +214,8 @@ else
     {
         _erreur = "";
         if (string.IsNullOrWhiteSpace(_texte)) { _erreur = L.T("Écrivez votre intention de prière."); return; }
-        if (_privee)
+        if (_qui == "groupes" && _groupes.Count == 0) { _erreur = L.T("Cochez au moins un groupe."); return; }
+        if (_qui == "responsables")
         {
             // Passe par le serveur : le membre n'a pas à lire les intentions des autres pour ajouter la sienne.
             _envoi = true;
@@ -201,9 +230,9 @@ else
         }
         else
         {
-            var res = Store.PartagerIntention(_texte, _anonyme);
+            var res = Store.PartagerIntention(_texte, _anonyme, _qui == "groupes" ? _groupes : null);
             if (!res.Success) { _erreur = res.Error; return; }
-            State.NotifySuccess(L.T("Votre intention est partagée avec les membres."));
+            State.NotifySuccess(_qui == "groupes" ? L.T("Votre intention est confiée à vos groupes.") : L.T("Votre intention est partagée avec les membres."));
         }
         _texte = "";
         _anonyme = false;

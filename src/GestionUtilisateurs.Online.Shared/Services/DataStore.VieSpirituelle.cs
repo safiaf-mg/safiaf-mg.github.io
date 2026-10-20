@@ -22,6 +22,7 @@ public partial class DataStore
         foreach (var s in _services) s.Affectations ??= new List<AffectationService>();
         _prieres.Clear();
         _prieres.AddRange(Deserialize<List<IntentionPriere>>(_storage.Get(K_PRIERES)) ?? new List<IntentionPriere>());
+        foreach (var p in _prieres) p.GroupeIds ??= new List<string>();
         _prieresPrivees.Clear();
         _prieresPrivees.AddRange(Deserialize<List<IntentionPriere>>(_storage.Get(K_PRIERES_PRIVEES)) ?? new List<IntentionPriere>());
         foreach (var p in _prieres.Concat(_prieresPrivees)) p.Prieurs ??= new List<string>();
@@ -163,7 +164,8 @@ public partial class DataStore
         var moi = MonIdentifiant;
         var destinataires = ParticipantsGroupe(g).Where(x => !MemeId(x, moi)).ToList();
         if (destinataires.Count == 0) return OperationResult.Fail(L.T("Ce groupe n'a pas encore d'autres membres."));
-        return SendMessage(destinataires, texte);
+        // Une seule discussion par groupe, à son nom, que l'on retrouve dans la Messagerie.
+        return SendMessage(destinataires, texte, PrefixeGroupe + g.Id, g.Nom);
     }
 
     // ---------- Planning des services ----------
@@ -193,6 +195,7 @@ public partial class DataStore
             return OperationResult.Fail(L.T("La date doit être au format JJ/MM/AAAA."));
         var existant = id == null ? null : FindService(id);
         if (id != null && existant == null) return OperationResult.Fail(L.T("Service introuvable."));
+        if (ServiceEnDouble(titre, ToYmd(draft.Date), (draft.Heure ?? "").Trim(), id) is { } doublon) return doublon;
 
         var affectations = new List<AffectationService>();
         foreach (var a in draft.Affectations ?? new List<AffectationService>())
@@ -295,8 +298,26 @@ public partial class DataStore
 
     // ---------- Intentions de prière ----------
 
-    /// <summary>Intentions partagées, les plus récentes d'abord.</summary>
-    public IReadOnlyList<IntentionPriere> Prieres => _prieres.OrderByDescending(p => p.Date, StringComparer.Ordinal).ToList();
+    /// <summary>Intentions partagées que le membre connecté peut lire, les plus récentes d'abord.</summary>
+    public IReadOnlyList<IntentionPriere> Prieres => _prieres.Where(PeutLireIntention)
+        .OrderByDescending(p => p.Date, StringComparer.Ordinal).ToList();
+
+    /// <summary>Une intention confiée à des groupes n'est lue que par leurs participants et son auteur
+    /// (et par les responsables des intentions si aucun de ces groupes n'existe plus).</summary>
+    private bool PeutLireIntention(IntentionPriere p)
+    {
+        if (p.GroupeIds.Count == 0) return true;
+        var moi = MonIdentifiant;
+        if (MemeId(p.Auteur, moi)) return true;
+        var groupes = p.GroupeIds.Select(FindGroupe).OfType<Groupe>().ToList();
+        return groupes.Count == 0
+            ? Can(Permissions.PrieresManage)
+            : groupes.Any(g => ParticipantsGroupe(g).Any(x => MemeId(x, moi)));
+    }
+
+    /// <summary>Noms des groupes à qui l'intention est confiée (vide : tous les membres).</summary>
+    public IReadOnlyList<string> GroupesIntention(IntentionPriere p)
+        => p.GroupeIds.Select(id => FindGroupe(id)?.Nom ?? L.T("Groupe supprimé")).ToList();
 
     /// <summary>Intentions privées (lisibles seulement avec « Lire les intentions de prière privées »).</summary>
     public IReadOnlyList<IntentionPriere> PrieresPrivees => Can(Permissions.PrieresManage)
@@ -316,22 +337,38 @@ public partial class DataStore
     }
 
     /// <summary>Confie une intention partagée avec les membres.</summary>
-    public OperationResult PartagerIntention(string texte, bool anonyme)
+    /// <param name="groupeIds">Groupes et ministères du membre à qui confier l'intention (vide : tous les membres).</param>
+    public OperationResult PartagerIntention(string texte, bool anonyme, IEnumerable<string>? groupeIds = null)
     {
         if (!Can(Permissions.PrieresUse)) return OperationResult.Fail(L.T("Votre rôle ne permet pas de confier une intention de prière."));
         texte = (texte ?? "").Trim();
         if (texte.Length == 0) return OperationResult.Fail(L.T("Écrivez votre intention de prière."));
         if (texte.Length > 2000) return OperationResult.Fail(L.T("L'intention ne doit pas dépasser 2 000 caractères."));
+        var moi = MonIdentifiant;
+        var groupes = new List<Groupe>();
+        foreach (var id in (groupeIds ?? Enumerable.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct())
+        {
+            var groupe = FindGroupe(id);
+            if (groupe == null) return OperationResult.Fail(L.T("Groupe introuvable."));
+            if (!ParticipantsGroupe(groupe).Any(x => MemeId(x, moi)))
+                return OperationResult.Fail(L.T("Vous ne faites pas partie de ce groupe."));
+            groupes.Add(groupe);
+        }
+        if (_prieres.Any(p => !p.Exaucee && MemeId(p.Auteur, moi) && CleDoublon(p.Texte) == CleDoublon(texte)))
+            return OperationResult.Fail(L.T("Vous avez déjà confié cette intention."));
         _prieres.Add(new IntentionPriere
         {
             Id = Guid.NewGuid().ToString("N"),
             Texte = texte,
-            Auteur = MonIdentifiant,
+            Auteur = moi,
             Anonyme = anonyme,
+            GroupeIds = groupes.Select(g => g.Id).ToList(),
             Date = DateTimeOffset.Now.ToString("O")
         });
         SavePrieres();
-        LogActivity(ActivityTypes.PriereChange, "Nouvelle intention de prière partagée");
+        LogActivity(ActivityTypes.PriereChange, groupes.Count == 0
+            ? "Nouvelle intention de prière partagée"
+            : "Nouvelle intention de prière confiée à : " + string.Join(", ", groupes.Select(g => g.Nom)));
         DataChanged?.Invoke();
         return OperationResult.Ok();
     }
@@ -340,7 +377,7 @@ public partial class DataStore
     public OperationResult BasculerJePrie(string id)
     {
         if (!Can(Permissions.PrieresUse)) return OperationResult.Fail(L.T("Votre rôle ne permet pas de confier une intention de prière."));
-        var p = _prieres.FirstOrDefault(x => x.Id == id);
+        var p = _prieres.FirstOrDefault(x => x.Id == id && PeutLireIntention(x));
         if (p == null) return OperationResult.Fail(L.T("Intention introuvable."));
         var moi = MonIdentifiant;
         if (p.Prieurs.RemoveAll(x => MemeId(x, moi)) == 0) p.Prieurs.Add(moi);
