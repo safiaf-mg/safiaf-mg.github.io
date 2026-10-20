@@ -331,5 +331,13 @@
   "Chaque identifiant devient le prénom du membre (deux prénoms : jean.pierre). Les homonymes reçoivent un numéro dans l'ordre d'inscription : lucas, lucas1, lucas2. Cotisations, messages, tâches et autres données suivent le nouvel identifiant.": "Each username becomes the member's first name (two first names: jean.pierre). Members with the same first name get a number in sign-up order: lucas, lucas1, lucas2. Contributions, messages, tasks and other data follow the new username.",
   "Renommer {0} identifiant(s)": "Rename {0} username(s)",
   "{0} identifiant(s) renommé(s).": "{0} username(s) renamed.",
-  "Action réservée aux administrateurs.": "Administrators only."
+  "Action réservée aux administrateurs.": "Administrators only.",
+  "Ce matricule ne suit pas le format {0}.": "This member number does not follow the format {0}.",
+  "Format : {0}": "Format: {0}",
+  "Initiales": "Initials",
+  "Le matricule doit suivre le format {0} : remplissez chaque case.": "The member number must follow the format {0}: fill in every box.",
+  "Numéro ({0} chiffres)": "Number ({0} digits)",
+  "Saisir au format": "Enter in the format",
+  "Sert à se connecter ; il ne change plus après la création.": "Used to sign in; it cannot be changed after creation.",
+  "Créé automatiquement à l'enregistrement": "Created automatically when saved"
 }

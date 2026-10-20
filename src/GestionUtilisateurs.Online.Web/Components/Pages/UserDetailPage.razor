@@ -31,6 +31,10 @@
         <h3>@L.T("Coordonnées")</h3>
         <div class="kv-row"><span class="kv-label">@L.T("E-mail")</span><span class="kv-value">@(string.IsNullOrWhiteSpace(_user.Email) ? "—" : _user.Email)</span></div>
         <div class="kv-row"><span class="kv-label">@L.T("Téléphone")</span><span class="kv-value">@(string.IsNullOrWhiteSpace(_user.Telephone) ? "—" : _user.Telephone)</span></div>
+        @if (!string.IsNullOrWhiteSpace(_user.Identifiant))
+        {
+            <div class="kv-row"><span class="kv-label">@L.T("Identifiant")</span><span class="kv-value">@_user.Identifiant</span></div>
+        }
         <div class="kv-row"><span class="kv-label">@L.T("Matricule")</span><span class="kv-value">@(string.IsNullOrWhiteSpace(_user.Matricule) ? "—" : _user.Matricule)</span></div>
         @if (_user.EstMineur || !string.IsNullOrWhiteSpace(_user.ResponsableLegal))
         {
@@ -537,7 +541,7 @@ else
     }
 
     private IReadOnlyList<FieldDefinition> ActiveFields =>
-        Store.Fields.Where(f => f.Actif).OrderBy(f => f.Ordre).ToList();
+        Store.ChampsPersonnalises.Where(f => f.Actif).ToList();
 
     private static string FieldDisplay(FieldDefinition f, FieldValue? val)
     {

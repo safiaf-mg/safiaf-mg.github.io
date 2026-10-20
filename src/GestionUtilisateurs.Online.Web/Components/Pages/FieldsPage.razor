@@ -5,7 +5,7 @@
     <p>@L.T("Personnalisez le formulaire utilisateur : texte, nombre, liste, choix, pièce jointe, image…")</p>
 </div>
 
-@if (Store.Fields.Count == 0)
+@if (Store.ChampsPersonnalises.Count == 0)
 {
     <EmptyState Icon="🧩" Title="@L.T("Aucun champ personnalisé")" Message="@L.T("Ajoutez votre premier champ pour enrichir le formulaire utilisateur.")" />
 }
@@ -117,7 +117,7 @@ else
 
     protected override void OnParametersSet()
     {
-        _fields = Store.Fields.ToList();
+        _fields = Store.ChampsPersonnalises.ToList();
     }
 
     private void OnTypeChanged(ChangeEventArgs e)
@@ -184,7 +184,7 @@ else
                 return;
             }
             _showEditor = false;
-            _fields = Store.Fields.ToList();
+            _fields = Store.ChampsPersonnalises.ToList();
             State.NotifySuccess(_isNew ? L.T("Champ ajouté.") : L.T("Champ modifié."));
         }
         finally
@@ -196,7 +196,7 @@ else
     private void Move(FieldDefinition f, int direction)
     {
         Store.MoveField(f.Id, direction);
-        _fields = Store.Fields.ToList();
+        _fields = Store.ChampsPersonnalises.ToList();
     }
 
     private void AskDelete(FieldDefinition f) => _deleteTarget = f;
@@ -213,7 +213,7 @@ else
             State.NotifyError(result.Error);
             return;
         }
-        _fields = Store.Fields.ToList();
+        _fields = Store.ChampsPersonnalises.ToList();
         State.NotifySuccess(L.F("Champ supprimé : {0}", target.Label));
     }
 }

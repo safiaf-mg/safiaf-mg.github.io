@@ -4,6 +4,16 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 20 octobre 2026 (identifiant et matricule au format)
+
+- Fiche d'un membre : l'« Identifiant » est un champ par défaut, dans la
+  partie « Compte », et n'apparaît plus parmi les champs personnalisés.
+- Matricule : quand un format est réglé (ex. M-{NNNN}), la partie fixe
+  « M- » est figée et on ne remplit que les cases, sans dépasser leur
+  longueur (4 chiffres pour {NNNN}). « 7 » devient « 0007 ». Un ancien
+  matricule hors format reste accepté tant qu'on ne le change pas.
+- L'icône de « Quitter l'aperçu » est maintenant toujours visible.
+
 ## 20 octobre 2026 (accès selon le rôle)
 
 - Les menus, les pages, l'accueil et le guide suivent la grille « Rôles et
