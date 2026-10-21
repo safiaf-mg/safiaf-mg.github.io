@@ -186,14 +186,19 @@ window.guWebPrint = {
             var w = window.open('', '_blank', 'width=900,height=700');
             if (!w) return false;
             var hasSize = pageWidthPt > 0 && pageHeightPt > 0;
+            var w2 = hasSize ? (+pageWidthPt).toFixed(2) + 'pt' : '';
+            var h2 = hasSize ? (+pageHeightPt).toFixed(2) + 'pt' : '';
             var pageRule = hasSize
-                ? '@page{size:' + Math.round(pageWidthPt) + 'pt ' + Math.round(pageHeightPt) + 'pt;margin:0}'
+                ? '@page{size:' + w2 + ' ' + h2 + ';margin:0}'
                 : '@page{size:auto;margin:0}';
+            // Chaque page a exactement la taille de la feuille : sans hauteur fixe, le
+            // moteur d'impression arrondit et fait déborder chaque face sur une page de plus.
             var css = '<style>' + pageRule +
                 'html,body{margin:0 !important;padding:0 !important;background:#fff}' +
                 'body{font-family:Segoe UI,system-ui,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
-                '.print-page{margin:0;padding:0;page-break-after:always;overflow:hidden}' +
-                '.print-page:last-child{page-break-after:auto}' +
+                '.print-page{margin:0;padding:0;overflow:hidden;break-inside:avoid;page-break-after:always;break-after:page' +
+                (hasSize ? ';width:' + w2 + ';height:calc(' + h2 + ' - 0.5pt)' : '') + '}' +
+                '.print-page:last-child{page-break-after:auto;break-after:auto}' +
                 'img{max-width:100%}</style>';
             var body = '';
             for (var i = 0; i < pagesHtml.length; i++) body += '<div class="print-page">' + pagesHtml[i] + '</div>';

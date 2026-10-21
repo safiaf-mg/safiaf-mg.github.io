@@ -63,11 +63,15 @@ else
         <button class="btn btn-secondary btn-sm" @onclick="CloseConversation">← @L.T("Conversations")</button>
         <div style="flex:1;min-width:0">
             <h2 style="margin:0;font-size:18px;font-weight:700">@ConversationIcon(_conversation) @ConversationTitle(_conversation)</h2>
-            @if (DataStore.EstDiscussionDeGroupe(_conversation))
+            @if (_conversation != DataStore.ConversationAnnonces && Store.ParticipantsConversation(_conversation).Count >= 3)
             {
                 <div class="text-muted" style="font-size:12px">@ParticipantsLabel(_conversation)</div>
             }
         </div>
+        @if (Store.PeutRenommerConversation(_conversation))
+        {
+            <button type="button" class="btn-icon" aria-label="@L.T("Renommer la conversation")" title="@L.T("Renommer la conversation")" @onclick="OuvrirRenommer">✏️</button>
+        }
         <button type="button" class="btn-icon danger" aria-label="@L.T("Supprimer la conversation")" title="@L.T("Supprimer la conversation")" @onclick="() => _supprimerConv = true">🗑</button>
     </div>
     <div class="msg-thread">
@@ -158,6 +162,22 @@ else
     </FooterContent>
 </Modal>
 
+<Modal Title="@L.T("Renommer la conversation")" Show="_renommer" OnClose="() => _renommer = false">
+    <ChildContent>
+        <div class="form-group">
+            <label for="msg-conv-nom">@L.T("Nom de la conversation")</label>
+            <input id="msg-conv-nom" type="text" maxlength="80" placeholder="@L.T("Ex : Comité de la kermesse")"
+                   value="@_nouveauNom" @oninput="e => _nouveauNom = e.Value?.ToString() ?? string.Empty" />
+            <span class="field-hint">@L.T("Le nom est visible par tous les participants.")</span>
+        </div>
+        <span class="form-error">@_renommerErreur</span>
+    </ChildContent>
+    <FooterContent>
+        <button class="btn btn-secondary" @onclick="() => _renommer = false">@L.T("Annuler")</button>
+        <button class="btn btn-primary" @onclick="Renommer">@L.T("Enregistrer")</button>
+    </FooterContent>
+</Modal>
+
 <Modal Title="@L.T("Supprimer la conversation")" Show="_supprimerConv" OnClose="() => _supprimerConv = false">
     <ChildContent>
         <p style="margin-top:0">@L.T("La conversation disparaît de votre liste. Elle reviendra si quelqu'un y écrit de nouveau, avec les nouveaux messages seulement.")</p>
@@ -207,6 +227,9 @@ else
     private bool _groupe;
     private string _nomGroupe = "";
     private bool _supprimerConv;
+    private bool _renommer;
+    private string _nouveauNom = "";
+    private string _renommerErreur = "";
     private HashSet<string> _dest = new();
     private string _newTexte = "";
     private string _newError = "";
@@ -311,7 +334,7 @@ else
     private string ConversationIcon(string cid)
         => cid == DataStore.ConversationAnnonces ? "📢"
             : Store.GroupeDeConversation(cid) != null ? "⛪"
-            : DataStore.EstDiscussionDeGroupe(cid) ? "👥" : "💬";
+            : DataStore.EstDiscussionDeGroupe(cid) || Store.ParticipantsConversation(cid).Count >= 3 ? "👥" : "💬";
 
     private string ParticipantsLabel(string cid)
         => string.Join(", ", Store.ParticipantsConversation(cid)
@@ -320,11 +343,9 @@ else
     private string ConversationTitle(string cid)
     {
         if (cid == DataStore.ConversationAnnonces) return L.T("Annonces");
-        if (DataStore.EstDiscussionDeGroupe(cid))
-        {
-            var nom = Store.NomDiscussion(cid);
-            return nom.Length > 0 ? nom : L.T("Discussion");
-        }
+        var nom = Store.NomDiscussion(cid);
+        if (nom.Length > 0) return nom;
+        if (DataStore.EstDiscussionDeGroupe(cid)) return L.T("Discussion");
         var parts = cid.StartsWith("mp:", StringComparison.OrdinalIgnoreCase)
             ? cid[3..].Split('+', StringSplitOptions.RemoveEmptyEntries)
             : new[] { cid };
@@ -370,6 +391,23 @@ else
         if (!res.Success) { State.NotifyError(res.Error); return; }
         _reply = "";
         LoadThread();
+    }
+
+    private void OuvrirRenommer()
+    {
+        _nouveauNom = _conversation == null ? "" : Store.NomDiscussion(_conversation);
+        _renommerErreur = "";
+        _renommer = true;
+    }
+
+    private void Renommer()
+    {
+        if (_conversation == null) return;
+        var res = Store.RenommerConversation(_conversation, _nouveauNom);
+        if (!res.Success) { _renommerErreur = res.Error; return; }
+        _renommer = false;
+        State.NotifySuccess(L.T("Conversation renommée."));
+        RefreshList();
     }
 
     private void SupprimerConversation(bool pourTous)

@@ -62,10 +62,43 @@ public partial class DataStore
             .Where(x => x.Length > 0 && !MemeId(x, me))
             .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         if (autres.Count < 2) return OperationResult.Fail(L.T("Choisissez au moins deux membres pour un groupe."));
-        var existe = GetConversations(me).Any(c => EstDiscussionDeGroupe(c.ConversationId)
-            && CleDoublon(NomDiscussion(c.ConversationId)) == CleDoublon(nom));
+        var existe = GetConversations(me).Any(c => CleDoublon(NomDiscussion(c.ConversationId)) == CleDoublon(nom));
         if (existe) return OperationResult.Fail(L.F("Une discussion « {0} » existe déjà : écrivez-y directement.", nom));
         return SendMessage(autres, texte, PrefixeGroupe + Guid.NewGuid().ToString("N"), nom);
+    }
+
+    /// <summary>
+    /// Une conversation à plusieurs (au moins trois personnes) peut recevoir un nom ou
+    /// changer de nom ; celle d'un groupe et ministère suit le nom du groupe.
+    /// </summary>
+    public bool PeutRenommerConversation(string conversationId)
+        => conversationId != ConversationAnnonces
+           && GroupeDeConversation(conversationId) == null
+           && ParticipantsConversation(conversationId).Count >= 3
+           && ParticipantsConversation(conversationId).Any(p => MemeId(p, MonIdentifiant));
+
+    /// <summary>Renomme une conversation à plusieurs ; un nom vide la remet sans nom (sauf discussion de groupe).</summary>
+    public OperationResult RenommerConversation(string conversationId, string nom)
+    {
+        if (GroupeDeConversation(conversationId) is { } g)
+            return OperationResult.Fail(L.F("Cette discussion porte le nom du groupe « {0} » : renommez le groupe dans « Groupes et ministères ».", g.Nom));
+        if (!PeutRenommerConversation(conversationId))
+            return OperationResult.Fail(L.T("Seule une conversation à plusieurs peut recevoir un nom."));
+        nom = (nom ?? "").Trim();
+        if (nom.Length == 0 && EstDiscussionDeGroupe(conversationId)) return OperationResult.Fail(L.T("Donnez un nom au groupe."));
+        if (nom.Length > 80) return OperationResult.Fail(L.T("Le nom ne doit pas dépasser 80 caractères."));
+        var me = MonIdentifiant;
+        if (nom.Length > 0 && GetConversations(me).Any(c => c.ConversationId != conversationId
+                && CleDoublon(NomDiscussion(c.ConversationId)) == CleDoublon(nom)))
+            return OperationResult.Fail(L.F("Une discussion « {0} » existe déjà : écrivez-y directement.", nom));
+        var ancien = NomDiscussion(conversationId);
+        foreach (var m in _messages.Where(m => m.ConversationId == conversationId)) m.NomGroupe = nom;
+        SaveMessages();
+        LogActivity(ActivityTypes.MessageUpdate, nom.Length == 0
+            ? "Conversation « " + ancien + " » remise sans nom"
+            : ancien.Length == 0 ? "Conversation nommée « " + nom + " »" : "Conversation « " + ancien + " » renommée « " + nom + " »");
+        DataChanged?.Invoke();
+        return OperationResult.Ok();
     }
 
     /// <summary>Répond dans une conversation existante : mêmes participants, même nom de groupe.</summary>

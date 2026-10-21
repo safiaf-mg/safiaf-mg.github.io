@@ -239,6 +239,7 @@ public static class HelpCatalog
                     "« Nouveau groupe » crée une discussion à son nom avec plusieurs membres ; « Écrire au groupe » d'un groupe et ministère écrit dans la discussion de ce groupe.",
                     "Touchez une conversation pour la lire et répondre.",
                     "🗑 en haut d'une conversation la retire de votre liste ; elle revient si quelqu'un y écrit de nouveau.",
+                    "✏️ en haut d'une conversation à trois personnes ou plus lui donne un nom ou le change.",
                     "Le compteur sur le menu « … » signale les conversations non lues."
                 })
             }),
@@ -319,6 +320,7 @@ public static class HelpCatalog
                     "Pour un membre de moins de 18 ans, la carte indique « Mineur » et le responsable légal.",
                     "Touchez le QR code pour l'agrandir et le faire scanner facilement.",
                     "« Exporter en PDF » ouvre la fenêtre d'impression : choisissez « Enregistrer au format PDF » pour obtenir une carte utilisable hors application.",
+                    "La carte a le format badge standard (85,6 × 54 mm, format carte bancaire). « Planche A4 à découper » imprime recto et verso sur une feuille A4 : imprimez à 100 %, découpez, pliez et plastifiez.",
                     "Slogan et citation du dos se personnalisent dans les Paramètres."
                 })
             }),

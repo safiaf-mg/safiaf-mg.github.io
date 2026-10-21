@@ -218,18 +218,25 @@
             <span class="field-hint">@L.T("Affichée au dos de la carte de membre.")</span>
         </div>
         <div class="form-group">
-            <label for="st-carte-largeur">@L.T("Taille réelle à l'impression (mm)")</label>
-            <div class="quota-input-row">
-                <input id="st-carte-largeur" type="number" min="50" max="150" value="@_carteLargeurMm"
-                       @oninput="e => _carteLargeurMm = int.TryParse(e.Value?.ToString(), out var w) ? w : 85"
-                       aria-label="@L.T("Largeur de la carte en millimètres")" style="max-width:90px" />
-                <span class="quota-input-unit">×</span>
-                <input id="st-carte-hauteur" type="number" min="30" max="100" value="@_carteHauteurMm"
-                       @oninput="e => _carteHauteurMm = int.TryParse(e.Value?.ToString(), out var h) ? h : 55"
-                       aria-label="@L.T("Hauteur de la carte en millimètres")" style="max-width:90px" />
-                <span class="quota-input-unit">mm</span>
-            </div>
-            <span class="field-hint">@L.T("Format standard : 85 × 55 mm. Appliqué au PDF et à l'impression.")</span>
+            <label for="st-carte-format">@L.T("Taille réelle à l'impression")</label>
+            <select id="st-carte-format" value="@_carteFormat" @onchange="e => _carteFormat = e.Value?.ToString() ?? AppSettings.CarteFormatBadge">
+                <option value="@AppSettings.CarteFormatBadge">@L.T("Badge standard (format carte bancaire, 85,6 × 54 mm)")</option>
+                <option value="@AppSettings.CarteFormatPerso">@L.T("Taille personnalisée")</option>
+            </select>
+            @if (_carteFormat == AppSettings.CarteFormatPerso)
+            {
+                <div class="quota-input-row" style="margin-top:8px">
+                    <input id="st-carte-largeur" type="number" min="50" max="150" value="@_carteLargeurMm"
+                           @oninput="e => _carteLargeurMm = int.TryParse(e.Value?.ToString(), out var w) ? w : 86"
+                           aria-label="@L.T("Largeur de la carte en millimètres")" style="max-width:90px" />
+                    <span class="quota-input-unit">×</span>
+                    <input id="st-carte-hauteur" type="number" min="30" max="100" value="@_carteHauteurMm"
+                           @oninput="e => _carteHauteurMm = int.TryParse(e.Value?.ToString(), out var h) ? h : 54"
+                           aria-label="@L.T("Hauteur de la carte en millimètres")" style="max-width:90px" />
+                    <span class="quota-input-unit">mm</span>
+                </div>
+            }
+            <span class="field-hint">@L.T("Le badge standard tient dans les porte-badges et les pochettes de plastification courants, et convient aux imprimantes de cartes PVC.")</span>
         </div>
         <div class="form-group">
             <label for="st-matricule">@L.T("Format du matricule")</label>
@@ -437,6 +444,7 @@
     }
     private int _carteLargeurMm = 85;
     private int _carteHauteurMm = 55;
+    private string _carteFormat = AppSettings.CarteFormatBadge;
     private bool _saving;
     private bool _confirmLogout;
     private bool _logoPreview;
@@ -639,6 +647,7 @@
         _matriculeFormat = s.MatriculeFormat ?? "";
         _carteLargeurMm = s.CarteLargeurMm > 0 ? s.CarteLargeurMm : 85;
         _carteHauteurMm = s.CarteHauteurMm > 0 ? s.CarteHauteurMm : 55;
+        _carteFormat = s.CarteEnBadge ? AppSettings.CarteFormatBadge : AppSettings.CarteFormatPerso;
         _sessionTimeout = s.SessionTimeoutMinutes;
         _autoExport = s.ExportAutoMensuel;
         _storageQuotaMb = _quotaDirty ? _storageQuotaMb
@@ -743,6 +752,7 @@
                 MatriculeFormat = _matriculeFormat.Trim(),
                 CarteLargeurMm = Math.Clamp(_carteLargeurMm, 50, 150),
                 CarteHauteurMm = Math.Clamp(_carteHauteurMm, 30, 100),
+                CarteFormat = _carteFormat,
                 SessionTimeoutMinutes = _sessionTimeout,
                 ExportAutoMensuel = _autoExport,
                 DernierExportAuto = prev.DernierExportAuto,

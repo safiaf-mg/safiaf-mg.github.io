@@ -109,9 +109,10 @@ else
         </div>
         <div class="form-actions no-print" style="margin-top:12px">
             <button class="btn btn-secondary" @onclick="() => _showBack = !_showBack">@(_showBack ? L.T("↺ Face avant") : L.T("↻ Voir le dos"))</button>
-            <button class="btn btn-primary" @onclick="ExportPdfAsync" disabled="@_exporting">@(_exporting ? L.T("Export…") : L.T("⤓ Exporter en PDF"))</button>
+            <button class="btn btn-primary" @onclick="() => ExportPdfAsync(false)" disabled="@_exporting">@(_exporting ? L.T("Export…") : L.T("⤓ Exporter en PDF"))</button>
+            <button class="btn btn-secondary" @onclick="() => ExportPdfAsync(true)" disabled="@_exporting">@L.T("🖨 Planche A4 à découper")</button>
         </div>
-        <p class="muted no-print" style="font-size:12.5px">@L.F("Le QR code contient la fiche contact (vCard) lisible par tout lecteur. « Export PDF » enregistre les deux faces en PDF à la taille réelle configurée ({0} × {1} mm).", CardWidthMm, CardHeightMm)</p>
+        <p class="muted no-print" style="font-size:12.5px">@L.F("Le QR code contient la fiche contact (vCard) lisible par tout lecteur. « Exporter en PDF » donne 2 pages (recto, verso) à la taille réelle du badge ({0} × {1} mm), pour une imprimante de cartes. « Planche A4 » place le recto et le verso côte à côte sur une feuille A4 : imprimez à 100 % (taille réelle), découpez, pliez au milieu puis plastifiez ou glissez dans un porte-badge.", MmTexte(CardWidthMm), MmTexte(CardHeightMm))</p>
     }
     else
     {
@@ -249,18 +250,19 @@ else
     private static string Vcf(string? s)
         => (s ?? "").Replace("\\", "\\\\").Replace(";", "\\;").Replace(",", "\\,").Replace("\n", "\\n").Trim();
 
-    private async Task ExportPdfAsync()
+    private async Task ExportPdfAsync(bool planche)
     {
         if (Current == null) return;
         _exporting = true;
         try
         {
             var user = Current;
-            var fileName = "carte-membre-" + user.Identifiant + ".pdf";
-            // Recto + verso : une page PDF par face, à la taille réelle réglée
-            // dans les paramètres (défaut 85 × 55 mm).
-            var pages = new[] { BuildCardFrontHtml(), BuildCardBackHtml() };
-            var path = await Saver.SaveHtmlAsPdfAsync(fileName, pages, MmToPt(CardWidthMm), MmToPt(CardHeightMm));
+            var fileName = "carte-membre-" + user.Identifiant + (planche ? "-a4" : "") + ".pdf";
+            // Badge : une page PDF par face, à la taille réelle réglée dans les paramètres
+            // (défaut : format carte bancaire 85,6 × 54 mm). Planche : une feuille A4.
+            var pages = planche ? new[] { BuildPlancheHtml() } : new[] { BuildCardFrontHtml(), BuildCardBackHtml() };
+            var (largeur, hauteur) = planche ? (A4LargeurMm, A4HauteurMm) : (CardWidthMm, CardHeightMm);
+            var path = await Saver.SaveHtmlAsPdfAsync(fileName, pages, MmToPt(largeur), MmToPt(hauteur));
             if (path == null)
                 State.NotifyError(L.T("Échec de l'export PDF de la carte."));
             else
@@ -270,8 +272,14 @@ else
     }
 
     /// <summary>Taille réelle de la carte à l'impression (mm, réglable en paramètres).</summary>
-    private double CardWidthMm => Store.Settings.CarteLargeurMm > 0 ? Store.Settings.CarteLargeurMm : 85;
-    private double CardHeightMm => Store.Settings.CarteHauteurMm > 0 ? Store.Settings.CarteHauteurMm : 55;
+    private double CardWidthMm => Store.Settings.CarteTailleMm.Largeur;
+    private double CardHeightMm => Store.Settings.CarteTailleMm.Hauteur;
+
+    private const double A4LargeurMm = 210, A4HauteurMm = 297;
+
+    private static string MmTexte(double mm) => mm.ToString("0.#", System.Globalization.CultureInfo.CurrentCulture);
+
+    private static string Css(double v) => v.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
 
     private static double MmToPt(double mm) => mm * 72.0 / 25.4;
 
@@ -284,15 +292,55 @@ else
 
     private string BuildCardBackHtml() => CardDocHead() + CardBackBody() + "</body></html>";
 
+    /// <summary>
+    /// Feuille A4 : recto et verso côte à côte à taille réelle, séparés par la ligne de
+    /// pliage, avec des traits de coupe aux coins pour découper au massicot ou aux ciseaux.
+    /// </summary>
+    private string BuildPlancheHtml()
+    {
+        var w = Css(CardWidthMm);
+        var h = Css(CardHeightMm);
+        var style = "<style>"
+            + ".sheet{width:210mm;padding-top:20mm;display:flex;flex-direction:column;align-items:center;color:#41506b}"
+            + ".pair{position:relative;display:flex}"
+            + ".slot{width:" + w + "mm;height:" + h + "mm}"
+            // Coins droits : la carte se découpe et se plie au ras du bord.
+            + ".slot .card{border-radius:0}"
+            + ".fold{position:absolute;left:50%;top:-6mm;bottom:-6mm;border-left:.3mm dashed #8a94a6}"
+            + ".mark{position:absolute;background:#41506b}"
+            + ".mh{width:5mm;height:.2mm}.mv{width:.2mm;height:5mm}"
+            + ".tips{margin-top:12mm;font-size:10pt;line-height:1.5;max-width:" + Css(CardWidthMm * 2) + "mm}"
+            + ".tips strong{color:#0b2a6b}"
+            + "</style>";
+        // Traits de coupe : 4 coins du rectangle recto + verso, décalés de 2 mm.
+        var marks = new System.Text.StringBuilder();
+        foreach (var (x, y) in new[] { ("0", "0"), ("100%", "0"), ("0", "100%"), ("100%", "100%") })
+        {
+            var dx = x == "0" ? "-7mm" : "2mm";
+            var dy = y == "0" ? "-7mm" : "2mm";
+            marks.Append("<span class=\"mark mh\" style=\"left:calc(" + x + " + " + dx + ");top:" + y + "\"></span>");
+            marks.Append("<span class=\"mark mv\" style=\"left:" + x + ";top:calc(" + y + " + " + dy + ")\"></span>");
+        }
+        return CardDocHead() + style
+            + "<div class=\"sheet\"><div class=\"pair\">"
+            + "<div class=\"slot\">" + CardFrontBody() + "</div>"
+            + "<div class=\"slot\">" + CardBackBody() + "</div>"
+            + "<span class=\"fold\"></span>" + marks + "</div>"
+            + "<div class=\"tips\"><strong>" + H(L.F("Badge {0} × {1} mm", MmTexte(CardWidthMm), MmTexte(CardHeightMm))) + "</strong><br />"
+            + H(L.T("1. Imprimez à 100 % (taille réelle), sans « Ajuster à la page »."))+ "<br />"
+            + H(L.T("2. Découpez le rectangle en suivant les traits de coupe."))+ "<br />"
+            + H(L.T("3. Pliez sur le pointillé, dos contre dos, puis plastifiez ou glissez dans un porte-badge."))
+            + "</div></div></body></html>";
+    }
+
     private string CardDocHead()
     {
         var user = Current!;
         // Gabarit réservé au PDF : la carte remplit toute la largeur du rendu avec le
-        // ratio exact configuré (défaut 85 × 55 mm). Le bitmap a donc le même ratio que
+        // ratio exact configuré (défaut 85,6 × 54 mm). Le bitmap a donc le même ratio que
         // la page PDF et la carte y tient à taille réelle. Les dimensions internes sont
         // en cqw (proportionnelles à la carte, repli px pour les moteurs anciens).
-        var ratio = CardWidthMm.ToString("0", System.Globalization.CultureInfo.InvariantCulture)
-            + "/" + CardHeightMm.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
+        var ratio = Css(CardWidthMm) + "/" + Css(CardHeightMm);
         return "<!DOCTYPE html><html lang=\"" + L.Langue + "\"><head><meta charset=\"utf-8\" />"
             + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />"
             + "<title>" + H(L.F("Carte de membre — {0}", user.NomComplet)) + "</title>"
@@ -300,7 +348,7 @@ else
             + "*{box-sizing:border-box}"
             + "html,body{margin:0;padding:0}"
             + "body{font-family:'Segoe UI',system-ui,sans-serif;background:#fff}"
-            + ".card{position:relative;overflow:hidden;width:100%;margin:0;aspect-ratio:" + ratio + ";container-type:inline-size;"
+            + ".card{position:relative;overflow:hidden;width:100%;height:100%;margin:0;aspect-ratio:" + ratio + ";container-type:inline-size;"
             + "padding:22px 24px;padding:4.2cqw 4.6cqw;border-radius:26px;border-radius:5cqw;color:#fff;"
             + "background:linear-gradient(135deg,#0b2a6b 0%,#1e4fb0 55%,#4f9de0 100%)}"
             + ".card.back{background:linear-gradient(135deg,#f6f9ff 0%,#e3edff 100%);color:#0b2a6b}"

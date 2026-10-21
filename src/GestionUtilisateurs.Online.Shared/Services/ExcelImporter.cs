@@ -43,9 +43,11 @@ public static class ExcelImporter
             if (!colMap.Values.Any(v => StandardHeaders.Contains(v)))
                 return new ImportResult { Success = false, Error = L.T("Le fichier ne ressemble pas à un export utilisateur (en-têtes introuvables).") };
 
+            // En-têtes et libellés comparés sous la même forme : un champ « Baptisé » ou
+            // « Lieu d'origine » est retrouvé malgré ses accents et apostrophes.
             var fieldByLabel = new Dictionary<string, FieldDefinition>(StringComparer.OrdinalIgnoreCase);
             foreach (var f in fields)
-                if (!string.IsNullOrWhiteSpace(f.Label)) fieldByLabel[f.Label.Trim()] = f;
+                if (!string.IsNullOrWhiteSpace(f.Label)) fieldByLabel[NormalizeHeader(f.Label)] = f;
 
             var users = new List<UserAccount>();
             for (var r = 1; r < sheetRows.Count; r++)
@@ -74,6 +76,9 @@ public static class ExcelImporter
                         case "date creation": u.DateCreation = ParseDate(row[c]); break;
                         case "derniere connexion": u.DerniereConnexion = string.IsNullOrWhiteSpace(row[c]) ? null : row[c]; break;
                         case "notes": u.Notes = row[c]; break;
+                        case "date de deces": u.DateDeces = ParseYmd(row[c]); break;
+                        case "responsable legal": u.ResponsableLegal = row[c].Trim(); break;
+                        case "telephone du responsable": u.ResponsableTelephone = row[c].Trim(); break;
                         default:
                             if (fieldByLabel.TryGetValue(key, out var f))
                                 u.Champs[f.Id] = FieldValueFrom(f, row[c]);
