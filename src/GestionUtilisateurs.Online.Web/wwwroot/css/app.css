@@ -3297,6 +3297,36 @@ img.cmc-logo { display: block; }
 .community-dot-btn { min-width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); font-weight: 700; cursor: pointer; }
 .community-dot-btn.active { background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
 
+/* Histoire : date souple, photos multiples et frise */
+.community-date-row { display: flex; gap: 8px; }
+.community-date-row select { flex: 1.3; min-width: 0; }
+.community-date-row input { flex: 1; min-width: 0; }
+.community-photo-edit-list { display: flex; flex-direction: column; gap: 8px; }
+.community-photo-edit { display: flex; gap: 10px; align-items: flex-start; padding: 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.community-photo-edit img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; flex: 0 0 auto; }
+.community-photo-edit-main { flex: 1; min-width: 0; }
+.community-photo-edit-main .community-actions { margin-top: 6px; }
+.community-gallery { display: flex; flex-direction: column; gap: 6px; }
+.community-caption { font-size: 13px; color: var(--text-muted); font-style: italic; text-align: center; overflow-wrap: anywhere; }
+.community-thumbs { display: flex; gap: 6px; align-items: center; overflow-x: auto; padding-bottom: 2px; }
+.community-thumb { flex: 0 0 auto; width: 60px; height: 46px; padding: 0; border: 2px solid transparent; border-radius: 9px; overflow: hidden; background: none; cursor: pointer; }
+.community-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.community-thumb.active { border-color: var(--accent); }
+.community-thumbs-count { margin-left: auto; padding-left: 6px; font-size: 12.5px; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+.community-viewer { flex-direction: column; align-items: center; gap: 8px; }
+.community-frise { display: flex; flex-direction: column; margin-top: 12px; }
+.community-frise-item { display: flex; gap: 10px; }
+.community-frise-rail { flex: 0 0 52px; display: flex; flex-direction: column; align-items: center; }
+.community-frise-year { background: var(--accent); color: var(--accent-contrast); font-weight: 800; font-size: 12.5px; border-radius: 999px; padding: 3px 8px; }
+.community-frise-line { flex: 1; width: 3px; margin: 4px 0; background: color-mix(in srgb, var(--accent) 30%, transparent); border-radius: 2px; }
+.community-frise-item:last-child .community-frise-line { visibility: hidden; }
+.community-frise-card { flex: 1; min-width: 0; display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding: 9px; text-align: left; font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); cursor: pointer; }
+.community-frise-card:hover { border-color: var(--accent); }
+.community-frise-thumb { width: 64px; height: 52px; object-fit: cover; border-radius: 8px; flex: 0 0 auto; }
+.community-frise-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.community-frise-main .community-title { margin: 1px 0 2px; }
+.community-frise-excerpt { font-size: 12.5px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 /* Le lecteur d'histoires autorise le swipe horizontal (le défilement vertical reste natif) */
 .community-reader { touch-action: pan-y; }
 

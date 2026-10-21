@@ -448,8 +448,18 @@ public class CommunityChapter
     public string Id { get; set; } = "";
     public string Titre { get; set; } = "";
     public string Texte { get; set; } = "";
+    /// <summary>« JJ/MM/AAAA », « MM/AAAA » (mois connu) ou « AAAA » (année seule).</summary>
     public string Date { get; set; } = "";
+    /// <summary>Ancienne image unique : lue comme première photo tant que <see cref="Photos"/> est vide.</summary>
     public string? Image { get; set; }
+    public List<CommunityPhoto> Photos { get; set; } = new();
+}
+
+/// <summary>Photo d'un chapitre de l'histoire, avec sa légende.</summary>
+public class CommunityPhoto
+{
+    public string Image { get; set; } = "";
+    public string Legende { get; set; } = "";
 }
 
 public class CommunityStory

@@ -224,11 +224,13 @@ window.guCommunity = {
         window.guCommunity._ref = dotnetRef;
         if (window.guCommunity._bound) return;
         window.guCommunity._bound = true;
-        var startX = 0, startY = 0, startT = 0, tracking = false;
+        var startX = 0, startY = 0, startT = 0, tracking = false, onPhoto = false;
         document.addEventListener('touchstart', function (e) {
             if (e.touches.length !== 1) { tracking = false; return; }
             var t = e.target && e.target.closest ? e.target.closest('.community-reader, .community-card, .community-dots') : null;
             if (!t) { tracking = false; return; }
+            // Sur les photos d'un chapitre, le balayage change de photo plutôt que de chapitre.
+            onPhoto = !!e.target.closest('.community-gallery');
             var p = e.touches[0];
             startX = p.clientX;
             startY = p.clientY;
@@ -243,7 +245,7 @@ window.guCommunity = {
             var dt = Date.now() - startT;
             if (dt < 700 && Math.abs(dx) > 70 && Math.abs(dx) > 1.5 * Math.abs(dy)) {
                 try {
-                    window.guCommunity._ref.invokeMethodAsync('OnSwipeChapter', dx < 0 ? 1 : -1);
+                    window.guCommunity._ref.invokeMethodAsync(onPhoto ? 'OnSwipePhoto' : 'OnSwipeChapter', dx < 0 ? 1 : -1);
                 } catch (_) { }
             }
         }, { passive: true });

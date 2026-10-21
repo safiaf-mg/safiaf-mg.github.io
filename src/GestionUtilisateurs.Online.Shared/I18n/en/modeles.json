@@ -361,5 +361,7 @@
   "Son pupille (sous sa tutelle)": "Their ward (under their guardianship)",
   "Un autre membre de sa famille": "Another relative",
   "{0} (tuteur)": "{0} (guardian)",
-  "« Listes de choix » (gestionnaires) règle les choix des formulaires : ajouter, renommer, réordonner, masquer ou supprimer un type, un lien de famille, une priorité, une catégorie…": "“Choice lists” (managers) sets the choices in forms: add, rename, reorder, hide or delete a type, a family link, a priority, a category…"
+  "« Listes de choix » (gestionnaires) règle les choix des formulaires : ajouter, renommer, réordonner, masquer ou supprimer un type, un lien de famille, une priorité, une catégorie…": "“Choice lists” (managers) sets the choices in forms: add, rename, reorder, hide or delete a type, a family link, a priority, a category…",
+  "« Frise » montre tous les chapitres avec leur année ; touchez-en un pour le lire.": "“Timeline” shows every chapter with its year; tap one to read it.",
+  "Un chapitre peut avoir un jour précis, un mois ou seulement une année, et plusieurs photos avec leur légende.": "A chapter can have an exact day, a month or just a year, and several photos with their captions."
 }

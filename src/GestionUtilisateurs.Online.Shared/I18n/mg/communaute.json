@@ -270,5 +270,20 @@
   "Histoire enregistrée.": "Voatahiry ny tantara.",
   "Chapitre ajouté.": "Voampy ny toko.",
   "Chapitre enregistré.": "Voatahiry ny toko.",
-  "Chapitre supprimé.": "Voafafa ny toko."
+  "Chapitre supprimé.": "Voafafa ny toko.",
+  "Affichage de l'histoire": "Fampisehoana ny tantara",
+  "Ajouter une photo": "Hanampy sary",
+  "Année (ex : 1993)": "Taona (ohatra : 1993)",
+  "Choisissez le mois et l'année (4 chiffres).": "Safidio ny volana sy ny taona (tarehimarika 4).",
+  "Frise": "Fandaharam-potoana",
+  "Indiquez l'année avec 4 chiffres (ex : 1993).": "Soraty amin'ny tarehimarika 4 ny taona (ohatra : 1993).",
+  "Jour exact": "Andro marina",
+  "Légende (facultatif)": "Fanazavana (tsy voatery)",
+  "Légende de la photo {0}": "Fanazavana ny sary {0}",
+  "Photo {0}": "Sary {0}",
+  "Photos (facultatif, max 5 Mo chacune, {0} au plus)": "Sary (tsy voatery, 5 Mo isaky ny iray, {0} farafahabetsany)",
+  "Précision de la date": "Fahamarinan'ny daty",
+  "Quand on ne connaît pas le jour exact, mettez seulement le mois ou l'année.": "Raha tsy fantatra ny andro marina, ny volana na ny taona ihany no soratana.",
+  "Touchez un chapitre pour le lire.": "Tsindrio ny toko iray hamakiana azy.",
+  "{0} photos": "Sary {0}"
 }
