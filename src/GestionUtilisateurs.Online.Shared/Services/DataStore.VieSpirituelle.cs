@@ -321,18 +321,21 @@ public partial class DataStore
         => EstDiscussionDeGroupe(id) ? id : PrefixeGroupe + id;
 
     /// <summary>
-    /// Groupes à qui le membre peut confier une intention : les discussions de groupe de
-    /// sa Messagerie (créées dans la Messagerie ou d'un groupe et ministère), sans celles
-    /// qu'il a supprimées.
+    /// Groupes à qui le membre peut confier une intention : tous ceux dont il fait partie,
+    /// discussions de groupe de sa Messagerie et groupes et ministères (même sans message),
+    /// sauf ceux qu'il a supprimés de sa Messagerie.
     /// </summary>
     public IReadOnlyList<(string Id, string Nom)> GroupesDePriere(string? identifiant)
     {
         var me = (identifiant ?? "").Trim();
         if (me.Length == 0) return new List<(string, string)>();
-        return GetConversations(me)
-            .Where(c => EstDiscussionDeGroupe(c.ConversationId)
-                        && ParticipantsConversation(c.ConversationId).Any(x => MemeId(x, me)))
-            .Select(c => (c.ConversationId, Nom: NomDiscussion(c.ConversationId)))
+        var discussions = GetConversations(me).Select(c => c.ConversationId)
+            .Where(id => EstDiscussionDeGroupe(id) && ParticipantsConversation(id).Any(x => MemeId(x, me)));
+        // Un groupe et ministère est proposé sans attendre un premier message, sauf si le membre a supprimé sa discussion.
+        var ministeres = GroupesDe(me).Select(g => PrefixeGroupe + g.Id)
+            .Where(id => !_messages.Any(m => m.ConversationId == id && MasquePourMoi(m, me)));
+        return discussions.Concat(ministeres).Distinct()
+            .Select(id => (Id: id, Nom: NomDiscussion(id)))
             .Where(c => c.Nom.Length > 0)
             .OrderBy(c => c.Nom, StringComparer.CurrentCultureIgnoreCase).ToList();
     }
