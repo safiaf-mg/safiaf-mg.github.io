@@ -192,7 +192,9 @@ public static class HelpCatalog
                 {
                     "Touchez le logo en haut de l'écran pour ouvrir l'histoire depuis n'importe où.",
                     "Dans l'écran Communauté, glissez un doigt horizontalement pour changer de chapitre.",
-                    "« ＋ Chapitre » ajoute une étape datée ; le titre et le sous-titre se modifient en haut."
+                    "« ＋ Chapitre » ajoute une étape datée ; le titre et le sous-titre se modifient en haut.",
+                    "« Frise » montre tous les chapitres avec leur année ; touchez-en un pour le lire.",
+                    "Un chapitre peut avoir un jour précis, un mois ou seulement une année, et plusieurs photos avec leur légende."
                 })
             }),
         new("comptes", "Comptes en ligne", "👤",

@@ -4,6 +4,16 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 21 octobre 2026 (histoire : frise, dates souples, photos)
+
+- Histoire de la communauté : un onglet « Frise » montre tous les chapitres
+  avec leur année et leur première photo. Touchez un chapitre pour le lire.
+- La date d'un chapitre peut être un jour exact, un mois (« Mars 2001 ») ou
+  seulement une année (« 1993 ») : pratique pour les débuts de la communauté.
+- Un chapitre peut avoir jusqu'à 10 photos, chacune avec sa légende. En
+  lecture, touchez une vignette ou glissez sur la photo pour passer à la
+  suivante. L'ancienne image d'un chapitre devient sa première photo.
+
 ## 21 octobre 2026 (messagerie plus claire, ajout de membres)
 
 - Nouvelle présentation de la messagerie : en-tête compact (retour, photo,

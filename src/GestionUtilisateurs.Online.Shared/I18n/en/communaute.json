@@ -270,5 +270,20 @@
   "Histoire enregistrée.": "Story saved.",
   "Chapitre ajouté.": "Chapter added.",
   "Chapitre enregistré.": "Chapter saved.",
-  "Chapitre supprimé.": "Chapter deleted."
+  "Chapitre supprimé.": "Chapter deleted.",
+  "Affichage de l'histoire": "Story view",
+  "Ajouter une photo": "Add a photo",
+  "Année (ex : 1993)": "Year (e.g. 1993)",
+  "Choisissez le mois et l'année (4 chiffres).": "Choose the month and the year (4 digits).",
+  "Frise": "Timeline",
+  "Indiquez l'année avec 4 chiffres (ex : 1993).": "Enter the year with 4 digits (e.g. 1993).",
+  "Jour exact": "Exact day",
+  "Légende (facultatif)": "Caption (optional)",
+  "Légende de la photo {0}": "Caption of photo {0}",
+  "Photo {0}": "Photo {0}",
+  "Photos (facultatif, max 5 Mo chacune, {0} au plus)": "Photos (optional, max 5 MB each, up to {0})",
+  "Précision de la date": "Date precision",
+  "Quand on ne connaît pas le jour exact, mettez seulement le mois ou l'année.": "When the exact day is unknown, enter only the month or the year.",
+  "Touchez un chapitre pour le lire.": "Tap a chapter to read it.",
+  "{0} photos": "{0} photos"
 }

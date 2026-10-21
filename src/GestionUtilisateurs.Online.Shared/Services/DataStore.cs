@@ -227,6 +227,7 @@ new ManagedDataSet("archives", "Archives des utilisateurs", "Comptes supprimés 
             _folders.AddRange(Deserialize<List<DocumentFolder>>(_storage.Get(K_FOLDERS)) ?? new List<DocumentFolder>());
             _community = Deserialize<CommunityStory>(_storage.Get(K_COMMUNITY)) ?? new CommunityStory();
             if (_community.Chapitres == null) _community.Chapitres = new List<CommunityChapter>();
+            foreach (var c in _community.Chapitres) c.Photos ??= new List<CommunityPhoto>();
             if (string.IsNullOrWhiteSpace(_community.Titre)) _community.Titre = "Histoire de notre communauté";
             _messages.Clear();
             _messages.AddRange(Deserialize<List<Message>>(_storage.Get(K_MESSAGES)) ?? new List<Message>());
@@ -772,6 +773,7 @@ case "settings":
                         c.Titre = (c.Titre ?? "").Trim();
                         c.Texte ??= "";
                         c.Date ??= "";
+                        c.Photos ??= new List<CommunityPhoto>();
                     }
                     _community = story;
                     SaveCommunity();
@@ -2007,7 +2009,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         // 8) Communauté
         var chapterRows = new List<string[]>();
         foreach (var ch in _community.Chapitres)
-            chapterRows.Add(new[] { ch.Titre, ch.Date, ch.Texte });
+            chapterRows.Add(new[] { ch.Titre, FormatDateHistoire(ch.Date), ch.Texte });
         sheets.Add(new ExcelExporter.Sheet("Communaute", new[] { "Chapitre", "Date", "Texte" }, chapterRows));
 
         // 9) Messages
@@ -2606,7 +2608,60 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         return OperationResult.Ok();
     }
 
-    public OperationResult AddCommunityChapter(string titre, string texte, string dateIso, string? imageDataUrl)
+    /// <summary>Nombre maximal de photos par chapitre.</summary>
+    public const int MaxPhotosChapitre = 10;
+
+    /// <summary>Précision d'une date de chapitre : « annee » (AAAA), « mois » (MM/AAAA) ou « jour ».</summary>
+    public static string PrecisionDateHistoire(string? date)
+    {
+        var d = (date ?? "").Trim();
+        if (System.Text.RegularExpressions.Regex.IsMatch(d, @"^\d{4}$")) return "annee";
+        if (System.Text.RegularExpressions.Regex.IsMatch(d, @"^\d{1,2}/\d{4}$")) return "mois";
+        return "jour";
+    }
+
+    /// <summary>Date d'un chapitre à afficher : « 1993 », « Mars 2001 » ou « 15/08/2018 » (vide si aucune date).</summary>
+    public static string FormatDateHistoire(string? date)
+    {
+        var d = (date ?? "").Trim();
+        if (d.Length == 0) return "";
+        switch (PrecisionDateHistoire(d))
+        {
+            case "annee": return d;
+            case "mois":
+                var parts = d.Split('/');
+                var mois = int.Parse(parts[0], System.Globalization.CultureInfo.InvariantCulture);
+                return mois is >= 1 and <= 12 ? L.Majuscule(L.Mois(mois)) + " " + parts[1] : d;
+            default:
+                var f = FormatDateCourte(d);
+                return f == "—" ? d : f;
+        }
+    }
+
+    /// <summary>Année d'un chapitre (pour la frise), ou vide si la date est inconnue.</summary>
+    public static string AnneeHistoire(string? date)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(FormatDateHistoire(date), @"\d{4}");
+        return m.Success ? m.Value : "";
+    }
+
+    /// <summary>Photos d'un chapitre (l'ancienne image unique compte comme première photo).</summary>
+    public static IReadOnlyList<CommunityPhoto> PhotosChapitre(CommunityChapter c)
+    {
+        var photos = (c.Photos ?? new List<CommunityPhoto>()).Where(p => !string.IsNullOrWhiteSpace(p.Image)).ToList();
+        if (photos.Count == 0 && !string.IsNullOrWhiteSpace(c.Image))
+            photos.Add(new CommunityPhoto { Image = c.Image });
+        return photos;
+    }
+
+    private static List<CommunityPhoto> NettoyerPhotos(IEnumerable<CommunityPhoto>? photos)
+        => (photos ?? Enumerable.Empty<CommunityPhoto>())
+            .Where(p => p != null && !string.IsNullOrWhiteSpace(p.Image))
+            .Take(MaxPhotosChapitre)
+            .Select(p => new CommunityPhoto { Image = p.Image, Legende = (p.Legende ?? "").Trim() })
+            .ToList();
+
+    public OperationResult AddCommunityChapter(string titre, string texte, string date, IEnumerable<CommunityPhoto>? photos = null)
     {
         if (string.IsNullOrWhiteSpace(titre)) return OperationResult.Fail(L.T("Le titre du chapitre est obligatoire."));
         if (_community.Chapitres.Any(c => CleDoublon(c.Titre) == CleDoublon(titre)))
@@ -2616,8 +2671,8 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             Id = Guid.NewGuid().ToString("N"),
             Titre = titre.Trim(),
             Texte = (texte ?? "").Trim(),
-            Date = (dateIso ?? "").Trim(),
-            Image = string.IsNullOrWhiteSpace(imageDataUrl) ? null : imageDataUrl
+            Date = (date ?? "").Trim(),
+            Photos = NettoyerPhotos(photos)
         });
         SaveCommunity();
         LogActivity(ActivityTypes.Create, "Ajout d'un chapitre à l'histoire de la communauté : « " + titre.Trim() + " »");
@@ -2625,16 +2680,16 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         return OperationResult.Ok();
     }
 
-    public OperationResult UpdateCommunityChapter(string id, string titre, string texte, string dateIso, string? imageDataUrl, bool removeImage)
+    public OperationResult UpdateCommunityChapter(string id, string titre, string texte, string date, IEnumerable<CommunityPhoto>? photos)
     {
         var c = _community.Chapitres.FirstOrDefault(x => x.Id == id);
         if (c == null) return OperationResult.Fail(L.T("Chapitre introuvable."));
         if (string.IsNullOrWhiteSpace(titre)) return OperationResult.Fail(L.T("Le titre du chapitre est obligatoire."));
         c.Titre = titre.Trim();
         c.Texte = (texte ?? "").Trim();
-        c.Date = (dateIso ?? "").Trim();
-        if (removeImage) c.Image = null;
-        else if (!string.IsNullOrWhiteSpace(imageDataUrl)) c.Image = imageDataUrl;
+        c.Date = (date ?? "").Trim();
+        c.Photos = NettoyerPhotos(photos);
+        c.Image = null;
         SaveCommunity();
         LogActivity(ActivityTypes.Update, "Modification du chapitre « " + c.Titre + " » de l'histoire de la communauté");
         DataChanged?.Invoke();
@@ -5682,9 +5737,9 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         });
 
         SaveCommunityStory("Communauté d'Ambatondrazaka", "Ensemble depuis 2018");
-        AddCommunityChapter("Les débuts", "Notre communauté est née d'un petit groupe de voisins décidés à se rendre les services les uns aux autres.", Ymd(today.AddYears(-3)), null);
-        AddCommunityChapter("La première kermesse", "Organisée en 2024, elle a rassemblé plus de 200 personnes et financé les premières activités.", Ymd(today.AddYears(-1)), null);
-        AddCommunityChapter("Aujourd'hui", "Une équipe de 12 membres actifs et de nombreux projets : préparation de la kermesse 2026 !", Ymd(today.AddMonths(-1)), null);
+        AddCommunityChapter("Les débuts", "Notre communauté est née d'un petit groupe de voisins décidés à se rendre les services les uns aux autres.", Ymd(today.AddYears(-3)));
+        AddCommunityChapter("La première kermesse", "Organisée en 2024, elle a rassemblé plus de 200 personnes et financé les premières activités.", Ymd(today.AddYears(-1)));
+        AddCommunityChapter("Aujourd'hui", "Une équipe de 12 membres actifs et de nombreux projets : préparation de la kermesse 2026 !", Ymd(today.AddMonths(-1)));
 
         SendMessage(new List<string>(), "Bienvenue ! Ce canal centralise les annonces importantes du groupe. N'hésitez pas à l'utiliser pour partager les informations essentielles.");
         SendMessage(new List<string>(), "Rappel : réunion mensuelle ce soir à 18h dans la salle polyvalente.");
