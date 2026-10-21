@@ -124,6 +124,36 @@ public class DataStoreConversationsTests
     }
 
     [Fact]
+    public void Intention_GroupesDeLaMessagerieSansCeuxSupprimes()
+    {
+        Assert.True(_store.AddUser(new UserAccount
+        {
+            Prenom = "Fara", Nom = "Rabe", Identifiant = "fara",
+            Role = Roles.Utilisateur, Actif = true, MotDePasse = "secret123"
+        }).Success);
+        Assert.True(_store.AjouterGroupe(new Groupe { Nom = "Test groupe", Membres = new() { "lalao", "hery" } }).Success);
+        var ministere = _store.Groupes[0];
+        Connecter("lalao");
+        Assert.True(_store.EcrireAuGroupe(ministere.Id, "Bonjour").Success);
+        Assert.True(_store.CreerDiscussionDeGroupe("Nom groupe test", new[] { "hery", "tiana" }, "Test").Success);
+        Assert.Equal(new[] { "Nom groupe test", "Test groupe" }, _store.GroupesDePriere("lalao").Select(g => g.Nom));
+
+        // Une discussion supprimée de sa Messagerie n'est plus proposée.
+        Assert.True(_store.SupprimerConversation(DataStore.PrefixeGroupe + ministere.Id).Success);
+        var g = Assert.Single(_store.GroupesDePriere("lalao"));
+        Assert.Equal("Nom groupe test", g.Nom);
+
+        Assert.True(_store.PartagerIntention("Pour la kermesse", false, new[] { g.Id }).Success);
+        var p = Assert.Single(_store.Prieres);
+        Assert.Equal(new[] { "Nom groupe test" }, _store.GroupesIntention(p));
+        Connecter("tiana");
+        Assert.Single(_store.Prieres);
+        Connecter("fara");
+        Assert.Empty(_store.Prieres);
+        Assert.False(_store.PartagerIntention("Autre", false, new[] { g.Id }).Success);
+    }
+
+    [Fact]
     public void Doublons_RefusesALAjout()
     {
         var evt = new CalendarEvent { Titre = "Culte de Noël", Date = Demain, HeureDebut = "09:00" };

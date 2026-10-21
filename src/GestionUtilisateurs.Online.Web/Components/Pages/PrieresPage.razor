@@ -197,7 +197,7 @@ else
 
     private string Me => Store.GetCurrentUser()?.Identifiant ?? "";
 
-    private IReadOnlyList<Groupe> MesGroupes => Store.GroupesDe(Me);
+    private IReadOnlyList<(string Id, string Nom)> MesGroupes => Store.GroupesDePriere(Me);
 
     private void BasculerGroupe(string id)
     {

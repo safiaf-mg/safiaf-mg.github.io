@@ -118,7 +118,8 @@ public class IntentionPriere
     /// <summary>Compte en ligne de l'auteur (intentions privées, rempli par le serveur).</summary>
     public string AuteurUid { get; set; } = "";
     public bool Anonyme { get; set; }
-    /// <summary>Groupes et ministères à qui l'intention est confiée (vide : tous les membres).</summary>
+    /// <summary>Discussions de groupe (« grp:… ») à qui l'intention est confiée (vide : tous les membres) ;
+    /// les plus anciennes contiennent l'Id d'un groupe et ministère.</summary>
     public List<string> GroupeIds { get; set; } = new();
     public string Date { get; set; } = "";
     /// <summary>Identifiants des membres qui ont dit « Je prie ».</summary>

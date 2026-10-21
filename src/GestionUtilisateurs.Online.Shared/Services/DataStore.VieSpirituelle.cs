@@ -309,15 +309,39 @@ public partial class DataStore
         if (p.GroupeIds.Count == 0) return true;
         var moi = MonIdentifiant;
         if (MemeId(p.Auteur, moi)) return true;
-        var groupes = p.GroupeIds.Select(FindGroupe).OfType<Groupe>().ToList();
-        return groupes.Count == 0
+        var participants = p.GroupeIds.Select(id => ParticipantsConversation(DiscussionDuGroupe(id)))
+            .Where(x => x.Count > 0).ToList();
+        return participants.Count == 0
             ? Can(Permissions.PrieresManage)
-            : groupes.Any(g => ParticipantsGroupe(g).Any(x => MemeId(x, moi)));
+            : participants.Any(x => x.Any(m => MemeId(m, moi)));
+    }
+
+    /// <summary>Discussion de la Messagerie d'un groupe d'intention (les anciennes intentions gardent l'Id du groupe et ministère).</summary>
+    private static string DiscussionDuGroupe(string id)
+        => EstDiscussionDeGroupe(id) ? id : PrefixeGroupe + id;
+
+    /// <summary>
+    /// Groupes à qui le membre peut confier une intention : les discussions de groupe de
+    /// sa Messagerie (créées dans la Messagerie ou d'un groupe et ministère), sans celles
+    /// qu'il a supprimées.
+    /// </summary>
+    public IReadOnlyList<(string Id, string Nom)> GroupesDePriere(string? identifiant)
+    {
+        var me = (identifiant ?? "").Trim();
+        if (me.Length == 0) return new List<(string, string)>();
+        return GetConversations(me)
+            .Where(c => EstDiscussionDeGroupe(c.ConversationId)
+                        && ParticipantsConversation(c.ConversationId).Any(x => MemeId(x, me)))
+            .Select(c => (c.ConversationId, Nom: NomDiscussion(c.ConversationId)))
+            .Where(c => c.Nom.Length > 0)
+            .OrderBy(c => c.Nom, StringComparer.CurrentCultureIgnoreCase).ToList();
     }
 
     /// <summary>Noms des groupes à qui l'intention est confiée (vide : tous les membres).</summary>
     public IReadOnlyList<string> GroupesIntention(IntentionPriere p)
-        => p.GroupeIds.Select(id => FindGroupe(id)?.Nom ?? L.T("Groupe supprimé")).ToList();
+        => p.GroupeIds.Select(id => DiscussionDuGroupe(id))
+            .Select(id => ParticipantsConversation(id).Count > 0 && NomDiscussion(id) is { Length: > 0 } nom ? nom : L.T("Groupe supprimé"))
+            .ToList();
 
     /// <summary>Intentions privées (lisibles seulement avec « Lire les intentions de prière privées »).</summary>
     public IReadOnlyList<IntentionPriere> PrieresPrivees => Can(Permissions.PrieresManage)
@@ -337,7 +361,7 @@ public partial class DataStore
     }
 
     /// <summary>Confie une intention partagée avec les membres.</summary>
-    /// <param name="groupeIds">Groupes et ministères du membre à qui confier l'intention (vide : tous les membres).</param>
+    /// <param name="groupeIds">Discussions de groupe du membre (voir <see cref="GroupesDePriere"/>) à qui confier l'intention (vide : tous les membres).</param>
     public OperationResult PartagerIntention(string texte, bool anonyme, IEnumerable<string>? groupeIds = null)
     {
         if (!Can(Permissions.PrieresUse)) return OperationResult.Fail(L.T("Votre rôle ne permet pas de confier une intention de prière."));
@@ -345,14 +369,16 @@ public partial class DataStore
         if (texte.Length == 0) return OperationResult.Fail(L.T("Écrivez votre intention de prière."));
         if (texte.Length > 2000) return OperationResult.Fail(L.T("L'intention ne doit pas dépasser 2 000 caractères."));
         var moi = MonIdentifiant;
-        var groupes = new List<Groupe>();
-        foreach (var id in (groupeIds ?? Enumerable.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct())
+        var groupes = new List<(string Id, string Nom)>();
+        foreach (var id in (groupeIds ?? Enumerable.Empty<string>()).Where(x => !string.IsNullOrWhiteSpace(x))
+                     .Select(DiscussionDuGroupe).Distinct())
         {
-            var groupe = FindGroupe(id);
-            if (groupe == null) return OperationResult.Fail(L.T("Groupe introuvable."));
-            if (!ParticipantsGroupe(groupe).Any(x => MemeId(x, moi)))
+            var participants = ParticipantsConversation(id);
+            var nom = NomDiscussion(id);
+            if (participants.Count == 0 || nom.Length == 0) return OperationResult.Fail(L.T("Groupe introuvable."));
+            if (!participants.Any(x => MemeId(x, moi)))
                 return OperationResult.Fail(L.T("Vous ne faites pas partie de ce groupe."));
-            groupes.Add(groupe);
+            groupes.Add((id, nom));
         }
         if (_prieres.Any(p => !p.Exaucee && MemeId(p.Auteur, moi) && CleDoublon(p.Texte) == CleDoublon(texte)))
             return OperationResult.Fail(L.T("Vous avez déjà confié cette intention."));
