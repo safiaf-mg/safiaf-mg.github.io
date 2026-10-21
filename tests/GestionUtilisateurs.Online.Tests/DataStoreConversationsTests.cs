@@ -184,4 +184,61 @@ public class DataStoreConversationsTests
         Assert.True(_store.AppliquerIdentifiantsParPrenom().Success);
         Assert.Equal(new[] { "fara" }, _store.Groupes[0].Responsables);
     }
+
+    [Fact]
+    public void AjouterAConversation_DuoDevientGroupeSansHistoire()
+    {
+        Assert.True(_store.AddUser(new UserAccount
+        {
+            Prenom = "Naina", Nom = "Rabe", Identifiant = "naina",
+            Role = Roles.Utilisateur, Actif = true, MotDePasse = "secret123"
+        }).Success);
+        Connecter("lalao");
+        Assert.True(_store.SendMessage(new() { "hery" }, "Entre nous").Success);
+        var duo = _store.GetConversations("lalao")[0].ConversationId;
+        Assert.True(_store.PeutAjouterAConversation(duo));
+        Assert.False(_store.AjouterAConversation(duo, new[] { "hery" }).Resultat.Success);
+        Assert.False(_store.AjouterAConversation(duo, new[] { "inconnu" }).Resultat.Success);
+
+        var (res, cid) = _store.AjouterAConversation(duo, new[] { "tiana", "TIANA" });
+        Assert.True(res.Success, res.Error);
+        Assert.True(DataStore.EstDiscussionDeGroupe(cid));
+        // Lalao et Hery gardent leur historique dans la même conversation.
+        Assert.Equal(2, _store.GetMessages(cid).Count);
+        Assert.Equal(3, _store.ParticipantsConversation(cid).Count);
+        Assert.True(_store.PeutRenommerConversation(cid));
+
+        // Tiana voit la conversation à partir de l'ajout, sans le message d'avant.
+        Connecter("tiana");
+        var vue = Assert.Single(_store.GetConversations("tiana"));
+        Assert.Equal(cid, vue.ConversationId);
+        Assert.DoesNotContain(_store.GetMessages(cid), m => m.Texte == "Entre nous");
+        Assert.True(_store.RepondreConversation(cid, "Merci de m'avoir ajoutée").Success);
+        Assert.True(_store.AjouterAConversation(cid, new[] { "naina" }).Resultat.Success);
+
+        Connecter("hery");
+        Assert.Single(_store.GetConversations("hery"));
+        Assert.Equal(4, _store.ParticipantsConversation(cid).Count);
+        Assert.True(_store.RepondreConversation(cid, "Bienvenue").Success);
+        Connecter("naina");
+        Assert.Equal(2, _store.GetMessages(cid).Count);
+    }
+
+    [Fact]
+    public void AjouterAConversation_RefuseePourUnGroupeEtLesAnnonces()
+    {
+        Assert.True(_store.AjouterGroupe(new Groupe { Nom = "Chorale", Responsables = new() { "lalao" }, Membres = new() { "hery" } }).Success);
+        Connecter("lalao");
+        Assert.True(_store.EcrireAuGroupe(_store.Groupes[0].Id, "Répétition").Success);
+        var chorale = DataStore.PrefixeGroupe + _store.Groupes[0].Id;
+        Assert.False(_store.PeutAjouterAConversation(chorale));
+        Assert.False(_store.AjouterAConversation(chorale, new[] { "tiana" }).Resultat.Success);
+        Assert.False(_store.PeutAjouterAConversation(DataStore.ConversationAnnonces));
+
+        // Seul un participant peut ajouter quelqu'un.
+        Assert.True(_store.SendMessage(new() { "hery" }, "Salut").Success);
+        var duo = _store.GetConversations("lalao").First(c => c.ConversationId.StartsWith("mp:")).ConversationId;
+        Connecter("tiana");
+        Assert.False(_store.AjouterAConversation(duo, new[] { "tiana" }).Resultat.Success);
+    }
 }

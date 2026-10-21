@@ -475,6 +475,8 @@ public class Message
     public string DateModification { get; set; } = "";
     /// <summary>Message supprimé : le contenu est masqué mais un journal reste visible dans la conversation.</summary>
     public bool Supprime { get; set; }
+    /// <summary>Note de la conversation (membres ajoutés…), affichée au centre et non comme une bulle.</summary>
+    public bool Info { get; set; }
     /// <summary>Identifiant de celui qui a supprimé le message.</summary>
     public string? SupprimePar { get; set; }
     /// <summary>Date de suppression au format ISO.</summary>

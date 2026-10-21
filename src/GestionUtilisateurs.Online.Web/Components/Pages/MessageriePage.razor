@@ -1,6 +1,7 @@
 ﻿@implements IDisposable
 @inject DataStore Store
 @inject AppState State
+@inject IJSRuntime Js
 
 @if (!Store.Can(Permissions.MessagerieUse))
 {
@@ -35,23 +36,25 @@ else if (_conversation == null)
     }
     else
     {
-        <div class="user-list">
+        <div class="conv-list">
             @foreach (var conv in VisibleConversations)
             {
                 var cid = conv.ConversationId;
                 var dernier = conv.Dernier;
                 var nonLus = conv.NonLus;
-                <div class="user-card" @onclick="() => OpenConversation(cid)">
-                    <span class="field-type-icon" aria-hidden="true">@ConversationIcon(cid)</span>
-                    <div class="user-card-main">
-                        <div class="user-card-name">@ConversationTitle(cid)</div>
-                        <div class="user-card-sub">@(dernier.Supprime ? "🗑 " + L.T("Message supprimé") : Truncate(dernier.Texte, 80))</div>
-                        <div class="user-card-meta">
-                            <span class="text-muted" style="font-size:12px">@dernier.Expediteur · @DataStore.FormatDateHeure(dernier.Date)</span>
-                            @if (nonLus > 0) { <Badge Text="@nonLus.ToString()" Kind="role" /> }
-                        </div>
-                    </div>
-                </div>
+                <button type="button" class="conv-item @(nonLus > 0 ? "conv-unread" : "")" @onclick="() => OpenConversation(cid)">
+                    @ConversationAvatar(cid)
+                    <span class="conv-main">
+                        <span class="conv-top">
+                            <span class="conv-title">@ConversationTitle(cid)</span>
+                            <span class="conv-time">@DateCourteMessage(dernier.Date)</span>
+                        </span>
+                        <span class="conv-bottom">
+                            <span class="conv-preview">@AperçuMessage(cid, dernier)</span>
+                            @if (nonLus > 0) { <span class="conv-badge" aria-label="@L.F("{0} non lu(s)", nonLus)">@nonLus</span> }
+                        </span>
+                    </span>
+                </button>
             }
         </div>
     }
@@ -59,57 +62,147 @@ else if (_conversation == null)
 }
 else
 {
-    <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-        <button class="btn btn-secondary btn-sm" @onclick="CloseConversation">← @L.T("Conversations")</button>
-        <div style="flex:1;min-width:0">
-            <h2 style="margin:0;font-size:18px;font-weight:700">@ConversationIcon(_conversation) @ConversationTitle(_conversation)</h2>
-            @if (_conversation != DataStore.ConversationAnnonces && Store.ParticipantsConversation(_conversation).Count >= 3)
+    var participants = Store.ParticipantsConversation(_conversation);
+    var aPlusieurs = _conversation != DataStore.ConversationAnnonces && participants.Count >= 3;
+    var peutAjouter = Store.PeutAjouterAConversation(_conversation);
+    var peutRenommer = Store.PeutRenommerConversation(_conversation);
+    <div class="chat-head">
+        <button type="button" class="chat-back" aria-label="@L.T("Retour aux conversations")" title="@L.T("Conversations")" @onclick="CloseConversation">‹</button>
+        @ConversationAvatar(_conversation)
+        <div class="chat-head-text">
+            <div class="chat-title">@ConversationTitle(_conversation)</div>
+            <div class="chat-sub">@ConversationSousTitre(_conversation, participants)</div>
+        </div>
+        <div class="chat-menu-wrap">
+            <button type="button" class="chat-menu-btn" aria-label="@L.T("Options de la conversation")" aria-expanded="@_menuConv" @onclick="() => _menuConv = !_menuConv">⋮</button>
+            @if (_menuConv)
             {
-                <div class="text-muted" style="font-size:12px">@ParticipantsLabel(_conversation)</div>
+                <div class="chat-menu-backdrop" @onclick="() => _menuConv = false"></div>
+                <div class="chat-menu" role="menu">
+                    @if (aPlusieurs)
+                    {
+                        <button type="button" role="menuitem" @onclick="() => { _menuConv = false; _voirMembres = true; }">👥 @L.F("Participants ({0})", participants.Count)</button>
+                    }
+                    @if (peutAjouter)
+                    {
+                        <button type="button" role="menuitem" @onclick="() => { _menuConv = false; OuvrirAjout(); }">➕ @L.T("Ajouter des membres")</button>
+                    }
+                    @if (peutRenommer)
+                    {
+                        <button type="button" role="menuitem" @onclick="() => { _menuConv = false; OuvrirRenommer(); }">✏️ @L.T("Renommer la conversation")</button>
+                    }
+                    <button type="button" role="menuitem" class="danger" @onclick="() => { _menuConv = false; _supprimerConv = true; }">🗑 @L.T("Supprimer la conversation")</button>
+                </div>
             }
         </div>
-        @if (Store.PeutRenommerConversation(_conversation))
-        {
-            <button type="button" class="btn-icon" aria-label="@L.T("Renommer la conversation")" title="@L.T("Renommer la conversation")" @onclick="OuvrirRenommer">✏️</button>
-        }
-        <button type="button" class="btn-icon danger" aria-label="@L.T("Supprimer la conversation")" title="@L.T("Supprimer la conversation")" @onclick="() => _supprimerConv = true">🗑</button>
     </div>
-    <div class="msg-thread">
+    <div class="msg-thread" id="msg-thread">
+        @if (_messages.Count == 0)
+        {
+            <div class="chat-empty">@L.T("Aucun message pour l'instant. Écrivez le premier !")</div>
+        }
+        @{
+            string? jourPrecedent = null;
+            string? auteurPrecedent = null;
+        }
         @foreach (var m in _messages)
         {
             var mine = m.Expediteur.Equals(Me, StringComparison.OrdinalIgnoreCase);
-            @if (m.Supprime)
+            var jour = JourMessage(m.Date);
+            if (jour != jourPrecedent)
+            {
+                <div class="chat-day"><span>@jour</span></div>
+                jourPrecedent = jour;
+                auteurPrecedent = null;
+            }
+            var suite = auteurPrecedent != null && auteurPrecedent.Equals(m.Expediteur, StringComparison.OrdinalIgnoreCase);
+            auteurPrecedent = m.Supprime || m.Info ? null : m.Expediteur;
+            @if (m.Info && !m.Supprime)
+            {
+                <div class="msg-info">@m.Texte · @HeureMessage(m.Date)</div>
+            }
+            else if (m.Supprime)
             {
                 <div class="msg-bubble msg-deleted">
-                    <div class="msg-meta"><strong>@(m.SupprimePar ?? m.Expediteur)</strong> · @(string.IsNullOrWhiteSpace(m.SupprimeLe) ? DataStore.FormatDateHeure(m.Date) : DataStore.FormatDateHeure(m.SupprimeLe))</div>
-                    <div class="msg-text msg-text-deleted">🗑 @L.T("Message supprimé")</div>
+                    🗑 @L.T("Message supprimé") · @HeureMessage(string.IsNullOrWhiteSpace(m.SupprimeLe) ? m.Date : m.SupprimeLe)
                 </div>
             }
             else
             {
-                <div class="msg-bubble @(mine ? "msg-mine" : "msg-theirs")">
-                    <div class="msg-meta"><strong>@m.Expediteur</strong> · @DataStore.FormatDateHeure(m.Date)@(string.IsNullOrWhiteSpace(m.DateModification) ? "" : " · " + L.T("modifié"))</div>
-                    <div class="msg-text">@m.Texte</div>
-                    <div class="msg-actions">
-                        @if (Store.CanEditMessage(m.Id))
+                var choisi = _choisi == m.Id;
+                var peutModifier = Store.CanEditMessage(m.Id);
+                var peutSupprimer = mine || Store.IsAdmin;
+                <div class="msg-row @(mine ? "msg-row-mine" : "msg-row-theirs") @(suite ? "msg-suite" : "")">
+                    @if (!mine && (aPlusieurs || _conversation == DataStore.ConversationAnnonces))
+                    {
+                        @if (suite)
                         {
-                            <button type="button" class="btn-icon msg-edit" aria-label="@L.T("Modifier")" @onclick="() => AskEdit(m)">✏️</button>
+                            <span class="msg-avatar-space" aria-hidden="true"></span>
                         }
-                        @if (mine || Store.IsAdmin)
+                        else
                         {
-                            <button type="button" class="btn-icon danger msg-del" aria-label="@L.T("Supprimer")" @onclick="() => AskDelete(m)">🗑</button>
+                            var auteur = Store.FindUserByIdentifier(m.Expediteur);
+                            <Avatar UserName="@(auteur?.NomComplet ?? m.Expediteur)" Seed="@m.Expediteur" Size="sm" Photo="@auteur?.Photo" />
                         }
+                    }
+                    <div class="msg-bubble @(mine ? "msg-mine" : "msg-theirs") @(choisi ? "msg-choisi" : "")"
+                         @onclick="() => _choisi = choisi ? null : m.Id">
+                        @if (!mine && !suite && (aPlusieurs || _conversation == DataStore.ConversationAnnonces))
+                        {
+                            <div class="msg-author">@NomAuteur(m.Expediteur)</div>
+                        }
+                        <div class="msg-text">@m.Texte</div>
+                        <div class="msg-time">@(string.IsNullOrWhiteSpace(m.DateModification) ? "" : L.T("modifié") + " · ")@HeureMessage(m.Date)</div>
                     </div>
                 </div>
+                @if (choisi && (peutModifier || peutSupprimer))
+                {
+                    <div class="msg-tools @(mine ? "msg-tools-mine" : "")">
+                        @if (peutModifier)
+                        {
+                            <button type="button" class="btn btn-secondary btn-sm" @onclick="() => AskEdit(m)">✏️ @L.T("Modifier")</button>
+                        }
+                        @if (peutSupprimer)
+                        {
+                            <button type="button" class="btn btn-danger-outline btn-sm" @onclick="() => AskDelete(m)">🗑 @L.T("Supprimer")</button>
+                        }
+                    </div>
+                }
             }
         }
     </div>
+    <div id="msg-fin"></div>
     <div class="msg-reply">
         <input type="text" placeholder="@L.T("Écrire un message…")" aria-label="@L.T("Répondre")"
                value="@_reply" @oninput="e => _reply = e.Value?.ToString() ?? string.Empty" @onkeydown="OnReplyKey" />
-        <button class="btn btn-primary btn-sm" @onclick="SendReply" disabled="@string.IsNullOrWhiteSpace(_reply)">@L.T("Envoyer")</button>
+        <button class="msg-send" aria-label="@L.T("Envoyer")" title="@L.T("Envoyer")" @onclick="SendReply" disabled="@string.IsNullOrWhiteSpace(_reply)">➤</button>
     </div>
 }
+
+<Modal Title="@L.T("Participants")" Show="_voirMembres" OnClose="() => _voirMembres = false">
+    <ChildContent>
+        @if (_conversation != null)
+        {
+            <div class="chat-members">
+                @foreach (var p in Store.ParticipantsConversation(_conversation))
+                {
+                    var u = Store.FindUserByIdentifier(p);
+                    <div class="chat-member">
+                        <Avatar UserName="@(u?.NomComplet ?? p)" Seed="@p" Size="sm" Photo="@u?.Photo" />
+                        <span>@(u?.NomComplet ?? p)@(p.Equals(Me, StringComparison.OrdinalIgnoreCase) ? " (" + L.T("vous") + ")" : "")</span>
+                    </div>
+                }
+            </div>
+        }
+    </ChildContent>
+    <FooterContent>
+        @if (_conversation != null && Store.PeutAjouterAConversation(_conversation))
+        {
+            <button class="btn btn-secondary" @onclick="() => { _voirMembres = false; OuvrirAjout(); }">➕ @L.T("Ajouter des membres")</button>
+        }
+        <button class="btn btn-primary" @onclick="() => _voirMembres = false">@L.T("Fermer")</button>
+    </FooterContent>
+</Modal>
 
 <Modal Title="@(_annonce ? L.T("Publier une annonce") : _groupe ? L.T("Nouveau groupe") : L.T("Nouveau message"))" Show="_showNew" OnClose="() => _showNew = false">
     <ChildContent>
@@ -178,6 +271,35 @@ else
     </FooterContent>
 </Modal>
 
+<Modal Title="@L.T("Ajouter des membres")" Show="_ajout" OnClose="() => _ajout = false">
+    <ChildContent>
+        <div class="search-box cal-search cal-opt-search">
+            <span class="search-icon" aria-hidden="true">&#128269;</span>
+            <input type="search" placeholder="@L.T("Écrire pour chercher un membre…")" aria-label="@L.T("Chercher un membre")"
+                   value="@_destSearch" @oninput="e => _destSearch = e.Value?.ToString() ?? string.Empty" />
+        </div>
+        <div class="check-group">
+            @foreach (var u in AjoutPossibles)
+            {
+                <label class="form-check">
+                    <input type="checkbox" checked="@_dest.Contains(u.Identifiant)" @onchange="() => ToggleDest(u.Identifiant)" />
+                    @u.NomComplet <span class="text-muted" style="font-size:12px">@@@u.Identifiant</span>
+                </label>
+            }
+            @if (AjoutPossibles.Count == 0)
+            {
+                <div class="cal-no-events">@L.T("Aucun autre membre à ajouter.")</div>
+            }
+        </div>
+        <span class="field-hint">@L.T("Les membres ajoutés reçoivent les messages à partir de maintenant, sans l'historique.")</span>
+        <span class="form-error">@_ajoutErreur</span>
+    </ChildContent>
+    <FooterContent>
+        <button class="btn btn-secondary" @onclick="() => _ajout = false">@L.T("Annuler")</button>
+        <button class="btn btn-primary" disabled="@(_dest.Count == 0)" @onclick="Ajouter">@L.F("Ajouter ({0})", _dest.Count)</button>
+    </FooterContent>
+</Modal>
+
 <Modal Title="@L.T("Supprimer la conversation")" Show="_supprimerConv" OnClose="() => _supprimerConv = false">
     <ChildContent>
         <p style="margin-top:0">@L.T("La conversation disparaît de votre liste. Elle reviendra si quelqu'un y écrit de nouveau, avec les nouveaux messages seulement.")</p>
@@ -230,6 +352,13 @@ else
     private bool _renommer;
     private string _nouveauNom = "";
     private string _renommerErreur = "";
+    private bool _ajout;
+    private bool _menuConv;
+    private bool _voirMembres;
+    /// <summary>Message touché : ses actions (modifier, supprimer) s'affichent dessous.</summary>
+    private string? _choisi;
+    private bool _defiler;
+    private string _ajoutErreur = "";
     private HashSet<string> _dest = new();
     private string _newTexte = "";
     private string _newError = "";
@@ -315,6 +444,9 @@ else
     private void OpenConversation(string id)
     {
         _conversation = id;
+        _menuConv = false;
+        _choisi = null;
+        _defiler = true;
         Store.MarkConversationRead(id, Me);
         LoadThread();
     }
@@ -340,16 +472,90 @@ else
         => string.Join(", ", Store.ParticipantsConversation(cid)
             .Select(p => p.Equals(Me, StringComparison.OrdinalIgnoreCase) ? L.T("vous") : Store.FindUserByIdentifier(p)?.NomComplet ?? p));
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // À l'ouverture et après un envoi, la conversation s'affiche sur ses derniers messages.
+        if (!_defiler || _conversation == null) return;
+        _defiler = false;
+        try { await Js.InvokeVoidAsync("guUi.scrollToId", "msg-fin"); } catch (JSException) { }
+    }
+
+    /// <summary>Photo de l'autre personne pour une conversation à deux, sinon une icône.</summary>
+    private RenderFragment ConversationAvatar(string cid) => builder =>
+    {
+        var autres = Store.ParticipantsConversation(cid).Where(p => !p.Equals(Me, StringComparison.OrdinalIgnoreCase)).ToList();
+        if (cid != DataStore.ConversationAnnonces && Store.GroupeDeConversation(cid) == null && autres.Count == 1)
+        {
+            var u = Store.FindUserByIdentifier(autres[0]);
+            builder.OpenComponent<Avatar>(0);
+            builder.AddAttribute(1, "UserName", u?.NomComplet ?? autres[0]);
+            builder.AddAttribute(2, "Seed", autres[0]);
+            builder.AddAttribute(3, "Photo", u?.Photo);
+            builder.CloseComponent();
+            return;
+        }
+        builder.OpenElement(4, "span");
+        builder.AddAttribute(5, "class", "avatar conv-icon");
+        builder.AddAttribute(6, "aria-hidden", "true");
+        builder.AddContent(7, ConversationIcon(cid));
+        builder.CloseElement();
+    };
+
+    private string ConversationSousTitre(string cid, IReadOnlyList<string> participants)
+    {
+        if (cid == DataStore.ConversationAnnonces) return L.T("Toute la communauté");
+        if (Store.GroupeDeConversation(cid) != null) return L.F("Groupe et ministère · {0} membre(s)", participants.Count);
+        if (participants.Count >= 3)
+            return Store.NomDiscussion(cid).Length > 0 ? ParticipantsLabel(cid) : L.F("{0} participants", participants.Count);
+        return L.T("Conversation privée");
+    }
+
+    private string NomAuteur(string identifiant)
+        => Store.FindUserByIdentifier(identifiant)?.NomComplet ?? identifiant;
+
+    private static DateTime? DateLocale(string? iso)
+        => DateTimeOffset.TryParse(iso, out var d) ? d.LocalDateTime : null;
+
+    /// <summary>Séparateur de jour dans la conversation : Aujourd'hui, Hier ou la date.</summary>
+    private static string JourMessage(string? iso)
+    {
+        if (DateLocale(iso) is not { } d) return "";
+        if (d.Date == DateTime.Today) return L.T("Aujourd'hui");
+        if (d.Date == DateTime.Today.AddDays(-1)) return L.T("Hier");
+        return d.ToString("dd/MM/yyyy");
+    }
+
+    private static string HeureMessage(string? iso) => DateLocale(iso)?.ToString("HH:mm") ?? "";
+
+    /// <summary>Date du dernier message dans la liste : l'heure aujourd'hui, « Hier », sinon le jour.</summary>
+    private static string DateCourteMessage(string? iso)
+    {
+        if (DateLocale(iso) is not { } d) return "";
+        if (d.Date == DateTime.Today) return d.ToString("HH:mm");
+        if (d.Date == DateTime.Today.AddDays(-1)) return L.T("Hier");
+        return d.ToString("dd/MM/yy");
+    }
+
+    private string AperçuMessage(string cid, Message m)
+    {
+        if (m.Supprime) return "🗑 " + L.T("Message supprimé");
+        if (m.Info) return m.Texte;
+        var texte = Truncate(m.Texte.Replace('\n', ' '), 70);
+        if (m.Expediteur.Equals(Me, StringComparison.OrdinalIgnoreCase)) return L.F("Vous : {0}", texte);
+        if (cid == DataStore.ConversationAnnonces || Store.ParticipantsConversation(cid).Count >= 3)
+        {
+            var u = Store.FindUserByIdentifier(m.Expediteur);
+            return (string.IsNullOrWhiteSpace(u?.Prenom) ? m.Expediteur : u!.Prenom) + " : " + texte;
+        }
+        return texte;
+    }
+
     private string ConversationTitle(string cid)
     {
         if (cid == DataStore.ConversationAnnonces) return L.T("Annonces");
         var nom = Store.NomDiscussion(cid);
         if (nom.Length > 0) return nom;
-        if (DataStore.EstDiscussionDeGroupe(cid)) return L.T("Discussion");
-        var parts = cid.StartsWith("mp:", StringComparison.OrdinalIgnoreCase)
-            ? cid[3..].Split('+', StringSplitOptions.RemoveEmptyEntries)
-            : new[] { cid };
-        var names = parts
+        var names = Store.ParticipantsConversation(cid)
             .Where(p => !p.Equals(Me, StringComparison.OrdinalIgnoreCase))
             .Select(p => Store.FindUserByIdentifier(p)?.NomComplet ?? p)
             .ToList();
@@ -390,6 +596,7 @@ else
         var res = Store.RepondreConversation(_conversation, _reply);
         if (!res.Success) { State.NotifyError(res.Error); return; }
         _reply = "";
+        _defiler = true;
         LoadThread();
     }
 
@@ -410,6 +617,36 @@ else
         RefreshList();
     }
 
+    /// <summary>Membres actifs qui ne sont pas encore dans la conversation ouverte.</summary>
+    private List<UserAccount> AjoutPossibles
+    {
+        get
+        {
+            var deja = _conversation == null ? new List<string>() : Store.ParticipantsConversation(_conversation).ToList();
+            return FilteredDest.Where(u => !u.EstDecede && !deja.Any(p => p.Equals(u.Identifiant, StringComparison.OrdinalIgnoreCase))).ToList();
+        }
+    }
+
+    private void OuvrirAjout()
+    {
+        _dest = new HashSet<string>();
+        _destSearch = "";
+        _ajoutErreur = "";
+        _ajout = true;
+    }
+
+    private void Ajouter()
+    {
+        if (_conversation == null) return;
+        var (res, id) = Store.AjouterAConversation(_conversation, _dest);
+        if (!res.Success) { _ajoutErreur = res.Error; return; }
+        _ajout = false;
+        State.NotifySuccess(L.F("{0} membre(s) ajouté(s).", _dest.Count));
+        _conversation = id;
+        LoadThread();
+        RefreshList();
+    }
+
     private void SupprimerConversation(bool pourTous)
     {
         _supprimerConv = false;
@@ -420,7 +657,7 @@ else
         CloseConversation();
     }
 
-    private void AskDelete(Message m) => _deleteTarget = m;
+    private void AskDelete(Message m) { _choisi = null; _deleteTarget = m; }
 
     private void ConfirmDelete()
     {
@@ -434,6 +671,7 @@ else
 
     private void AskEdit(Message m)
     {
+        _choisi = null;
         _editTarget = m;
         _editTexte = m.Texte;
         _editError = "";
