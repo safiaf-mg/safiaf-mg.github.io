@@ -1885,26 +1885,42 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
     /// <param name="subset">Liste restreinte à exporter (filtres) ; null = tous les utilisateurs.</param>
     public byte[] ExportUsersExcel(IReadOnlyList<UserAccount>? subset = null)
     {
+        var (headers, rows) = TableauMembres(subset ?? _users);
+        return ExcelExporter.Build("Utilisateurs", headers, rows);
+    }
+
+    /// <summary>
+    /// Feuille des membres : colonnes de la fiche (réimportables), âge, décès,
+    /// responsable légal, famille et groupes, puis un champ personnalisé par colonne.
+    /// </summary>
+    private (List<string> Headers, List<string[]> Rows) TableauMembres(IEnumerable<UserAccount> membres)
+    {
         var custom = Fields.Where(f => f.Actif && !f.SystemField).ToList();
         var headers = new List<string>
         {
             "Nom", "Prénom", "Identifiant", "Matricule", "Email", "Téléphone", "Rôle",
-            "Statut", "Date de naissance", "Date de création", "Dernière connexion", "Notes"
+            "Statut", "Date de naissance", "Âge", "Date de création", "Dernière connexion", "Notes",
+            "Date de décès", "Responsable légal", "Téléphone du responsable", "Famille", "Groupes et ministères"
         };
         headers.AddRange(custom.Select(f => f.Label));
 
         var rows = new List<string[]>();
-        foreach (var u in (subset ?? _users).OrderBy(u => u.Nom).ThenBy(u => u.Prenom))
+        foreach (var u in membres.OrderBy(u => u.Nom).ThenBy(u => u.Prenom))
         {
+            var famille = string.Join(" ; ", Famille(u).Groupes
+                .Select(g => g.Titre + " : " + string.Join(", ", g.Membres.Select(m => m.NomComplet))));
             var row = new List<string>
             {
                 u.Nom, u.Prenom, u.Identifiant, u.Matricule ?? "", u.Email, u.Telephone, u.Role,
-                u.Actif ? "Actif" : "Inactif", FormatExportDate(u.DateNaissance), FormatExportDate(u.DateCreation), FormatExportDate(u.DerniereConnexion), u.Notes
+                u.Actif ? "Actif" : "Inactif", FormatExportDate(u.DateNaissance), u.Age?.ToString() ?? "",
+                FormatExportDate(u.DateCreation), FormatExportDate(u.DerniereConnexion), u.Notes,
+                FormatExportDate(u.DateDeces), u.ResponsableLegal ?? "", u.ResponsableTelephone ?? "", famille,
+                string.Join(", ", GroupesDe(u.Identifiant).Select(g => g.Nom))
             };
             foreach (var f in custom) row.Add(FieldExcelValue(f, u.GetChamp(f.Id)));
             rows.Add(row.ToArray());
         }
-        return ExcelExporter.Build("Utilisateurs", headers, rows);
+        return (headers, rows);
     }
 
     /// <summary>Export Excel du journal d'activité.</summary>
@@ -1941,26 +1957,8 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         var sheets = new List<ExcelExporter.Sheet>();
 
         // 1) Utilisateurs
-        var usersHeaders = new List<string>
-        {
-            "Nom", "Prénom", "Identifiant", "Matricule", "Email", "Téléphone", "Rôle",
-            "Statut", "Date de naissance", "Date de création", "Dernière connexion", "Notes"
-        };
-        var custom = Fields.Where(f => f.Actif && !f.SystemField).ToList();
-        var usersHeadersFull = new List<string>(usersHeaders);
-        usersHeadersFull.AddRange(custom.Select(f => f.Label));
-        var usersRows = new List<string[]>();
-        foreach (var u in _users.OrderBy(u => u.Nom).ThenBy(u => u.Prenom))
-        {
-            var row = new List<string>
-            {
-                u.Nom, u.Prenom, u.Identifiant, u.Matricule ?? "", u.Email, u.Telephone, u.Role,
-                u.Actif ? "Actif" : "Inactif", FormatExportDate(u.DateNaissance), FormatExportDate(u.DateCreation), FormatExportDate(u.DerniereConnexion), u.Notes
-            };
-            foreach (var f in custom) row.Add(FieldExcelValue(f, u.GetChamp(f.Id)));
-            usersRows.Add(row.ToArray());
-        }
-        sheets.Add(new ExcelExporter.Sheet("Utilisateurs", usersHeadersFull, usersRows));
+        var (usersHeaders, usersRows) = TableauMembres(_users);
+        sheets.Add(new ExcelExporter.Sheet("Utilisateurs", usersHeaders, usersRows));
 
         // 2) Champs personnalisés
         var fieldsSheets = new List<string[]>();
@@ -2296,6 +2294,7 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         Signature = src.Signature,
         ResponsableLegal = src.ResponsableLegal,
         ResponsableTelephone = src.ResponsableTelephone,
+        DateDeces = src.DateDeces,
         DateCreation = src.DateCreation,
         DerniereConnexion = src.DerniereConnexion,
         Champs = src.Champs.ToDictionary(kv => kv.Key, kv => kv.Value)
@@ -4906,16 +4905,15 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         foreach (var u in _users.Where(u => u.Actif && !u.EstDecede && TryParseYmd(u.DateNaissance, out _)))
         {
             TryParseYmd(u.DateNaissance, out var naiss);
-            // AddYears ramène le 29 février au 28 les années non bissextiles (pas d'exception).
-            var prochain = naiss.Date.AddYears(today.Year - naiss.Year);
-            if (prochain < today) prochain = naiss.Date.AddYears(today.Year + 1 - naiss.Year);
+            var prochain = ProchainAnniversaire(naiss, today);
             var jours = (prochain - today).Days;
+            var ageFete = Age(u.DateNaissance, prochain) ?? 0;
             if (jours <= 30)
                 rappels.Add(new Rappel
                 {
                     Id = "anniversaire:" + u.Id, Categorie = L.T("Anniversaires"),
                     Titre = L.F("Anniversaire de {0}", u.NomComplet),
-                    Detail = jours == 0 ? L.F("Aujourd'hui ({0})", FormatDateCourte(u.DateNaissance)) : L.F("Dans {0} j ({1})", jours, prochain.ToString("dd/MM/yyyy")),
+                    Detail = jours == 0 ? L.F("Aujourd'hui · {0} ans", ageFete) : L.F("Dans {0} j ({1}) · {2} ans", jours, prochain.ToString("dd/MM/yyyy"), ageFete),
                     Priorite = jours <= 7 ? Models.CalendarEventTypes.PrioriteImportante : Models.CalendarEventTypes.PrioriteNormale,
                     PageCible = "users"
                 });
@@ -4923,14 +4921,20 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
 
         foreach (var e in _events)
         {
-            if (!TryParseYmd(e.Date, out var d)) continue;
+            // Un événement répété compte à sa prochaine date ; l'anniversaire d'un membre
+            // dont la date de naissance est connue est déjà rappelé ci-dessus.
+            if (DataStore.ProchaineOccurrence(e, today) is not { } d) continue;
+            if (e.Type == Models.CalendarEventTypes.Anniversaire
+                && (e.PersonnesConcernees ?? new List<string>()).Append(e.PersonneConcernee ?? "")
+                    .Any(p => FindUserByIdentifier(p) is { } membre && TryParseYmd(membre.DateNaissance, out _)))
+                continue;
             var jours = (d.Date - today).Days;
             if (jours >= 0 && jours <= 7)
                 rappels.Add(new Rappel
                 {
                     Id = "evenement:" + e.Id, Categorie = L.T("Calendrier"),
                     Titre = e.Titre,
-                    Detail = jours == 0 ? L.F("Aujourd'hui ({0})", FormatDateCourte(e.Date)) : L.F("Dans {0} j ({1})", jours, FormatDateCourte(e.Date)),
+                    Detail = jours == 0 ? L.F("Aujourd'hui ({0})", d.ToString("dd/MM/yyyy")) : L.F("Dans {0} j ({1})", jours, d.ToString("dd/MM/yyyy")),
                     Priorite = Models.CalendarEventTypes.PrioriteNormale, PageCible = "calendar"
                 });
         }

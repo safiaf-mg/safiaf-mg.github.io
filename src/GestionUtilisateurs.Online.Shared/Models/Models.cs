@@ -303,15 +303,8 @@ public class UserAccount
     [System.Text.Json.Serialization.JsonIgnore]
     public bool EstMineur => Age is < 18;
 
-    public int? AgeAu(DateTime jour)
-    {
-        if (!DateTime.TryParseExact(DateNaissance ?? "", "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
-                System.Globalization.DateTimeStyles.None, out var naissance) || naissance > jour)
-            return null;
-        var age = jour.Year - naissance.Year;
-        if (naissance.Date > jour.AddYears(-age)) age--;
-        return age;
-    }
+    /// <summary>Âge atteint ce jour-là (même calcul que le calendrier).</summary>
+    public int? AgeAu(DateTime jour) => Services.DataStore.Age(DateNaissance, jour);
 
     public string? GetChampTexte(string fieldId)
         => Champs.TryGetValue(fieldId, out var v) ? v.Texte : null;
@@ -369,6 +362,27 @@ public class AppSettings
     public int CarteLargeurMm { get; set; } = 85;
     /// <summary>Hauteur réelle de la carte de membre à l'impression, en mm (défaut 55).</summary>
     public int CarteHauteurMm { get; set; } = 55;
+    /// <summary>
+    /// Format de la carte : « badge » (format carte bancaire CR80, 85,6 × 54 mm, celui des
+    /// badges PVC et de leurs porte-badges) ou « perso » (largeur et hauteur ci-dessus).
+    /// Vide (anciens réglages) : badge, sauf si une autre taille que 85 × 55 avait été choisie.
+    /// </summary>
+    public string CarteFormat { get; set; } = "";
+
+    public const string CarteFormatBadge = "badge";
+    public const string CarteFormatPerso = "perso";
+    public const double BadgeLargeurMm = 85.6;
+    public const double BadgeHauteurMm = 54;
+
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool CarteEnBadge => CarteFormat == CarteFormatBadge
+        || (CarteFormat != CarteFormatPerso && (CarteLargeurMm, CarteHauteurMm) is (85, 55) or (0, 0));
+
+    /// <summary>Taille réelle de la carte à l'impression, en mm.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public (double Largeur, double Hauteur) CarteTailleMm => CarteEnBadge
+        ? (BadgeLargeurMm, BadgeHauteurMm)
+        : (CarteLargeurMm > 0 ? CarteLargeurMm : BadgeLargeurMm, CarteHauteurMm > 0 ? CarteHauteurMm : BadgeHauteurMm);
     /// <summary>Export automatique mensuel de toutes les données (activé par défaut).</summary>
     public bool ExportAutoMensuel { get; set; } = true;
     /// <summary>Dernier mois exporté automatiquement (format yyyy-MM).</summary>

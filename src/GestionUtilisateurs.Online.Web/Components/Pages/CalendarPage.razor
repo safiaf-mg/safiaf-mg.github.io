@@ -115,7 +115,7 @@ else
                     }
                     @foreach (var evt in group)
                     {
-                        @RenderEventCard(evt)
+                        @RenderEventCard(evt, group.Key)
                     }
                 </div>
             }
@@ -716,8 +716,10 @@ else
             .Where(MatchSearch)
             .ToList();
 
+        // Un événement répété (anniversaire…) se range à sa prochaine date, pas à sa date d'origine.
+        var aujourdhui = DateTime.Today;
         GroupedByDay = FilteredEvents
-            .GroupBy(e => ParseDate(e.Date))
+            .GroupBy(e => DataStore.ProchaineOccurrence(e, aujourdhui) ?? ParseDate(e.Date))
             .OrderBy(g => g.Key)
             .ToList();
 
@@ -1341,15 +1343,9 @@ else
 
     private static string Soft(string hex) => hex.Length == 7 ? hex + "24" : hex;
 
-    /// <summary>Âge fêté le jour affiché (ou âge actuel dans la liste).</summary>
+    /// <summary>Âge fêté le jour affiché (âge actuel sans jour précis).</summary>
     private static string AgeLabel(CalendarEvent e, DateTime? jour = null)
-    {
-        if (!TryDate(e.Date, out var birth)) return "";
-        var ref_ = (jour ?? DateTime.Today).Date;
-        var age = ref_.Year - birth.Year;
-        if (ref_ < birth.AddYears(age)) age--;
-        return age <= 0 ? "" : L.F("🎂 {0} ans", age);
-    }
+        => DataStore.Age(e.Date, jour) is int age && age > 0 ? L.F("🎂 {0} ans", age) : "";
 
     private string UserName(string identifiant)
         => Store.Users.FirstOrDefault(u => u.Identifiant == identifiant)?.NomComplet ?? identifiant;

@@ -136,7 +136,13 @@
         }
         @foreach (var evt in BirthdayEvents)
         {
-            <div class="kv-row"><span class="kv-label">📅 @DataStore.FormatDateCourte(evt.Date)</span><span class="kv-value">@evt.Titre</span></div>
+            // Prochain anniversaire, avec l'âge fêté ce jour-là (comme dans le calendrier).
+            var prochain = DataStore.ProchaineOccurrence(evt, DateTime.Today);
+            var ageFete = prochain is { } p ? DataStore.Age(_user.DateNaissance, p) : null;
+            <div class="kv-row">
+                <span class="kv-label">📅 @(prochain is { } jour ? jour.ToString("dd/MM/yyyy") : DataStore.FormatDateCourte(evt.Date))</span>
+                <span class="kv-value">@evt.Titre@(ageFete is int a && a > 0 ? " · " + L.F("{0} ans", a) : "")</span>
+            </div>
         }
         @if (Store.Can(Permissions.CalendarUse) && !string.IsNullOrWhiteSpace(_user.DateNaissance) && BirthdayEvents.Count == 0)
         {
@@ -447,13 +453,7 @@ else
             : Store.GetBirthdayEventsForUser(_user.Identifiant, _user.NomComplet);
 
     private static string AgeLabel(string ymd)
-    {
-        if (!DataStore.TryParseYmd(ymd, out var birth)) return "—";
-        var today = DateTime.Today;
-        var age = today.Year - birth.Year;
-        if (today < birth.AddYears(age)) age--;
-        return age < 0 ? "—" : age.ToString();
-    }
+        => DataStore.Age(ymd)?.ToString() ?? "—";
 
     private void CreateBirthdayEvent()
     {

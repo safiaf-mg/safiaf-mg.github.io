@@ -4,6 +4,25 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 21 octobre 2026 (âges, conversations, exports et badge)
+
+- Âges : le calendrier range chaque anniversaire à sa prochaine date, avec
+  l'âge atteint ce jour-là (Ange, née le 01/12/1998 : « 28 ans » le
+  01/12/2026, comme dans la vue du mois). La fiche, le calendrier et les
+  rappels utilisent le même calcul ; un né le 29 février fête ses ans le
+  28 février les autres années.
+- Messagerie : une conversation à trois personnes ou plus peut recevoir un
+  nom ou en changer (✏️ en haut), même si elle a été commencée sans nom.
+  Celle d'un groupe et ministère garde le nom du groupe.
+- Export Excel des membres : en plus des champs personnalisés, il donne
+  l'âge, la date de décès, le responsable légal, la famille et les groupes.
+  Les champs personnalisés accentués (« Baptisé »…) se réimportent bien.
+- Carte de membre : l'export PDF donne bien 2 pages (recto, verso) au lieu
+  de 4, au format badge standard 85,6 × 54 mm (format carte bancaire, celui
+  des porte-badges). Nouveau : « Planche A4 à découper », recto et verso
+  côte à côte avec traits de coupe et pliage. Une taille personnalisée reste
+  possible dans Paramètres.
+
 ## 20 octobre 2026 (discussions de groupe et doublons)
 
 - Messagerie : « Nouveau groupe » crée une discussion nommée avec plusieurs
