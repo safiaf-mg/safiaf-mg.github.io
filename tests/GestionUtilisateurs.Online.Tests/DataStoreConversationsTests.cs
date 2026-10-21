@@ -143,6 +143,14 @@ public class DataStoreConversationsTests
         var g = Assert.Single(_store.GroupesDePriere("lalao"));
         Assert.Equal("Nom groupe test", g.Nom);
 
+        // Un groupe et ministère dont on fait partie est proposé même sans message.
+        _store.Logout();
+        Assert.True(_store.Login("admin", "admin123").Success);
+        Assert.True(_store.AjouterGroupe(new Groupe { Nom = "Chorale", Membres = new() { "hery" } }).Success);
+        Connecter("hery");
+        Assert.Equal(new[] { "Chorale", "Nom groupe test", "Test groupe" }, _store.GroupesDePriere("hery").Select(x => x.Nom));
+        Connecter("lalao");
+
         Assert.True(_store.PartagerIntention("Pour la kermesse", false, new[] { g.Id }).Success);
         var p = Assert.Single(_store.Prieres);
         Assert.Equal(new[] { "Nom groupe test" }, _store.GroupesIntention(p));
