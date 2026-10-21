@@ -319,7 +319,7 @@ input, select, textarea { font-family: var(--font); }
 
 /* Le contenu ne passe jamais sous le bouton + : la fin des listes reste au-dessus du FAB. */
 .user-list, .doc-list, .cal-list, .cal-events, .cal-day-section,
-.community-timeline, .community-reader, .msg-thread {
+.community-timeline, .community-reader {
     padding-bottom: 84px;
 }
 
@@ -3140,23 +3140,120 @@ img.cmc-logo { display: block; }
 @media (min-width: 720px) { .media-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; } .media-title { font-size: 15px; } .media-sub { font-size: 13.5px; } }
 
 /* Messagerie interne */
-.msg-thread { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
-.msg-bubble { position: relative; max-width: 88%; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); }
-.msg-mine { align-self: flex-end; background: var(--accent-soft); border-color: var(--accent); }
-.msg-theirs { align-self: flex-start; }
-.msg-meta { font-size: 11.5px; color: var(--text-muted); margin-bottom: 4px; }
-.msg-meta strong { color: var(--accent); }
-.msg-text { font-size: 14.5px; white-space: pre-wrap; overflow-wrap: anywhere; padding-right: 28px; }
-.msg-del { position: absolute; right: 2px; bottom: 2px; font-size: 14px; padding: 4px; }
-/* Journal de suppression : bulle discrète, contenu masqué. */
-.msg-deleted { align-self: center; max-width: 96%; background: var(--surface-2); border-style: dashed; }
-.msg-text-deleted { font-style: italic; color: var(--text-muted); padding-right: 0; }
-/* Actions : modifier + supprimer en bas à droite de la bulle. */
-.msg-actions { position: absolute; right: 2px; bottom: 2px; display: flex; gap: 0; }
-.msg-actions .btn-icon { font-size: 14px; padding: 4px; position: static; }
-.msg-edit { color: var(--text-muted); }
-.msg-reply { display: flex; gap: 8px; position: sticky; bottom: calc(var(--navbar-h) + 8px); background: var(--bg); padding: 6px 0; }
-.msg-reply input { flex: 1; min-width: 0; padding: 12px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text); font-size: 14px; }
+/* ---------- Messagerie : conversation ---------- */
+/* En-tête compact et fixe : retour, avatar, nom sur une ligne, options dans ⋮. */
+.chat-head {
+    position: sticky; top: var(--topbar-h); z-index: 20;
+    display: flex; align-items: center; gap: 10px;
+    margin: -8px -4px 8px; padding: 8px 4px;
+    background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+}
+.chat-back {
+    flex: 0 0 auto; width: 36px; height: 36px; border-radius: 50%; border: 0;
+    background: transparent; color: var(--text); font-size: 30px; line-height: 1; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; padding: 0 0 4px;
+}
+.chat-back:hover, .chat-menu-btn:hover { background: var(--surface-2); }
+.chat-head-text { flex: 1 1 auto; min-width: 0; }
+.chat-title { font-size: 16.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-sub { font-size: 12.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-menu-wrap { position: relative; flex: 0 0 auto; }
+.chat-menu-btn {
+    width: 36px; height: 36px; border-radius: 50%; border: 0; background: transparent;
+    color: var(--text); font-size: 22px; font-weight: 700; cursor: pointer;
+}
+.chat-menu-backdrop { position: fixed; inset: 0; z-index: 30; }
+.chat-menu {
+    position: absolute; right: 0; top: 40px; z-index: 31; min-width: 230px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow-lg); padding: 6px; display: flex; flex-direction: column;
+}
+.chat-menu button {
+    white-space: nowrap; border: 0; background: transparent; color: var(--text); text-align: left;
+    padding: 11px 12px; border-radius: 10px; font-size: 14.5px; cursor: pointer;
+}
+.chat-menu button:hover { background: var(--surface-2); }
+.chat-menu button.danger { color: var(--danger, #dc2626); }
+.conv-icon { background: var(--accent-soft); color: var(--accent); font-size: 20px; }
+.chat-head .avatar { width: 38px; height: 38px; font-size: 13px; }
+.chat-empty { text-align: center; color: var(--text-muted); font-size: 13.5px; padding: 40px 12px; }
+.chat-day { display: flex; justify-content: center; margin: 10px 0 4px; }
+.chat-day span {
+    font-size: 11.5px; font-weight: 600; color: var(--text-muted);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 3px 10px;
+}
+.chat-members { display: flex; flex-direction: column; gap: 10px; }
+.chat-member { display: flex; align-items: center; gap: 10px; font-size: 14.5px; }
+
+/* Bulles : les miennes à droite en couleur, celles des autres à gauche avec leur photo. */
+.msg-thread { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; padding-bottom: 12px; }
+.msg-row { display: flex; align-items: flex-end; gap: 6px; margin-top: 8px; }
+.msg-row.msg-suite { margin-top: 2px; }
+.msg-row-mine { justify-content: flex-end; }
+.msg-row .avatar { width: 28px; height: 28px; font-size: 11px; }
+.msg-avatar-space { width: 28px; flex: 0 0 28px; }
+.msg-bubble {
+    position: relative; max-width: 80%; padding: 7px 10px 5px; border-radius: 18px;
+    background: var(--surface); border: 1px solid var(--border); cursor: pointer;
+    box-shadow: 0 1px 1px rgba(15, 23, 42, .05);
+}
+.msg-mine { background: var(--accent); border-color: var(--accent); color: #fff; border-bottom-right-radius: 6px; }
+.msg-theirs { border-bottom-left-radius: 6px; }
+.msg-suite .msg-mine { border-top-right-radius: 6px; }
+.msg-suite .msg-theirs { border-top-left-radius: 6px; }
+.msg-choisi { outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 2px; }
+.msg-author { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 2px; }
+.msg-text { font-size: 15px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg-time { font-size: 10.5px; text-align: right; margin-top: 2px; color: var(--text-muted); }
+.msg-mine .msg-time { color: rgba(255, 255, 255, .8); }
+/* Journal de suppression : ligne discrète au centre. */
+.msg-deleted {
+    align-self: center; max-width: 96%; margin-top: 8px; cursor: default;
+    background: transparent; border-style: dashed; font-size: 12.5px; font-style: italic; color: var(--text-muted);
+}
+.msg-info { align-self: center; max-width: 92%; margin: 8px 0 2px; text-align: center; font-size: 12.5px; color: var(--text-muted); }
+/* Actions d'un message, sous la bulle touchée. */
+.msg-tools { display: flex; gap: 6px; margin: 4px 0 2px 34px; }
+.msg-tools-mine { justify-content: flex-end; margin-left: 0; }
+/* Zone de saisie collée en bas, au-dessus de la barre de navigation. */
+.msg-reply {
+    display: flex; gap: 8px; align-items: center; position: sticky; bottom: calc(var(--navbar-h) + 8px);
+    background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(10px); padding: 6px 0;
+}
+.msg-reply input { flex: 1; min-width: 0; padding: 12px 16px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text); font-size: 15px; }
+.msg-send {
+    flex: 0 0 auto; width: 46px; height: 46px; border-radius: 50%; border: 0;
+    background: var(--accent); color: #fff; font-size: 19px; cursor: pointer; padding-left: 3px;
+}
+.msg-send:disabled { opacity: .45; cursor: default; }
+
+/* ---------- Messagerie : liste des conversations ---------- */
+.conv-list {
+    display: flex; flex-direction: column; margin-bottom: 84px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+}
+.conv-item {
+    display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px;
+    border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--text);
+    text-align: left; font: inherit; cursor: pointer;
+}
+.conv-item:last-child { border-bottom: 0; }
+.conv-item:hover { background: var(--surface-2); }
+.conv-item > .avatar { width: 48px; height: 48px; }
+.conv-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.conv-top, .conv-bottom { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.conv-title { flex: 1 1 auto; min-width: 0; font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conv-time { flex: 0 0 auto; font-size: 12px; color: var(--text-muted); }
+.conv-preview { flex: 1 1 auto; min-width: 0; font-size: 13.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.conv-badge {
+    flex: 0 0 auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px;
+    background: var(--accent); color: #fff; font-size: 11.5px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.conv-unread .conv-title { font-weight: 800; }
+.conv-unread .conv-preview { color: var(--text); font-weight: 600; }
+.conv-unread .conv-time { color: var(--accent); font-weight: 700; }
 
 /* Matrice des rôles et permissions */
 .perm-matrix { display: flex; flex-direction: column; }

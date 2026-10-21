@@ -3895,11 +3895,13 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
             .ToList();
     }
 
-    /// <summary>Messages de la conversation, sans ceux que le membre connecté a retirés de sa liste.</summary>
+    /// <summary>Messages de la conversation que le membre connecté peut lire, sans ceux qu'il a retirés de sa liste.</summary>
     public IReadOnlyList<Message> GetMessages(string conversationId)
     {
         var me = GetCurrentUser()?.Identifiant ?? "";
-        return _messages.Where(m => m.ConversationId == conversationId && !MasquePourMoi(m, me))
+        // Seulement les messages dont le membre est destinataire : un membre ajouté en
+        // cours de route ne voit pas ce qui a été écrit avant son arrivée.
+        return _messages.Where(m => m.ConversationId == conversationId && VisiblePour(m, me))
             .OrderBy(m => m.Date).ToList();
     }
 

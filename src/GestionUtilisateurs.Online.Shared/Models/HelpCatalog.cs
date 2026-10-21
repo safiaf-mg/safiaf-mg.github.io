@@ -238,8 +238,10 @@ public static class HelpCatalog
                     "Le canal « Annonces » s'adresse à toute la communauté.",
                     "« Nouveau groupe » crée une discussion à son nom avec plusieurs membres ; « Écrire au groupe » d'un groupe et ministère écrit dans la discussion de ce groupe.",
                     "Touchez une conversation pour la lire et répondre.",
-                    "🗑 en haut d'une conversation la retire de votre liste ; elle revient si quelqu'un y écrit de nouveau.",
-                    "✏️ en haut d'une conversation à trois personnes ou plus lui donne un nom ou le change.",
+                    "⋮ en haut d'une conversation : voir les participants, ajouter des membres, la renommer (à trois ou plus) ou la supprimer.",
+                    "Les membres ajoutés reçoivent les messages à partir de leur arrivée, sans l'historique.",
+                    "Touchez un de vos messages pour le modifier (5 minutes) ou le supprimer.",
+                    "Supprimer une conversation la retire de votre liste ; elle revient si quelqu'un y écrit de nouveau.",
                     "Le compteur sur le menu « … » signale les conversations non lues."
                 })
             }),

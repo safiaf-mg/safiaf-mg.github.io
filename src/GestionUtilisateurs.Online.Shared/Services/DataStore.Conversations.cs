@@ -77,7 +77,7 @@ public partial class DataStore
            && ParticipantsConversation(conversationId).Count >= 3
            && ParticipantsConversation(conversationId).Any(p => MemeId(p, MonIdentifiant));
 
-    /// <summary>Renomme une conversation à plusieurs ; un nom vide la remet sans nom (sauf discussion de groupe).</summary>
+    /// <summary>Renomme une conversation à plusieurs ; un nom vide la remet sans nom.</summary>
     public OperationResult RenommerConversation(string conversationId, string nom)
     {
         if (GroupeDeConversation(conversationId) is { } g)
@@ -85,7 +85,6 @@ public partial class DataStore
         if (!PeutRenommerConversation(conversationId))
             return OperationResult.Fail(L.T("Seule une conversation à plusieurs peut recevoir un nom."));
         nom = (nom ?? "").Trim();
-        if (nom.Length == 0 && EstDiscussionDeGroupe(conversationId)) return OperationResult.Fail(L.T("Donnez un nom au groupe."));
         if (nom.Length > 80) return OperationResult.Fail(L.T("Le nom ne doit pas dépasser 80 caractères."));
         var me = MonIdentifiant;
         if (nom.Length > 0 && GetConversations(me).Any(c => c.ConversationId != conversationId
@@ -99,6 +98,56 @@ public partial class DataStore
             : ancien.Length == 0 ? "Conversation nommée « " + nom + " »" : "Conversation « " + ancien + " » renommée « " + nom + " »");
         DataChanged?.Invoke();
         return OperationResult.Ok();
+    }
+
+    /// <summary>
+    /// Un participant peut ajouter des membres à une conversation (sauf Annonces) ;
+    /// celle d'un groupe et ministère suit les membres du groupe.
+    /// </summary>
+    public bool PeutAjouterAConversation(string conversationId)
+        => conversationId != ConversationAnnonces
+           && GroupeDeConversation(conversationId) == null
+           && Can(Permissions.MessagerieUse)
+           && ParticipantsConversation(conversationId).Any(p => MemeId(p, MonIdentifiant));
+
+    /// <summary>
+    /// Ajoute des membres à une conversation. Ils reçoivent les messages à partir de
+    /// l'ajout, pas l'historique. Une conversation sans nom (identifiée par ses
+    /// participants) prend un identifiant fixe pour que tout le monde garde son
+    /// historique ; l'identifiant à ouvrir ensuite est renvoyé.
+    /// </summary>
+    public (OperationResult Resultat, string ConversationId) AjouterAConversation(string conversationId, IEnumerable<string> membres)
+    {
+        if (GroupeDeConversation(conversationId) is { } g)
+            return (OperationResult.Fail(L.F("Les membres de cette discussion sont ceux du groupe « {0} » : ajoutez-les dans « Groupes et ministères ».", g.Nom)), conversationId);
+        if (!PeutAjouterAConversation(conversationId))
+            return (OperationResult.Fail(L.T("Vous ne pouvez pas ajouter de membres à cette conversation.")), conversationId);
+        var participants = ParticipantsConversation(conversationId);
+        var nouveaux = (membres ?? Enumerable.Empty<string>())
+            .Select(x => (x ?? "").Trim())
+            .Where(x => x.Length > 0 && !participants.Any(p => MemeId(p, x)))
+            .Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        if (nouveaux.Count == 0)
+            return (OperationResult.Fail(L.T("Choisissez au moins un membre qui n'est pas déjà dans la conversation.")), conversationId);
+        var absent = nouveaux.FirstOrDefault(x => FindUserByIdentifier(x) is not { Actif: true, EstDecede: false });
+        if (absent != null)
+            return (OperationResult.Fail(L.F("Membre introuvable ou inactif : « {0} ».", absent)), conversationId);
+
+        var messages = _messages.Where(m => m.ConversationId == conversationId).ToList();
+        var id = EstDiscussionDeGroupe(conversationId) ? conversationId : PrefixeGroupe + Guid.NewGuid().ToString("N");
+        foreach (var m in messages) m.ConversationId = id;
+        var noms = string.Join(", ", nouveaux.Select(x => FindUserByIdentifier(x)!.NomComplet));
+        var moi = GetCurrentUser()?.NomComplet ?? MonIdentifiant;
+        var res = SendMessage(participants.Concat(nouveaux).ToList(),
+            L.F("{0} a ajouté {1} à la conversation.", moi, noms), id, NomDiscussion(id));
+        if (!res.Success)
+        {
+            foreach (var m in messages) m.ConversationId = conversationId;
+            return (res, conversationId);
+        }
+        _messages[^1].Info = true;
+        SaveMessages();
+        return (res, id);
     }
 
     /// <summary>Répond dans une conversation existante : mêmes participants, même nom de groupe.</summary>

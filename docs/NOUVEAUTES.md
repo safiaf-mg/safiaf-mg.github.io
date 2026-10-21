@@ -4,6 +4,21 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 21 octobre 2026 (messagerie plus claire, ajout de membres)
+
+- Nouvelle présentation de la messagerie : en-tête compact (retour, photo,
+  nom et participants) avec un menu ⋮, bulles colorées pour vos messages,
+  photo et nom de l'auteur dans les groupes, séparateurs « Aujourd'hui »,
+  « Hier », heure dans chaque bulle et bouton d'envoi ➤. La conversation
+  s'ouvre sur ses derniers messages.
+- Touchez un de vos messages pour le modifier ou le supprimer : les boutons
+  ne recouvrent plus le texte.
+- Liste des conversations : photo de la personne ou icône du groupe, heure
+  du dernier message, « Vous : … » pour vos messages, non lus en gras.
+- ⋮ > « Ajouter des membres » ajoute des personnes à une conversation. Elles
+  reçoivent les messages à partir de leur arrivée, sans l'historique. Une
+  conversation de groupe et ministère suit toujours les membres du groupe.
+
 ## 21 octobre 2026 (âges, conversations, exports et badge)
 
 - Âges : le calendrier range chaque anniversaire à sa prochaine date, avec
