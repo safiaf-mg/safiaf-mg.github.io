@@ -154,6 +154,7 @@ public static class HelpCatalog
                     "« Ma langue » : français, anglais ou malgache, au choix de chacun ; elle se choisit aussi sur l'écran de connexion.",
                     "« Ordre du menu » (gestionnaires) réorganise les cartes du menu « … » pour toute la communauté.",
                     "« Listes de choix » (gestionnaires) règle les choix des formulaires : ajouter, renommer, réordonner, masquer ou supprimer un type, un lien de famille, une priorité, une catégorie…",
+                    "« Tableaux » (gestionnaires) crée des tableaux de rubriques avec leurs colonnes et leurs lignes, par exemple un barème des famangiana. Lié à la participation remise, aux cotisations ou à la trésorerie, un tableau devient une liste qui remplit le montant.",
                     "Les données sont sauvegardées chaque semaine sur le serveur ; l'export Excel reste disponible à tout moment."
                 }),
                 new HelpSection("Bon à savoir", new[]
@@ -267,7 +268,8 @@ public static class HelpCatalog
                     "Trois cartes : Solde disponible, Cotisations et Impayés.",
                     "Les impayés ne sont pas automatiques : « ＋ Impayés » choisit les membres concernés, le montant, le motif et la période.",
                     "« Encaisser » règle une cotisation en attente et peut ajouter l'entrée dans la trésorerie.",
-                    "« ＋ Paiement » enregistre directement un règlement ; « Trésorerie » saisit chaque mouvement de caisse."
+                    "« ＋ Paiement » enregistre directement un règlement ; « Trésorerie » saisit chaque mouvement de caisse.",
+                    "Si un tableau est lié aux cotisations ou à la trésorerie (Paramètres › Tableaux), choisissez la rubrique : elle remplit le montant et le motif."
                 })
             }),
         new("materiel", "Matériel", "🧰",
@@ -312,7 +314,8 @@ public static class HelpCatalog
                 {
                     "Chaque situation est privée et visible uniquement par ce que les permissions autorisent.",
                     "Un suivi peut être marqué « résolu » et reste alors consultable en historique.",
-                    "Pour organiser les famangiana, choisissez le type : naissance, baptême, mariage, maladie ou hospitalisation, accident ou sinistre, décès, ou visite, accompagnement, événement important."
+                    "Pour organiser les famangiana, choisissez le type : naissance, baptême, mariage, maladie ou hospitalisation, accident ou sinistre, décès, ou visite, accompagnement, événement important.",
+                    "Si un barème est lié à la participation remise (Paramètres › Tableaux), choisissez la rubrique : le montant se remplit. Le type choisi (ex. Naissance) propose la ligne du même nom."
                 })
             }),
         new("carte", "Carte de membre", "🪪",

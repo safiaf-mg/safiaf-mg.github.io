@@ -1,0 +1,37 @@
+@inject DataStore Store
+
+@* Liste des lignes du tableau lié à un champ de montant (Paramètres › Tableaux) : choisir une ligne remplit le montant. *@
+@if (Tableau != null && Lignes.Count > 0)
+{
+    <div class="form-group rubrique-picker">
+        <label for="@Id">@L.F("Rubrique ({0})", Tableau.Nom)</label>
+        <select id="@Id" value="@Courante?.LigneId" @onchange="Choisir">
+            <option value="" selected="@(Courante == null)">@L.T("— Montant libre —")</option>
+            @foreach (var r in Lignes)
+            {
+                <option value="@r.LigneId" selected="@(r.LigneId == Courante?.LigneId)">@r.Texte</option>
+            }
+        </select>
+        <span class="field-hint">@L.T("Choisir une ligne du tableau remplit le montant ; vous pouvez encore le changer.")</span>
+    </div>
+}
+
+@code {
+    /// <summary>Champ de montant (voir <see cref="ChampsLiables"/>).</summary>
+    [Parameter, EditorRequired] public string Champ { get; set; } = "";
+    [Parameter] public string Id { get; set; } = "rubrique";
+    /// <summary>Rubrique actuellement choisie (son libellé), vide si montant libre.</summary>
+    [Parameter] public string? Valeur { get; set; }
+    /// <summary>Ligne choisie (null : montant libre).</summary>
+    [Parameter] public EventCallback<RubriqueTableau?> OnChoisir { get; set; }
+
+    private TableauPerso? Tableau => Store.TableauDuChamp(Champ);
+    private IReadOnlyList<RubriqueTableau> Lignes => Store.Rubriques(Champ);
+    private RubriqueTableau? Courante => Store.RubriqueNommee(Champ, Valeur);
+
+    private Task Choisir(ChangeEventArgs e)
+    {
+        var id = e.Value?.ToString() ?? "";
+        return OnChoisir.InvokeAsync(Lignes.FirstOrDefault(r => r.LigneId == id));
+    }
+}

@@ -1,0 +1,177 @@
+@inject DataStore Store
+@inject AppState State
+
+@* Édition d'un tableau (Paramètres › Tableaux) : nom, colonnes, lignes et champs liés. Rien n'est enregistré avant « Enregistrer ». *@
+<Modal Show="Brouillon != null" Title="@(EstNouveau ? L.T("Nouveau tableau") : L.F("Tableau « {0} »", _nomOrigine))" OnClose="Fermer" CssClass="tableau-modal">
+    <ChildContent>
+        @if (Brouillon is { } t)
+        {
+            <div class="form-group">
+                <label for="tab-nom">@L.T("Nom du tableau *")</label>
+                <input id="tab-nom" type="text" maxlength="80" placeholder="@L.T("Ex : Barème des famangiana")" value="@t.Nom" @oninput="e => t.Nom = e.Value?.ToString() ?? string.Empty" />
+            </div>
+            <div class="form-group">
+                <label for="tab-desc">@L.T("Description")</label>
+                <input id="tab-desc" type="text" maxlength="200" value="@t.Description" @oninput="e => t.Description = e.Value?.ToString() ?? string.Empty" />
+            </div>
+
+            <div class="divider-section">@L.F("Colonnes ({0})", t.Colonnes.Count)</div>
+            <p class="muted tableau-aide">@L.T("Cochez « Montant » pour une colonne de sommes en Ariary : c'est elle qui remplit les champs liés. La première autre colonne donne le nom de la rubrique.")</p>
+            <div class="tableau-colonnes">
+                @for (var i = 0; i < t.Colonnes.Count; i++)
+                {
+                    var c = t.Colonnes[i];
+                    var idx = i;
+                    <div class="tableau-colonne" data-colonne="@c.Id">
+                        <input type="text" maxlength="60" aria-label="@L.F("Nom de la colonne {0}", idx + 1)" placeholder="@L.T("Nom de la colonne")" value="@c.Nom" @oninput="e => c.Nom = e.Value?.ToString() ?? string.Empty" />
+                        <label class="form-check tableau-montant">
+                            <input type="checkbox" checked="@c.Montant" @onchange="e => c.Montant = e.Value is true" />
+                            @L.T("Montant")
+                        </label>
+                        <div class="menu-order-actions">
+                            <button type="button" class="btn btn-secondary btn-sm menu-order-btn" disabled="@(idx == 0)" aria-label="@L.F("Déplacer la colonne {0} vers la gauche", c.Nom)" @onclick="() => Deplacer(t.Colonnes, idx, -1)">◀</button>
+                            <button type="button" class="btn btn-secondary btn-sm menu-order-btn" disabled="@(idx >= t.Colonnes.Count - 1)" aria-label="@L.F("Déplacer la colonne {0} vers la droite", c.Nom)" @onclick="() => Deplacer(t.Colonnes, idx, 1)">▶</button>
+                            <button type="button" class="btn btn-secondary btn-sm menu-order-btn" disabled="@(t.Colonnes.Count <= 1)" aria-label="@L.F("Supprimer la colonne {0}", c.Nom)" title="@L.T("Supprimer")" @onclick="() => t.Colonnes.Remove(c)">🗑</button>
+                        </div>
+                    </div>
+                }
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm tableau-ajout-colonne" disabled="@(t.Colonnes.Count >= 20)" @onclick="AjouterColonne">＋ @L.T("Colonne")</button>
+
+            <div class="divider-section">@L.F("Lignes ({0})", t.Lignes.Count)</div>
+            <div class="tableau-grille-wrap">
+                <table class="tableau-grille">
+                    <thead>
+                        <tr>
+                            @foreach (var c in t.Colonnes)
+                            {
+                                <th class="@(c.Montant ? "tableau-th-montant" : "")">@(string.IsNullOrWhiteSpace(c.Nom) ? "…" : c.Nom)</th>
+                            }
+                            <th><span class="sr-only">@L.T("Actions")</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var i = 0; i < t.Lignes.Count; i++)
+                        {
+                            var l = t.Lignes[i];
+                            var idx = i;
+                            <tr data-ligne="@l.Id">
+                                @foreach (var c in t.Colonnes)
+                                {
+                                    var col = c;
+                                    <td>
+                                        <input type="text" maxlength="200" inputmode="@(col.Montant ? "decimal" : "text")" class="@(col.Montant ? "tableau-cellule-montant" : "")"
+                                               aria-label="@L.F("{0}, ligne {1}", col.Nom, idx + 1)" value="@l.Valeur(col.Id)"
+                                               @oninput="e => l.Cellules[col.Id] = e.Value?.ToString() ?? string.Empty" />
+                                    </td>
+                                }
+                                <td class="tableau-ligne-actions">
+                                    <button type="button" class="btn-icon" disabled="@(idx == 0)" aria-label="@L.F("Monter la ligne {0}", idx + 1)" @onclick="() => Deplacer(t.Lignes, idx, -1)">▲</button>
+                                    <button type="button" class="btn-icon" disabled="@(idx >= t.Lignes.Count - 1)" aria-label="@L.F("Descendre la ligne {0}", idx + 1)" @onclick="() => Deplacer(t.Lignes, idx, 1)">▼</button>
+                                    <button type="button" class="btn-icon danger" aria-label="@L.F("Supprimer la ligne {0}", idx + 1)" @onclick="() => t.Lignes.Remove(l)">🗑</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm tableau-ajout-ligne" @onclick="AjouterLigne">＋ @L.T("Ligne")</button>
+
+            <div class="divider-section">@L.T("Lier à un champ")</div>
+            <p class="muted tableau-aide">@L.T("Dans le formulaire du champ lié, les lignes du tableau deviennent une liste : en choisir une remplit le montant.")</p>
+            @foreach (var champ in ChampsLiables.Tous)
+            {
+                var ch = champ;
+                var autre = Store.TableauDuChamp(ch.Id);
+                <label class="form-check tableau-champ">
+                    <input type="checkbox" checked="@t.Champs.Contains(ch.Id)" @onchange="e => Lier(t, ch.Id, e.Value is true)" />
+                    <span>
+                        @L.T(ch.Titre) <small class="muted">· @L.T(ch.Module)</small>
+                        @if (autre != null && autre.Id != t.Id)
+                        {
+                            <small class="listes-detail">@L.F("Actuellement lié à « {0} » : cocher le remplace.", autre.Nom)</small>
+                        }
+                    </span>
+                </label>
+            }
+            <span class="form-error">@_erreur</span>
+        }
+    </ChildContent>
+    <FooterContent>
+        @if (!EstNouveau)
+        {
+            <button type="button" class="btn btn-danger" @onclick="() => _confirmerSuppression = true">🗑 @L.T("Supprimer")</button>
+        }
+        <button type="button" class="btn btn-secondary" @onclick="Fermer">@L.T("Annuler")</button>
+        <button type="button" class="btn btn-primary tableau-enregistrer" @onclick="Enregistrer">@L.T("Enregistrer")</button>
+    </FooterContent>
+</Modal>
+
+<ConfirmDialog Show="_confirmerSuppression" Title="@L.T("Supprimer le tableau")"
+               Message="@L.F("Supprimer le tableau « {0} » ? Les montants déjà enregistrés ne changent pas.", _nomOrigine)"
+               ConfirmLabel="@L.T("Supprimer")" Danger="true" OnConfirm="Supprimer" OnCancel="() => _confirmerSuppression = false" />
+
+@code {
+    /// <summary>Copie du tableau à modifier (ou nouveau tableau) ; null : fermé.</summary>
+    [Parameter] public TableauPerso? Brouillon { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private string _erreur = "";
+    private string _nomOrigine = "";
+    private bool _confirmerSuppression;
+    private TableauPerso? _ouvert;
+
+    private bool EstNouveau => Brouillon == null || Store.FindTableau(Brouillon.Id) == null;
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(Brouillon, _ouvert)) return;
+        _ouvert = Brouillon;
+        _erreur = "";
+        _confirmerSuppression = false;
+        _nomOrigine = Brouillon?.Nom ?? "";
+    }
+
+    private static string NouvelId() => Guid.NewGuid().ToString("N")[..8];
+
+    private static void Deplacer<T>(List<T> liste, int i, int sens)
+    {
+        var j = i + sens;
+        if (i < 0 || j < 0 || j >= liste.Count) return;
+        (liste[i], liste[j]) = (liste[j], liste[i]);
+    }
+
+    private void AjouterColonne()
+        => Brouillon?.Colonnes.Add(new ColonneTableau { Id = NouvelId(), Nom = "" });
+
+    private void AjouterLigne()
+        => Brouillon?.Lignes.Add(new LigneTableau { Id = NouvelId() });
+
+    private static void Lier(TableauPerso t, string champ, bool lie)
+    {
+        t.Champs.Remove(champ);
+        if (lie) t.Champs.Add(champ);
+    }
+
+    private Task Fermer() => OnClose.InvokeAsync();
+
+    private async Task Enregistrer()
+    {
+        if (Brouillon == null) return;
+        var nouveau = EstNouveau;
+        var res = Store.EnregistrerTableau(Brouillon);
+        if (!res.Success) { _erreur = res.Error; return; }
+        State.NotifySuccess(nouveau ? L.F("Tableau « {0} » créé.", Brouillon.Nom.Trim()) : L.T("Tableau enregistré."));
+        await Fermer();
+    }
+
+    private async Task Supprimer()
+    {
+        _confirmerSuppression = false;
+        if (Brouillon == null) return;
+        var res = Store.SupprimerTableau(Brouillon.Id);
+        if (!res.Success) { _erreur = res.Error; return; }
+        State.NotifySuccess(L.T("Tableau supprimé."));
+        await Fermer();
+    }
+}

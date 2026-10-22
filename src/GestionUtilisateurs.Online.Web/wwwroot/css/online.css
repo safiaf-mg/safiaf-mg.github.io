@@ -507,6 +507,28 @@
 .listes-aide { display: block; margin: -6px 0 12px; font-size: 12px; }
 @media (max-width: 480px) { .listes-traductions { grid-template-columns: 1fr; } }
 
+/* Paramètres › Tableaux */
+.tableau-item { display: flex; align-items: center; gap: 8px; }
+.tableau-item .listes-choix-item { flex: 1; min-width: 0; }
+.tableau-aide { font-size: 12.5px; margin: -4px 0 10px; }
+.tableau-colonnes { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.tableau-colonne { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tableau-colonne > input[type=text] { flex: 1 1 160px; min-width: 0; }
+.form-check.tableau-montant { margin: 0; white-space: nowrap; }
+.tableau-ajout-colonne, .tableau-ajout-ligne { margin-bottom: 6px; }
+.tableau-grille-wrap { overflow-x: auto; margin-bottom: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.tableau-grille { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.tableau-grille th { text-align: left; font-weight: 600; padding: 6px 8px; background: var(--surface-2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.tableau-grille td { padding: 4px; border-bottom: 1px solid var(--border); }
+.tableau-grille tr:last-child td { border-bottom: none; }
+.tableau-grille input { width: 100%; min-width: 110px; padding: 6px 8px; }
+.tableau-grille .tableau-cellule-montant { text-align: right; min-width: 90px; }
+.tableau-grille th.tableau-th-montant { text-align: right; }
+.tableau-ligne-actions { white-space: nowrap; width: 1%; }
+.form-check.tableau-champ { align-items: flex-start; }
+.tableau-champ .listes-detail { display: block; }
+.rubrique-picker select { width: 100%; }
+
 /* Inscription sans e-mail et connexion avec Google */
 .online-auth-label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 .form-group label.online-auth-sans-email {

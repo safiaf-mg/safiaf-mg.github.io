@@ -2372,6 +2372,10 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
         if ((value.Listes == null || value.Listes.Count == 0) && _settings.Listes?.Count > 0)
             value.Listes = _settings.Listes;
         value.Listes ??= new Dictionary<string, ListeConfig>();
+        // Idem pour les tableaux (Paramètres › Tableaux).
+        if ((value.Tableaux == null || value.Tableaux.Count == 0) && _settings.Tableaux?.Count > 0)
+            value.Tableaux = _settings.Tableaux;
+        value.Tableaux ??= new List<TableauPerso>();
         // En ligne, aucun thème commun : chacun choisit le sien (clair par défaut).
         if (OnlineMode) value.Theme = "light";
         _settings = value;
