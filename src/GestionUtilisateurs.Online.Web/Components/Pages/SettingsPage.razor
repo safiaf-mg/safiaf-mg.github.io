@@ -542,7 +542,7 @@
 
     // Sections minimisables, repliées par défaut (mémoire de session uniquement).
     private readonly HashSet<string> _collapsed = new(
-        new[] { "appearance", "menu", "listes", "guide", "cartemembre", "pagesize", "storage", "security", "fields", "actions" },
+        new[] { "appearance", "menu", "listes", "tableaux", "guide", "cartemembre", "pagesize", "storage", "security", "fields", "actions" },
         StringComparer.Ordinal);
 
     private bool IsCollapsed(string key) => _collapsed.Contains(key);
