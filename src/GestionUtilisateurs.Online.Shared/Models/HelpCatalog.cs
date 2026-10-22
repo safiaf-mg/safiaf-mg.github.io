@@ -289,6 +289,7 @@ public static class HelpCatalog
                 {
                     "« ＋ Réunion » saisit la date, l'objet et les participants.",
                     "Les gestionnaires notent la présence de chaque participant dans la réunion.",
+                    "« 📷 Scanner les QR codes des membres » ouvre la caméra du téléphone : chaque carte de membre scannée est pointée « présent », même si le membre n'était pas dans la liste des participants.",
                     "L'historique des présences aide à préparer les prochaines rencontres."
                 })
             }),
@@ -323,6 +324,7 @@ public static class HelpCatalog
                     "La carte se compose d'une face avant (photo, identité, QR) et d'un dos (signature, citation).",
                     "Pour un membre de moins de 18 ans, la carte indique « Mineur » et le responsable légal.",
                     "Touchez le QR code pour l'agrandir et le faire scanner facilement.",
+                    "Le même QR code sert à pointer la présence aux réunions (menu « Présence et réunions »).",
                     "« Exporter en PDF » ouvre la fenêtre d'impression : choisissez « Enregistrer au format PDF » pour obtenir une carte utilisable hors application.",
                     "La carte a le format badge standard (85,6 × 54 mm, format carte bancaire). « Planche A4 à découper » imprime recto et verso sur une feuille A4 : imprimez à 100 %, découpez, pliez et plastifiez.",
                     "Slogan et citation du dos se personnalisent dans les Paramètres."

@@ -1,6 +1,7 @@
 ﻿@implements IDisposable
 @inject DataStore Store
 @inject AppState State
+@inject JavascriptBridge Js
 
 @if (!Store.Can(Permissions.PresenceManage))
 {
@@ -80,6 +81,7 @@ else
                 <div class="cal-detail-notes">@reunion.CompteRendu</div>
             }
             <div class="divider-section">@L.T("Feuille de présence (touchez pour pointer)")</div>
+            <button type="button" class="btn btn-primary btn-block qr-scan-btn" @onclick="() => OuvrirScan(reunion.Id)">📷 @L.T("Scanner les QR codes des membres")</button>
             @if (reunion.Participants.Count == 0)
             {
                 <p class="muted">@L.T("Aucun participant. Modifiez la réunion pour en ajouter.")</p>
@@ -155,6 +157,51 @@ else
         <FooterContent>
             <button class="btn btn-secondary" @onclick="CloseEditor">@L.T("Annuler")</button>
             <button class="btn btn-primary" @onclick="Save">@L.T("Enregistrer")</button>
+        </FooterContent>
+    </Modal>
+
+    <Modal Title="@L.T("Pointer avec le QR code")" Show="_scanReunionId != null" OnClose="FermerScan" CssClass="qr-scan-modal">
+        <ChildContent>
+            @if (_scanEtat is "refuse" or "non-supporte" or "erreur")
+            {
+                <p class="form-error">@ScanErreur</p>
+                <button type="button" class="btn btn-secondary btn-sm" @onclick="ReessayerScan">@L.T("Réessayer")</button>
+            }
+            else
+            {
+                <div class="qr-scan-cadre">
+                    <video id="qr-scan-video" playsinline muted autoplay></video>
+                    <div class="qr-scan-viseur" aria-hidden="true"></div>
+                    @if (_scanEtat != "ok")
+                    {
+                        <div class="qr-scan-attente">@L.T("Ouverture de la caméra…")</div>
+                    }
+                </div>
+                <p class="muted qr-scan-aide">@L.T("Visez le QR code de la carte de membre. Chaque carte reconnue est pointée « présent » ; la caméra reste ouverte pour la personne suivante.")</p>
+            }
+            @if (_scanDernier != null)
+            {
+                <div class="qr-scan-resultat @(!_scanDernier.Succes ? "erreur" : _scanDernier.DejaPointe ? "deja" : "ok")" role="status" aria-live="polite">
+                    @if (_scanDernier.Membre != null)
+                    {
+                        <Avatar UserName="@_scanDernier.Membre.NomComplet" Seed="@_scanDernier.Membre.Identifiant" Size="sm" Photo="@_scanDernier.Membre.Photo" />
+                    }
+                    <span>@(_scanDernier.Succes ? (_scanDernier.DejaPointe ? "◐ " : "✓ ") : "✗ ")@_scanDernier.Message</span>
+                </div>
+            }
+            @if (_scanReunionId != null)
+            {
+                var scanStats = Store.ReunionStats(_scanReunionId);
+                <div class="storage-line storage-total"><span>@L.T("Présents")</span><strong>@scanStats.Presents / @scanStats.Total</strong></div>
+            }
+            @if (_scanPointes.Count > 0)
+            {
+                <div class="cal-detail-label">@L.F("Pointés par QR code ({0})", _scanPointes.Count)</div>
+                <div class="qr-scan-liste">@string.Join(", ", _scanPointes)</div>
+            }
+        </ChildContent>
+        <FooterContent>
+            <button class="btn btn-primary" @onclick="FermerScan">@L.T("Terminer")</button>
         </FooterContent>
     </Modal>
 
@@ -309,6 +356,66 @@ else
         if (!res.Success) State.NotifyError(res.Error);
     }
 
+    // ---------- Pointage par QR code (carte de membre) ----------
+
+    private string? _scanReunionId;
+    private bool _scanDemarre;
+    private string _scanEtat = "";
+    private PointageQr? _scanDernier;
+    private readonly List<string> _scanPointes = new();
+    private DotNetObjectReference<ReunionsPage>? _scanRef;
+
+    private string ScanErreur => _scanEtat switch
+    {
+        "refuse" => L.T("L'accès à la caméra a été refusé. Autorisez la caméra pour ce site dans les réglages du navigateur, puis réessayez."),
+        "non-supporte" => L.T("Ce navigateur ne permet pas de scanner avec la caméra. Ouvrez l'application dans Chrome ou Safari à jour."),
+        _ => L.T("Impossible d'ouvrir la caméra. Vérifiez qu'aucune autre application ne l'utilise, puis réessayez.")
+    };
+
+    private void OuvrirScan(string reunionId)
+    {
+        _scanReunionId = reunionId;
+        _scanDemarre = false;
+        _scanEtat = "";
+        _scanDernier = null;
+        _scanPointes.Clear();
+    }
+
+    private void ReessayerScan()
+    {
+        _scanDemarre = false;
+        _scanEtat = "";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_scanReunionId == null || _scanDemarre) return;
+        _scanDemarre = true;
+        _scanRef ??= DotNetObjectReference.Create(this);
+        var etat = await Js.QrScanStartAsync("qr-scan-video", _scanRef);
+        if (_scanReunionId == null || etat == "arrete") return;
+        _scanEtat = etat;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public Task OnQrLu(string texte) => InvokeAsync(() =>
+    {
+        if (_scanReunionId == null) return;
+        var res = Store.PointerPresenceParQr(_scanReunionId, texte);
+        _scanDernier = res;
+        if (res.Succes && !res.DejaPointe && res.Membre != null) _scanPointes.Insert(0, res.Membre.NomComplet);
+        StateHasChanged();
+    });
+
+    private async Task FermerScan()
+    {
+        _scanReunionId = null;
+        _scanDemarre = false;
+        await Js.QrScanStopAsync();
+        if (_scanPointes.Count > 0) State.NotifySuccess(L.F("{0} présence(s) pointée(s) par QR code.", _scanPointes.Count));
+    }
+
     private void CreateCalendarEvent()
     {
         if (_selected == null) return;
@@ -344,5 +451,10 @@ else
         else State.NotifyError(res.Error);
     }
 
-    public void Dispose() => Store.DataChanged -= Refresh;
+    public void Dispose()
+    {
+        Store.DataChanged -= Refresh;
+        if (_scanReunionId != null) _ = Js.QrScanStopAsync();
+        _scanRef?.Dispose();
+    }
 }
