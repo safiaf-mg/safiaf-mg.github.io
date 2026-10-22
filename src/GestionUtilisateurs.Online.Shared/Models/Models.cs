@@ -345,6 +345,8 @@ public class AppSettings
     public List<string> PasDoublons { get; set; } = new();
     /// <summary>Listes de choix réglées par les gestionnaires (clé : <see cref="ListesChoix"/>).</summary>
     public Dictionary<string, ListeConfig> Listes { get; set; } = new();
+    /// <summary>Tableaux de rubriques créés par les gestionnaires (Paramètres › Tableaux).</summary>
+    public List<TableauPerso> Tableaux { get; set; } = new();
     public string Theme { get; set; } = "light";
     public string Color { get; set; } = "#4f46e5";
     public int PageSize { get; set; } = 10;
@@ -728,6 +730,8 @@ public class Situation
     public string? EvenementId { get; set; }
     /// <summary>Participation remise (fanomezana), en Ariary.</summary>
     public double Participation { get; set; }
+    /// <summary>Rubrique choisie dans le tableau lié à la participation (ex. « Naissance »), vide si montant libre.</summary>
+    public string ParticipationRubrique { get; set; } = "";
     /// <summary>Sortie de trésorerie enregistrée pour la participation.</summary>
     public string? TransactionId { get; set; }
     /// <summary>Fiche créée pour le bébé (naissance).</summary>

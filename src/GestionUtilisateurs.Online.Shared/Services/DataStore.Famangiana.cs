@@ -29,6 +29,7 @@ public partial class DataStore
             draft.HeureVisite = heure.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
         }
         if (draft.Participation < 0) return L.T("La participation ne peut pas être négative.");
+        draft.ParticipationRubrique = (draft.ParticipationRubrique ?? "").Trim();
         draft.Visiteurs = (draft.Visiteurs ?? new List<string>())
             .Select(v => FindUserByIdentifier((v ?? "").Trim())?.Identifiant)
             .OfType<string>()
@@ -45,6 +46,7 @@ public partial class DataStore
         cible.LieuVisite = source.LieuVisite;
         cible.Visiteurs = source.Visiteurs.ToList();
         cible.Participation = source.Participation;
+        cible.ParticipationRubrique = source.ParticipationRubrique;
     }
 
     /// <summary>Crée, met à jour ou retire l'événement de la visite (droit « Calendrier » requis).</summary>
@@ -108,7 +110,8 @@ public partial class DataStore
         }
 
         var membre = FindUserByIdentifier(s.MembreIdentifiant);
-        var motif = "Famangiana : " + s.Titre + " (" + (membre?.NomComplet ?? s.MembreIdentifiant) + ")";
+        var motif = "Famangiana : " + s.Titre + " (" + (membre?.NomComplet ?? s.MembreIdentifiant) + ")"
+            + (s.ParticipationRubrique.Length > 0 ? " · " + s.ParticipationRubrique : "");
         var date = s.DateVisite.Length > 0 ? s.DateVisite : DateTime.Today.ToString("yyyy-MM-dd");
         if (tx == null)
         {

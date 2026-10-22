@@ -176,6 +176,7 @@ else
             {
                 <p class="text-muted" style="margin-top:0">@MemberName(_cMembre)</p>
             }
+            <RubriquePicker Champ="@ChampsLiables.Cotisation" Id="fi-rubrique" Valeur="@_cMotif" OnChoisir="@(r => Rubrique(r, ref _cMontant, ref _cMotif))" />
             <div class="form-group">
                 <label for="fi-montant">@L.T("Montant (Ar) *")</label>
                 <input id="fi-montant" type="text" inputmode="decimal" placeholder="@L.T("Ex : 5000")" value="@_cMontant" @oninput="e => _cMontant = e.Value?.ToString() ?? string.Empty" />
@@ -244,6 +245,7 @@ else
     <Modal Title="@L.T("Configurer des impayés")" Show="_showImpayes" OnClose="() => _showImpayes = false">
         <ChildContent>
             <p class="text-muted" style="margin-top:0">@L.T("Chaque membre coché devra cette cotisation. Un membre qui a déjà une cotisation de même motif sur la période est ignoré.")</p>
+            <RubriquePicker Champ="@ChampsLiables.Cotisation" Id="imp-rubrique" Valeur="@_iMotif" OnChoisir="@(r => Rubrique(r, ref _iMontant, ref _iMotif))" />
             <div class="form-group">
                 <label for="imp-montant">@L.T("Montant dû (Ar) *")</label>
                 <input id="imp-montant" type="text" inputmode="decimal" placeholder="@L.T("Ex : 5000")" value="@_iMontant" @oninput="e => _iMontant = e.Value?.ToString() ?? string.Empty" />
@@ -302,6 +304,7 @@ else
                     </label>
                 </div>
             </div>
+            <RubriquePicker Champ="@ChampsLiables.Tresorerie" Id="tr-rubrique" Valeur="@_tMotif" OnChoisir="@(r => Rubrique(r, ref _tMontant, ref _tMotif))" />
             <div class="form-group">
                 <label for="tr-montant">@L.T("Montant (Ar) *")</label>
                 <input id="tr-montant" type="text" inputmode="decimal" placeholder="@L.T("Ex : 20000")" value="@_tMontant" @oninput="e => _tMontant = e.Value?.ToString() ?? string.Empty" />
@@ -394,6 +397,14 @@ else
     // ---- Configuration des impayés ----
     private bool _showImpayes;
     private string _iMontant = "";
+
+    /// <summary>Ligne choisie dans le tableau lié : elle donne le montant et le motif.</summary>
+    private static void Rubrique(RubriqueTableau? r, ref string montant, ref string motif)
+    {
+        if (r == null) { motif = ""; return; }
+        if (r.Montant is { } m) montant = m.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        motif = r.Libelle;
+    }
     private string _iMotif = "";
     private string _iPeriode = "";
     private string _iSearch = "";

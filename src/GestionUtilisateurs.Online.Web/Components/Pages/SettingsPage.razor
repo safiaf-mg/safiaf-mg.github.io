@@ -172,6 +172,49 @@
 <ListesChoixEditor Show="_listeOuverte != null" ListeId="@_listeOuverte" OnClose="() => _listeOuverte = null" />
 }
 
+@if (GereParametres)
+{
+<div class="card settings-card settings-card-tableaux @(IsCollapsed("tableaux") ? "collapsed" : "")">
+    <span class="card-corner" aria-hidden="true"></span>
+    <div class="settings-card-head">
+        <span class="settings-deco settings-deco-listes" aria-hidden="true">▦</span>
+        <h3>@L.T("Tableaux")</h3>
+        <button type="button" class="section-toggle" aria-label="@L.T("Réduire ou agrandir la section Tableaux")" aria-expanded="@(!IsCollapsed("tableaux"))" @onclick='() => ToggleSection("tableaux")'>@(IsCollapsed("tableaux") ? "▸" : "▾")</button>
+    </div>
+    <p class="muted">@L.T("Créez vos tableaux de rubriques, avec les colonnes et les lignes que vous voulez (ex : un barème des famangiana). Lié à un champ de montant, un tableau devient une liste de choix qui remplit le montant.")</p>
+    @if (Store.Tableaux.Count > 0)
+    {
+        <div class="listes-choix">
+            @for (var i = 0; i < Store.Tableaux.Count; i++)
+            {
+                var t = Store.Tableaux[i];
+                var idx = i;
+                var lies = t.Champs.Select(c => ChampsLiables.Definition(c)).OfType<ChampLiable>().Select(c => L.T(c.Titre)).ToList();
+                <div class="tableau-item">
+                    <button type="button" class="listes-choix-item" data-tableau="@t.Id" @onclick="() => _tableauOuvert = t.Copie()">
+                        <span class="listes-choix-titre">@t.Nom</span>
+                        <span class="listes-choix-module">@L.F("{0} colonne(s), {1} ligne(s)", t.Colonnes.Count, t.Lignes.Count)@(lies.Count > 0 ? " · " + L.F("lié à : {0}", string.Join(", ", lies)) : "")</span>
+                        <span class="listes-choix-go" aria-hidden="true">›</span>
+                    </button>
+                    <div class="menu-order-actions">
+                        <button type="button" class="btn btn-secondary btn-sm menu-order-btn" disabled="@(idx == 0)" aria-label="@L.F("Monter {0}", t.Nom)" @onclick="() => Store.DeplacerTableau(t.Id, -1)">▲</button>
+                        <button type="button" class="btn btn-secondary btn-sm menu-order-btn" disabled="@(idx >= Store.Tableaux.Count - 1)" aria-label="@L.F("Descendre {0}", t.Nom)" @onclick="() => Store.DeplacerTableau(t.Id, 1)">▼</button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    <div class="form-actions" style="gap:10px;flex-wrap:wrap">
+        <button type="button" class="btn btn-primary tableau-nouveau" @onclick="NouveauTableau">＋ @L.T("Nouveau tableau")</button>
+        @if (Store.TableauDuChamp(ChampsLiables.Participation) == null)
+        {
+            <button type="button" class="btn btn-secondary tableau-modele" @onclick="() => _tableauOuvert = Store.ModeleBaremeFamangiana()">🏠 @L.T("Barème des famangiana (modèle)")</button>
+        }
+    </div>
+</div>
+<TableauEditor Brouillon="_tableauOuvert" OnClose="() => _tableauOuvert = null" />
+}
+
 <div class="card settings-card settings-card-guide @(IsCollapsed("guide") ? "collapsed" : "")">
     <span class="card-corner" aria-hidden="true"></span>
     <div class="settings-card-head">
@@ -417,6 +460,17 @@
 @code {
     /// <summary>Liste de choix ouverte dans l'éditeur (null : aucune).</summary>
     private string? _listeOuverte;
+    private TableauPerso? _tableauOuvert;
+
+    private void NouveauTableau() => _tableauOuvert = new TableauPerso
+    {
+        Colonnes =
+        {
+            new ColonneTableau { Id = "rubrique", Nom = L.T("Rubrique") },
+            new ColonneTableau { Id = "montant", Nom = L.T("Montant (Ar)"), Montant = true }
+        },
+        Lignes = { new LigneTableau { Id = Guid.NewGuid().ToString("N")[..8] } }
+    };
 
     /// <summary>Nom affiché d'une entrée du menu (l'histoire porte le nom de l'application).</summary>
     private string MenuLabel(AppMenus.MenuDef def) => def.Key == "community" ? Store.LibelleHistoire() : L.T(def.Label);
@@ -757,6 +811,7 @@
                 ExportAutoMensuel = _autoExport,
                 DernierExportAuto = prev.DernierExportAuto,
                 Listes = prev.Listes,
+                Tableaux = prev.Tableaux,
                 StorageQuotaMb = Math.Clamp(_storageQuotaMb, DataStore.StorageQuotaMbMin, QuotaMaxMb),
                 MenuOrder = new List<string>(_menuOrder),
                 MenuHidden = new List<string>(_menuHidden),

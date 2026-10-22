@@ -115,7 +115,7 @@ else
             }
             @if (sit.Participation > 0)
             {
-                <div class="storage-line"><span>@L.T("Participation remise")</span><strong>@DataStore.FormatMontant(sit.Participation)@(Store.ParticipationEnFinances(sit) ? " · " + L.T("dans Finances") : "")</strong></div>
+                <div class="storage-line"><span>@L.T("Participation remise")</span><strong>@(sit.ParticipationRubrique.Length > 0 ? sit.ParticipationRubrique + " · " : "")@DataStore.FormatMontant(sit.Participation)@(Store.ParticipationEnFinances(sit) ? " · " + L.T("dans Finances") : "")</strong></div>
             }
 
             @if (Store.FindUserByIdentifier(sit.MembreIdentifiant) is { } membre)
@@ -173,7 +173,7 @@ else
             </div>
             <div class="form-group">
                 <label for="si-type">@L.T("Type")</label>
-                <select id="si-type" value="@_type" @onchange="e => _type = e.Value?.ToString() ?? SituationTypes.Visite">
+                <select id="si-type" value="@_type" @onchange="ChangerType">
                     @foreach (var t in ListesChoix.Choix(ListesChoix.TypesSituation, _type))
                     {
                         <option value="@t.Cle" selected="@(t.Cle == _type)">@SituationTypes.Icon(t.Cle) @t.Libelle</option>
@@ -233,6 +233,7 @@ else
                     ? L.T("Avec une date, la visite est ajoutée au Calendrier des membres qui la font.")
                     : L.T("Votre rôle ne permet pas de modifier le Calendrier : la visite n'y sera pas ajoutée."))</span>
             </div>
+            <RubriquePicker Champ="@ChampsLiables.Participation" Id="si-rubrique" Valeur="@_rubrique" OnChoisir="ChoisirRubrique" />
             <div class="form-group">
                 <label for="si-part">@L.T("Participation remise (Ar)")</label>
                 <input id="si-part" type="text" inputmode="decimal" placeholder="@L.T("Ex : 20000")" value="@_participation" @oninput="e => _participation = e.Value?.ToString() ?? string.Empty" />
@@ -312,6 +313,7 @@ else
     private string _lieu = "";
     private List<string> _visiteurs = new();
     private string _participation = "";
+    private string _rubrique = "";
     private bool _enFinances;
     private bool _decesOpen;
     private Situation? _naissanceSituation;
@@ -336,7 +338,7 @@ else
         var q = _search.Trim();
         if (q.Length == 0) return true;
         return (s.Titre + " " + s.Description + " " + SituationTypes.Label(s.Type)
-            + " " + MemberName(s.MembreIdentifiant) + " " + s.PersonneConcernee)
+            + " " + MemberName(s.MembreIdentifiant) + " " + s.PersonneConcernee + " " + s.ParticipationRubrique)
             .Contains(q, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -364,6 +366,22 @@ else
         var v = (raw ?? "").Trim().Replace(" ", "").Replace(",", ".");
         if (v.Length == 0) return 0;
         return double.TryParse(v, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var n) ? n : null;
+    }
+
+    private void ChoisirRubrique(RubriqueTableau? r)
+    {
+        _rubrique = r?.Libelle ?? "";
+        if (r?.Montant is { } m) _participation = m.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    }
+
+    /// <summary>Change le type ; si le barème a une ligne de ce nom (ex. « Naissance »), elle est proposée.</summary>
+    private void ChangerType(ChangeEventArgs e)
+    {
+        _type = e.Value?.ToString() ?? SituationTypes.Visite;
+        if (_participation.Trim().Length > 0 && _rubrique.Length == 0) return;
+        if (_rubrique.Length > 0 && Store.RubriqueNommee(ChampsLiables.Participation, _rubrique) is { } actuelle
+            && TableauPerso.LireMontant(_participation) != actuelle.Montant) return;
+        if (Store.RubriqueNommee(ChampsLiables.Participation, SituationTypes.Label(_type)) is { } r) ChoisirRubrique(r);
     }
 
     private void OuvrirNaissance(Situation s, UserAccount parent)
@@ -412,7 +430,7 @@ else
         _priorite = CalendarEventTypes.PrioriteNormale;
         _personne = ""; _dateVisite = ""; _heure = ""; _lieu = "";
         _visiteurs = new List<string>();
-        _participation = ""; _enFinances = true;
+        _participation = ""; _rubrique = ""; _enFinances = true;
         _error = "";
         _showEditor = true;
     }
@@ -426,6 +444,7 @@ else
         _personne = s.PersonneConcernee; _dateVisite = s.DateVisite; _heure = s.HeureVisite; _lieu = s.LieuVisite;
         _visiteurs = s.Visiteurs.ToList();
         _participation = s.Participation > 0 ? s.Participation.ToString(System.Globalization.CultureInfo.InvariantCulture) : "";
+        _rubrique = s.ParticipationRubrique;
         _enFinances = Store.ParticipationEnFinances(s);
         _error = "";
         _showEditor = true;
@@ -441,7 +460,7 @@ else
         {
             MembreIdentifiant = _membre, Type = _type, Titre = _titre, Description = _desc, Priorite = _priorite,
             PersonneConcernee = _personne, DateVisite = _dateVisite, HeureVisite = _heure, LieuVisite = _lieu,
-            Visiteurs = _visiteurs.ToList(), Participation = participation
+            Visiteurs = _visiteurs.ToList(), Participation = participation, ParticipationRubrique = _rubrique
         };
         bool? enFinances = Store.Can(Permissions.FinancesManage) ? _enFinances : null;
         OperationResult res = _editId == null

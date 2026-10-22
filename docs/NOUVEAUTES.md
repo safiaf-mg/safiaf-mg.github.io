@@ -4,6 +4,21 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 22 octobre 2026 (tableaux personnalisables)
+
+- Paramètres › « Tableaux » (gestionnaires) : créez autant de tableaux que
+  vous voulez, avec vos colonnes et vos lignes (ex : « Rubrique » et
+  « Montant (Ar) »). Le bouton « Barème des famangiana (modèle) » prépare un
+  tableau avec une ligne par type de famangiana : il reste à écrire les
+  montants.
+- Un tableau peut être lié à un champ de montant : participation remise des
+  famangiana, montant des cotisations (paiement et impayés) ou montant des
+  mouvements de trésorerie. Le formulaire propose alors la liste des lignes :
+  en choisir une remplit le montant (et le motif dans Finances), que l'on
+  peut encore changer.
+- Famangiana : choisir le type (ex. « Naissance ») propose la ligne du même
+  nom dans le barème, et la rubrique choisie s'affiche avec la participation.
+
 ## 21 octobre 2026 (histoire : frise, dates souples, photos)
 
 - Histoire de la communauté : un onglet « Frise » montre tous les chapitres
