@@ -700,6 +700,9 @@ public static class PresenceStatuts
     public static string Icon(string statut) => ListesChoix.IconePerso(ListesChoix.StatutsPresence, statut) ?? IconOrigine(statut);
 }
 
+/// <summary>Résultat d'un scan de QR code sur la feuille de présence.</summary>
+public record PointageQr(bool Succes, string Message, UserAccount? Membre, bool DejaPointe);
+
 /// <summary>Situation particulière d'un membre (visite, accompagnement, événement important…).</summary>
 public class Situation
 {

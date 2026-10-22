@@ -269,5 +269,20 @@
   "Vous ne pouvez pas enregistrer votre propre décès.": "Tsy afaka manoratra ny fahafatesanao ianao.",
   "dans Finances": "ao amin'ny Fitantanam-bola",
   "{0} est décédé(e) le {1}.": "Nodimandry ny {1} i {0}.",
-  "Pour organiser les famangiana, choisissez le type : naissance, baptême, mariage, maladie ou hospitalisation, accident ou sinistre, décès, ou visite, accompagnement, événement important.": "Mba handaminana ny famangiana, safidio ny karazany: fahaterahana, batisa, fanambadiana, aretina na fidirana hopitaly, loza na voina, fahafatesana, na fitsidihana, fanohanana, zava-mitranga lehibe."
+  "Pour organiser les famangiana, choisissez le type : naissance, baptême, mariage, maladie ou hospitalisation, accident ou sinistre, décès, ou visite, accompagnement, événement important.": "Mba handaminana ny famangiana, safidio ny karazany: fahaterahana, batisa, fanambadiana, aretina na fidirana hopitaly, loza na voina, fahafatesana, na fitsidihana, fanohanana, zava-mitranga lehibe.",
+  "Scanner les QR codes des membres": "Hijery ny QR code-n'ny mpikambana",
+  "Pointer avec le QR code": "Hanamarika amin'ny QR code",
+  "Ouverture de la caméra…": "Manokatra ny fakan-tsary…",
+  "Visez le QR code de la carte de membre. Chaque carte reconnue est pointée « présent » ; la caméra reste ouverte pour la personne suivante.": "Atondrohy amin'ny QR code amin'ny karatry ny mpikambana ny fakan-tsary. Voamarika « tonga » ny karatra fantatra rehetra ; mijanona misokatra ny fakan-tsary ho an'ny manaraka.",
+  "Pointés par QR code ({0})": "Voamarika tamin'ny QR code ({0})",
+  "Terminer": "Vita",
+  "L'accès à la caméra a été refusé. Autorisez la caméra pour ce site dans les réglages du navigateur, puis réessayez.": "Nolavina ny fidirana amin'ny fakan-tsary. Avelao hampiasa ny fakan-tsary ity tranonkala ity ao amin'ny fikirakiran'ny mpitety, dia andramo indray.",
+  "Ce navigateur ne permet pas de scanner avec la caméra. Ouvrez l'application dans Chrome ou Safari à jour.": "Tsy afaka mijery amin'ny fakan-tsary ity mpitety ity. Sokafy amin'ny Chrome na Safari vaovao ny rindranasa.",
+  "Impossible d'ouvrir la caméra. Vérifiez qu'aucune autre application ne l'utilise, puis réessayez.": "Tsy nety nisokatra ny fakan-tsary. Jereo fa tsy misy rindranasa hafa mampiasa azy, dia andramo indray.",
+  "{0} présence(s) pointée(s) par QR code.": "Fanatrehana {0} voamarika tamin'ny QR code.",
+  "QR code non reconnu : ce n'est pas une carte de membre.": "Tsy fantatra ny QR code : tsy karatry ny mpikambana io.",
+  "{0} est déjà pointé(e) présent(e).": "Efa voamarika fa tonga i {0}.",
+  "{0} : présent(e).": "{0} : tonga.",
+  "« 📷 Scanner les QR codes des membres » ouvre la caméra du téléphone : chaque carte de membre scannée est pointée « présent », même si le membre n'était pas dans la liste des participants.": "« 📷 Hijery ny QR code-n'ny mpikambana » no manokatra ny fakan-tsarin'ny finday : voamarika « tonga » ny karatry ny mpikambana rehetra jerena, na dia tsy tao amin'ny lisitry ny mpandray anjara aza izy.",
+  "Le même QR code sert à pointer la présence aux réunions (menu « Présence et réunions »).": "Io QR code io ihany no ampiasaina hanamarihana ny fanatrehana amin'ny fivoriana (menio « Fanatrehana sy fivoriana »)."
 }

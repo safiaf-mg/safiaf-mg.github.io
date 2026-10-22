@@ -112,6 +112,7 @@ else
             <button class="btn btn-primary" @onclick="() => ExportPdfAsync(false)" disabled="@_exporting">@(_exporting ? L.T("Export…") : L.T("⤓ Exporter en PDF"))</button>
             <button class="btn btn-secondary" @onclick="() => ExportPdfAsync(true)" disabled="@_exporting">@L.T("🖨 Planche A4 à découper")</button>
         </div>
+        <p class="muted no-print" style="font-size:12.5px">@L.T("Le même QR code sert à pointer la présence aux réunions (menu « Présence et réunions »).")</p>
         <p class="muted no-print" style="font-size:12.5px">@L.F("Le QR code contient la fiche contact (vCard) lisible par tout lecteur. « Exporter en PDF » donne 2 pages (recto, verso) à la taille réelle du badge ({0} × {1} mm), pour une imprimante de cartes. « Planche A4 » place le recto et le verso côte à côte sur une feuille A4 : imprimez à 100 % (taille réelle), découpez, pliez au milieu puis plastifiez ou glissez dans un porte-badge.", MmTexte(CardWidthMm), MmTexte(CardHeightMm))</p>
     }
     else
@@ -195,7 +196,7 @@ else
         try
         {
             using var gen = new QRCoder.QRCodeGenerator();
-            var data = gen.CreateQrCode(BuildVCard(user, code), QRCoder.QRCodeGenerator.ECCLevel.Q);
+            var data = gen.CreateQrCode(Store.VCardMembre(user), QRCoder.QRCodeGenerator.ECCLevel.Q);
             using var png = new QRCoder.PngByteQRCode(data);
             return "data:image/png;base64," + Convert.ToBase64String(png.GetGraphic(pixelsPerModule));
         }
@@ -229,26 +230,6 @@ else
         if (e.Key is "Enter" or " " && Current != null)
             OpenQrPreview(Current, MemberCode(Current));
     }
-
-    private string BuildVCard(UserAccount user, string? code)
-    {
-        var sb = new System.Text.StringBuilder();
-        sb.AppendLine("BEGIN:VCARD");
-        sb.AppendLine("VERSION:3.0");
-        sb.AppendLine("N:" + Vcf(user.Nom) + ";" + Vcf(user.Prenom) + ";;;");
-        sb.AppendLine("FN:" + Vcf(user.NomComplet));
-        sb.AppendLine("ORG:" + Vcf(Store.Settings.AppName));
-        if (!string.IsNullOrWhiteSpace(user.Telephone)) sb.AppendLine("TEL;TYPE=CELL:" + Vcf(user.Telephone));
-        if (!string.IsNullOrWhiteSpace(user.Email)) sb.AppendLine("EMAIL:" + Vcf(user.Email));
-        sb.AppendLine(string.IsNullOrWhiteSpace(code)
-            ? "NOTE:" + Vcf(user.Role)
-            : "NOTE:Membre " + Vcf(code) + " — " + Vcf(user.Role));
-        sb.AppendLine("END:VCARD");
-        return sb.ToString();
-    }
-
-    private static string Vcf(string? s)
-        => (s ?? "").Replace("\\", "\\\\").Replace(";", "\\;").Replace(",", "\\,").Replace("\n", "\\n").Trim();
 
     private async Task ExportPdfAsync(bool planche)
     {
