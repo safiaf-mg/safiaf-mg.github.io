@@ -423,6 +423,7 @@
 .online-auth-main .online-auth-mobile-logo { width: 112px; height: 112px; border-radius: 30px; font-size: 38px; margin-bottom: 12px; }
 .online-auth-main img.online-auth-mobile-logo { object-fit: cover; background: var(--surface); }
 .online-auth-mobile-name { margin: 0; font-size: 22px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.online-auth-mobile-slogan { margin: 4px 0 0; font-size: 14.5px; font-style: italic; color: var(--text-muted); overflow-wrap: anywhere; }
 .online-auth-main.is-signup { padding-top: 16px; padding-bottom: 16px; }
 .online-auth-main.is-signup .lang-picker-auth { margin-bottom: 10px; }
 .online-auth-main.is-signup .login-logo { margin-bottom: 12px; }
@@ -440,7 +441,9 @@
     .online-auth-hero { position: sticky; top: 0; height: 100vh; }
     .online-auth-main { min-height: 100vh; justify-content: safe center; }
     .online-auth-main .online-auth-mobile-logo,
-    .online-auth-main .online-auth-mobile-name { display: none; }
+    .online-auth-main .online-auth-mobile-name,
+    .online-auth-main .online-auth-mobile-slogan { display: none; }
+    .online-auth-hero .online-auth-slogan { font-style: italic; overflow-wrap: anywhere; }
     .online-auth-main .login-subtitle { font-size: 15px; font-weight: 600; color: var(--text); }
     .online-auth-logo {
         width: 132px; height: 132px; border-radius: 34px; object-fit: cover; display: block;

@@ -4,6 +4,19 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 22 octobre 2026 (slogan sur la page de connexion)
+
+- Page de connexion : la phrase « Membres, calendrier, documents, finances,
+  votes et messagerie, partagés en toute sécurité. » est remplacée par le
+  slogan de l'application, sous son nom. Il se règle dans Paramètres ›
+  « Configuration carte de membre » › « Slogan de la carte de membre » (le
+  même que sur la carte). Sans slogan, rien n'est affiché à cet endroit.
+- Sur téléphone, le slogan s'affiche sous le nom sur l'onglet « Connexion »
+  (pas sur « Inscription », qui doit tenir sur un écran).
+- Administrateur : lancer une fois le script
+  `supabase/migrations/0007_slogan_connexion.sql` dans Supabase pour que le
+  slogan s'affiche aussi sur les appareils qui ne se sont jamais connectés.
+
 ## 22 octobre 2026 (tableaux personnalisables)
 
 - Paramètres › « Tableaux » (gestionnaires) : créez autant de tableaux que

@@ -297,11 +297,11 @@ window.guOnline = (function () {
             return { data: JSON.stringify(r.data === undefined ? null : r.data) };
         },
 
-        // Nom et logo de la communauté pour l'écran de connexion (sans compte).
+        // Nom, logo et slogan de la communauté pour l'écran de connexion (sans compte).
         marque: async function () {
             var r = await client.rpc('public_branding');
             if (r.error || !r.data) return { error: r.error ? err(r.error) : 'vide' };
-            var nom = r.data.nom || '', logo = r.data.logo || '';
+            var nom = r.data.nom || '', logo = r.data.logo || '', slogan = r.data.slogan;
             var m = REF.exec(logo);
             if (m) {
                 logo = '';
@@ -310,7 +310,8 @@ window.guOnline = (function () {
                     if (!dl.error) logo = await blobToDataUrl(dl.data, m[2]);
                 } catch (_) { }
             }
-            return { nom: nom, logo: logo.startsWith('data:image/') ? logo : '' };
+            // slogan absent (script 0007 pas encore lancé) : on garde celui de l'appareil.
+            return { nom: nom, logo: logo.startsWith('data:image/') ? logo : '', slogan: typeof slogan === 'string' ? slogan : null };
         },
 
         removeFiles: async function (names) {
