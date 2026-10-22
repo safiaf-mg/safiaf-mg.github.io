@@ -269,5 +269,20 @@
   "Vous ne pouvez pas enregistrer votre propre décès.": "You cannot record your own death.",
   "dans Finances": "in Finances",
   "{0} est décédé(e) le {1}.": "{0} died on {1}.",
-  "Pour organiser les famangiana, choisissez le type : naissance, baptême, mariage, maladie ou hospitalisation, accident ou sinistre, décès, ou visite, accompagnement, événement important.": "To organise famangiana (visits), pick the type: birth, baptism, wedding, illness or hospital stay, accident or disaster, death, or visit, support, important event."
+  "Pour organiser les famangiana, choisissez le type : naissance, baptême, mariage, maladie ou hospitalisation, accident ou sinistre, décès, ou visite, accompagnement, événement important.": "To organise famangiana (visits), pick the type: birth, baptism, wedding, illness or hospital stay, accident or disaster, death, or visit, support, important event.",
+  "Scanner les QR codes des membres": "Scan members' QR codes",
+  "Pointer avec le QR code": "Check in with the QR code",
+  "Ouverture de la caméra…": "Opening the camera…",
+  "Visez le QR code de la carte de membre. Chaque carte reconnue est pointée « présent » ; la caméra reste ouverte pour la personne suivante.": "Point the camera at the member card's QR code. Each recognised card is marked “present”; the camera stays open for the next person.",
+  "Pointés par QR code ({0})": "Checked in by QR code ({0})",
+  "Terminer": "Done",
+  "L'accès à la caméra a été refusé. Autorisez la caméra pour ce site dans les réglages du navigateur, puis réessayez.": "Camera access was denied. Allow the camera for this site in the browser settings, then try again.",
+  "Ce navigateur ne permet pas de scanner avec la caméra. Ouvrez l'application dans Chrome ou Safari à jour.": "This browser cannot scan with the camera. Open the app in an up-to-date Chrome or Safari.",
+  "Impossible d'ouvrir la caméra. Vérifiez qu'aucune autre application ne l'utilise, puis réessayez.": "Could not open the camera. Make sure no other app is using it, then try again.",
+  "{0} présence(s) pointée(s) par QR code.": "{0} attendance(s) checked in by QR code.",
+  "QR code non reconnu : ce n'est pas une carte de membre.": "QR code not recognised: this is not a member card.",
+  "{0} est déjà pointé(e) présent(e).": "{0} is already marked present.",
+  "{0} : présent(e).": "{0}: present.",
+  "« 📷 Scanner les QR codes des membres » ouvre la caméra du téléphone : chaque carte de membre scannée est pointée « présent », même si le membre n'était pas dans la liste des participants.": "“📷 Scan members' QR codes” opens the phone camera: each scanned member card is marked “present”, even if the member was not on the participant list.",
+  "Le même QR code sert à pointer la présence aux réunions (menu « Présence et réunions »).": "The same QR code is used to check in at meetings (“Attendance and meetings” menu)."
 }

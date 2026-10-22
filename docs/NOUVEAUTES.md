@@ -19,6 +19,19 @@ obligatoire.
 - Famangiana : choisir le type (ex. « Naissance ») propose la ligne du même
   nom dans le barème, et la rubrique choisie s'affiche avec la participation.
 
+## 22 octobre 2026 (présence par QR code)
+
+- Présence et réunions : dans une réunion, « 📷 Scanner les QR codes des
+  membres » ouvre la caméra du téléphone. Chaque carte de membre scannée est
+  pointée « présent » (le membre est ajouté aux participants s'il n'y était
+  pas). La caméra reste ouverte pour la personne suivante ; le nom s'affiche
+  en vert, ou en orange s'il était déjà pointé.
+- Les cartes déjà imprimées marchent : le membre est reconnu par son
+  matricule, son e-mail, son téléphone ou son nom. Les nouvelles cartes
+  portent en plus un code unique du membre, qui reste valable même si son
+  identifiant change.
+- Autorisez la caméra la première fois que le navigateur le demande.
+
 ## 21 octobre 2026 (histoire : frise, dates souples, photos)
 
 - Histoire de la communauté : un onglet « Frise » montre tous les chapitres

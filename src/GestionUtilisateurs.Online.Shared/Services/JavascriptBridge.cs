@@ -123,6 +123,16 @@ public class JavascriptBridge
         catch { return null; }
     }
 
+    /// <summary>Scanner de QR code (feuille de présence) : « ok », « refuse », « non-supporte » ou « erreur ».</summary>
+    public async Task<string> QrScanStartAsync<T>(string videoId, DotNetObjectReference<T> reference) where T : class
+    {
+        try { return await _js.InvokeAsync<string>("guQrScan.start", videoId, reference); }
+        catch { return "erreur"; }
+    }
+
+    public Task QrScanStopAsync()
+        => InvokeAsync("guQrScan.stop");
+
     private Task InvokeAsync(string ident, params object?[] args)
     {
         try { return _js.InvokeVoidAsync(ident, args).AsTask(); }
