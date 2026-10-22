@@ -684,14 +684,15 @@ to authenticated;
 
 grant execute on function public.record_capacity_snapshot(text), public.gu_measure() to service_role;
 
--- Écran de connexion : nom et logo de la communauté visibles avant la connexion
--- (seuls ces deux réglages et le fichier du logo sont lisibles sans compte).
+-- Écran de connexion : nom, logo et slogan de la communauté visibles avant la
+-- connexion (seuls ces réglages et le fichier du logo sont lisibles sans compte).
 
 create or replace function public.public_branding()
 returns jsonb language sql stable security definer set search_path = public as $$
     select jsonb_build_object(
         'nom',  coalesce(a.value ->> 'appName', ''),
-        'logo', coalesce(a.value ->> 'logo', ''))
+        'logo', coalesce(a.value ->> 'logo', ''),
+        'slogan', coalesce(a.value ->> 'carteSlogan', ''))
     from public.app_data a
     where a.key = 'gu2:settings';
 $$;

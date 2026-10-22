@@ -16,19 +16,25 @@ window.guLangue = {
 // dernière visite, puis mis à jour par le serveur).
 window.guMarque = {
     lire: function () {
-        try { return { nom: localStorage.getItem('gu_app_name') || '', logo: localStorage.getItem('gu_logo') || '' }; }
-        catch (e) { return { nom: '', logo: '' }; }
+        try { return { nom: localStorage.getItem('gu_app_name') || '', logo: localStorage.getItem('gu_logo') || '', slogan: localStorage.getItem('gu_slogan') || '' }; }
+        catch (e) { return { nom: '', logo: '', slogan: '' }; }
     },
-    ecrire: function (nom, logo) {
+    ecrire: function (nom, logo, slogan) {
         try {
             if (nom) localStorage.setItem('gu_app_name', nom);
             if (logo) localStorage.setItem('gu_logo', logo); else localStorage.removeItem('gu_logo');
+            if (typeof slogan === 'string') window.guMarque.slogan(slogan);
+        } catch (e) { }
+    },
+    slogan: function (slogan) {
+        try {
+            if (slogan) localStorage.setItem('gu_slogan', slogan); else localStorage.removeItem('gu_slogan');
         } catch (e) { }
     }
 };
 
 window.guTheme = {
-    apply: function (theme, color, appName, logoDataUrl) {
+    apply: function (theme, color, appName, logoDataUrl, slogan) {
         var root = document.documentElement;
         if (theme === 'dark') root.setAttribute('data-theme', 'dark');
         else root.removeAttribute('data-theme');
@@ -52,6 +58,8 @@ window.guTheme = {
             try { localStorage.setItem('gu_app_name', appName); } catch (e) { }
             window.guSplash.setName(appName);
         }
+        // Slogan gardé pour la page de connexion des prochaines ouvertures.
+        if (typeof slogan === 'string') window.guMarque.slogan(slogan.trim());
     }
 };
 

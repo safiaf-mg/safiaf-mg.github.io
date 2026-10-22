@@ -147,6 +147,11 @@ script peut être relancé sans danger.
   planning des services, intentions de prière et groupes et ministères. Le
   serveur garde les intentions confiées aux seuls responsables hors de portée
   des membres. Sans ce script, ces trois pages ne peuvent rien enregistrer.
+- `supabase/migrations/0007_slogan_connexion.sql` (22 octobre 2026) :
+  affiche le slogan (Paramètres › Configuration carte de membre) sur l'écran
+  de connexion, même sur un appareil qui ne s'est jamais connecté. Sans ce
+  script, l'écran de connexion montre le slogan gardé lors de la dernière
+  connexion sur l'appareil.
 
 ### Installer le site sur un téléphone
 

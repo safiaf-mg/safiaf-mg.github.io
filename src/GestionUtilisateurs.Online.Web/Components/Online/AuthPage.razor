@@ -6,7 +6,10 @@
         <div class="online-auth-hero-inner">
             <img class="online-auth-logo" src="@LogoAffiche" alt="" />
             <h2>@(_communaute.Length > 0 ? L.T(_communaute) : L.T("Votre communauté, en ligne"))</h2>
-            <p>@L.T("Membres, calendrier, documents, finances, votes et messagerie, partagés en toute sécurité.")</p>
+            @if (_slogan.Length > 0)
+            {
+                <p class="online-auth-slogan">@_slogan</p>
+            }
             <ul>
                 <li>@L.T("Un compte personnel pour chaque membre")</li>
                 <li>@L.T("Des droits selon votre rôle")</li>
@@ -22,6 +25,10 @@
             @if (_communaute.Length > 0)
             {
                 <h1 class="online-auth-mobile-name">@L.T(_communaute)</h1>
+            }
+            @if (_slogan.Length > 0 && !_signup)
+            {
+                <p class="online-auth-mobile-slogan">@_slogan</p>
             }
             <p class="login-subtitle">@(_signup ? L.T("Créez votre compte membre") : _forgot ? L.T("Mot de passe oublié") : L.T("Connectez-vous à votre espace membre"))</p>
         </div>
@@ -156,15 +163,16 @@
 </div>
 
 @code {
-    private sealed record Marque(string? Nom, string? Logo, string? Error = null);
+    private sealed record Marque(string? Nom, string? Logo, string? Slogan = null, string? Error = null);
 
     private string _communaute = "";
     private string _logo = "";
+    private string _slogan = "";
 
     /// <summary>Logo réglé dans Apparence, sinon le logo SAFIAF livré avec le site.</summary>
     private string LogoAffiche => _logo.Length > 0 ? _logo : Root.LogoParDefaut;
 
-    /// <summary>Nom et logo de la communauté : ceux gardés sur l'appareil, puis ceux du serveur.</summary>
+    /// <summary>Nom, logo et slogan de la communauté : ceux gardés sur l'appareil, puis ceux du serveur.</summary>
     protected override async Task OnInitializedAsync()
     {
         try
@@ -179,7 +187,7 @@
             if (serveur.Error == null)
             {
                 Appliquer(serveur);
-                await JS.InvokeVoidAsync("guMarque.ecrire", _communaute, _logo);
+                await JS.InvokeVoidAsync("guMarque.ecrire", _communaute, _logo, serveur.Slogan);
             }
         }
         catch { }
@@ -231,6 +239,8 @@
             Root.NomGarde = _communaute;
         }
         _logo = m.Logo?.StartsWith("data:image/", StringComparison.Ordinal) == true ? m.Logo : "";
+        // Slogan réglé dans Paramètres › Configuration carte de membre (null : non lu, on garde l'actuel).
+        if (m.Slogan != null) _slogan = m.Slogan.Trim();
     }
 
     private bool _signup;

@@ -14,7 +14,7 @@ public class JavascriptBridge
     {
         try
         {
-            await _js.InvokeVoidAsync("guTheme.apply", settings.Theme, settings.Color, settings.AppName, settings.Logo);
+            await _js.InvokeVoidAsync("guTheme.apply", settings.Theme, settings.Color, settings.AppName, settings.Logo, settings.CarteSlogan ?? "");
         }
         catch { /* hors navigateur (tests) : sans effet */ }
     }
