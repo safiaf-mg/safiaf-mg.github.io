@@ -253,5 +253,6 @@
   "Conjoint(e)": "Spouse",
   "Frère ou sœur": "Sibling",
   "Le numéro doit avoir 9 chiffres après +261 (ex. 341234567).": "The number must have 9 digits after +261 (e.g. 341234567).",
-  "Numéro de téléphone, 9 chiffres après +261": "Phone number, 9 digits after +261"
+  "Numéro de téléphone, 9 chiffres après +261": "Phone number, 9 digits after +261",
+  "Moins de 18 ans : le téléphone du responsable légal est obligatoire.": "Under 18: the legal guardian's phone is required."
 }

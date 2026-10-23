@@ -93,6 +93,12 @@ public class DataStoreDoublonsTests
 
         draft.ResponsableLegal = "Rabe Hery (père)";
         Assert.DoesNotContain("responsable", store.ValidateUser(draft, null, true, false).Keys);
+        Assert.Contains("responsable-tel", store.ValidateUser(draft, null, true, false).Keys);
+
+        draft.ResponsableTelephone = "+261 34 12";
+        Assert.Contains("responsable-tel", store.ValidateUser(draft, null, true, false).Keys);
+        draft.ResponsableTelephone = "+261 34 11 222 33";
+        Assert.DoesNotContain("responsable-tel", store.ValidateUser(draft, null, true, false).Keys);
 
         var adulte = new UserAccount { DateNaissance = DateTime.Today.AddYears(-18).ToString("yyyy-MM-dd") };
         Assert.False(adulte.EstMineur);
@@ -240,6 +246,24 @@ public class DataStoreDoublonsTests
         Assert.True(store.AjouterLienFamille(tuteur.Id, enfant.Identifiant, LiensFamille.Pupille).Success);
         Assert.Equal(tuteur.NomComplet + " (tuteur)", store.ResponsableAffiche(enfant).Nom);
         Assert.DoesNotContain("responsable", store.ValidateUser(enfant, enfant.Id, false, false).Keys);
+        // Le tuteur relié a un téléphone : rien de plus à saisir sur la fiche du mineur.
+        Assert.DoesNotContain("responsable-tel", store.ValidateUser(enfant, enfant.Id, false, false).Keys);
+        Assert.Equal("+261 34 11 222 33", store.ResponsableAffiche(enfant).Telephone);
+    }
+
+    [Fact]
+    public void Famille_ParentRelieSansTelephone_DemandeLeTelephoneDuResponsable()
+    {
+        var store = NewAdminStore();
+        var mere = Ajouter(store, "Lalao", "Rasoa");
+        var enfant = Ajouter(store, "Tiana", "Rabe", naissance: DateTime.Today.AddYears(-10).ToString("yyyy-MM-dd"));
+        Assert.True(store.AjouterLienFamille(enfant.Id, mere.Identifiant, LiensFamille.Parent).Success);
+        enfant = store.FindUser(enfant.Id)!;
+        Assert.DoesNotContain("responsable", store.ValidateUser(enfant, enfant.Id, false, false).Keys);
+        Assert.Contains("responsable-tel", store.ValidateUser(enfant, enfant.Id, false, false).Keys);
+
+        enfant.ResponsableTelephone = "+261 33 44 555 66";
+        Assert.DoesNotContain("responsable-tel", store.ValidateUser(enfant, enfant.Id, false, false).Keys);
     }
 
     [Fact]

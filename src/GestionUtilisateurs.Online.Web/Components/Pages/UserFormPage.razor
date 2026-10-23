@@ -145,8 +145,10 @@
             <input id="uf-resp" type="text" placeholder="@L.T("Nom et prénom")" value="@_model.ResponsableLegal" @oninput="e => _model.ResponsableLegal = e.Value?.ToString() ?? string.Empty" />
             <span class="field-hint">@L.T("Si un parent est déjà inscrit, vous pouvez aussi le relier dans la section « Famille » de la fiche.")</span>
             <span class="form-error">@Err("responsable")</span>
-            <label for="uf-resp-tel" style="margin-top:8px">@L.T("Téléphone du responsable")</label>
+            <label for="uf-resp-tel" style="margin-top:8px">@L.T("Téléphone du responsable *")</label>
             <TelephoneInput Id="uf-resp-tel" Value="@_model.ResponsableTelephone" ValueChanged="@(v => _model.ResponsableTelephone = v)" />
+            <span class="field-hint">@L.T("Obligatoire, sauf si le parent ou le tuteur relié dans « Famille » a déjà un téléphone sur sa fiche.")</span>
+            <span class="form-error">@Err("responsable-tel")</span>
         </div>
     }
     @if (!IsSelfSimpleUser)
