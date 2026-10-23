@@ -301,5 +301,6 @@
   "Toutes les pages sont dans ce menu : {0}…": "All pages are in this menu: {0}…",
   "Regardez la barre du bas : {0}, toujours à portée de pouce.": "Look at the bottom bar: {0}, always within thumb's reach.",
   "En haut à droite : {0}… Tout le reste se trouve derrière ce bouton.": "Top right: {0}… Everything else is behind this button.",
-  "Tous les rappels ({0})": "All reminders ({0})"
+  "Tous les rappels ({0})": "All reminders ({0})",
+  "Faites encore « retour » pour quitter l'application.": "Go back once more to close the app."
 }

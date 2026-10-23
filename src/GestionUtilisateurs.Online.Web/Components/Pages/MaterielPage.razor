@@ -309,5 +309,19 @@ else
         else State.NotifyError(res.Error);
     }
 
-    public void Dispose() => Store.DataChanged -= Refresh;
+    /// <summary>Geste « retour » : referme la fiche du matériel sélectionné.</summary>
+    private void RetourSousVue()
+    {
+        _selected = null;
+        StateHasChanged();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+        => State.SetSousVue(this, _selected != null ? RetourSousVue : null);
+
+    public void Dispose()
+    {
+        State.SetSousVue(this, null);
+        Store.DataChanged -= Refresh;
+    }
 }

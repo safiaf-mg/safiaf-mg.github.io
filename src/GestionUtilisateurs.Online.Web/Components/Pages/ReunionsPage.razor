@@ -387,8 +387,16 @@ else
         _scanEtat = "";
     }
 
+    /// <summary>Geste « retour » : referme la réunion sélectionnée.</summary>
+    private void RetourSousVue()
+    {
+        _selected = null;
+        StateHasChanged();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        State.SetSousVue(this, _selected != null ? RetourSousVue : null);
         if (_scanReunionId == null || _scanDemarre) return;
         _scanDemarre = true;
         _scanRef ??= DotNetObjectReference.Create(this);
@@ -453,6 +461,7 @@ else
 
     public void Dispose()
     {
+        State.SetSousVue(this, null);
         Store.DataChanged -= Refresh;
         if (_scanReunionId != null) _ = Js.QrScanStopAsync();
         _scanRef?.Dispose();

@@ -8,10 +8,44 @@ public class AppState
 
     public string CurrentPage => _currentPage;
 
-    /// <summary>Indique si une page précédente existe (affiche le bouton retour).</summary>
-    public bool HasHistory => _history.Count > 0;
+    /// <summary>Indique si une page précédente (ou un écran interne à fermer) existe :
+    /// affiche le bouton retour et active le geste « retour » du système.</summary>
+    public bool HasHistory => _history.Count > 0 || _retourSousVue != null;
+
+    // Écran interne d'une page (fiche d'un membre, formulaire, module du guide,
+    // conversation…) : le retour le ferme avant de quitter la page.
+    private object? _sousVueProprietaire;
+    private Action? _retourSousVue;
+
+    /// <summary>Déclare (ou retire, avec null) l'écran interne ouvert par une page :
+    /// le prochain retour appellera <paramref name="retour"/> au lieu de changer de page.</summary>
+    public void SetSousVue(object proprietaire, Action? retour)
+    {
+        if (retour == null)
+        {
+            if (!ReferenceEquals(_sousVueProprietaire, proprietaire) || _retourSousVue == null) return;
+            _sousVueProprietaire = null;
+            _retourSousVue = null;
+        }
+        else
+        {
+            if (ReferenceEquals(_sousVueProprietaire, proprietaire) && Equals(_retourSousVue, retour)) return;
+            _sousVueProprietaire = proprietaire;
+            _retourSousVue = retour;
+        }
+        SousVueChanged?.Invoke();
+    }
+
+    private void OublierSousVue()
+    {
+        _sousVueProprietaire = null;
+        _retourSousVue = null;
+    }
 
     public event Action? PageChanged;
+
+    /// <summary>Un écran interne s'ouvre ou se ferme (le bouton retour peut apparaître ou disparaître).</summary>
+    public event Action? SousVueChanged;
     public event Action<string, string>? Toast;
     public event Action<string, string, string?, Func<Task>?>? ToastAction;
     public event Action? SearchChanged;
@@ -23,6 +57,7 @@ public class AppState
     public void Navigate(string page)
     {
         if (_currentPage == page) return;
+        OublierSousVue();
         // Si la page est déjà dans la pile, on dépile jusqu'à elle au lieu
         // d'empiler un doublon : le retour reste page par page, sans détour,
         // et la sortie de l'app ne demande jamais une longue série de gestes.
@@ -39,6 +74,14 @@ public class AppState
     /// Depuis la carte de membre, renvoie vers la fiche de l'utilisateur.</summary>
     public void GoBack()
     {
+        if (_retourSousVue != null)
+        {
+            var retour = _retourSousVue;
+            OublierSousVue();
+            retour();
+            SousVueChanged?.Invoke();
+            return;
+        }
         if (_history.Count == 0) return;
         if (_currentPage == "carte")
         {
@@ -56,6 +99,7 @@ public class AppState
     public void ResetNavigation()
     {
         _history.Clear();
+        OublierSousVue();
         _currentPage = "dashboard";
         PageChanged?.Invoke();
     }
@@ -64,6 +108,7 @@ public class AppState
     public void GoToInitial(string page)
     {
         _history.Clear();
+        OublierSousVue();
         _currentPage = page;
         PageChanged?.Invoke();
     }

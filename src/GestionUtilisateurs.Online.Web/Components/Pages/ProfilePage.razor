@@ -1,3 +1,4 @@
+@implements IDisposable
 @inject DataStore Store
 @inject AppState State
 
@@ -26,4 +27,16 @@ else
 
     private void Back()
         => State.GoBack();
+
+    /// <summary>Geste « retour » : ferme le formulaire de modification du profil.</summary>
+    private void RetourSousVue()
+    {
+        _editing = false;
+        StateHasChanged();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+        => State.SetSousVue(this, _editing ? RetourSousVue : null);
+
+    public void Dispose() => State.SetSousVue(this, null);
 }
