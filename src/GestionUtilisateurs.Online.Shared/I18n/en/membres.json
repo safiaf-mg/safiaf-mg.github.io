@@ -339,5 +339,7 @@
   "Numéro ({0} chiffres)": "Number ({0} digits)",
   "Saisir au format": "Enter in the format",
   "Sert à se connecter ; il ne change plus après la création.": "Used to sign in; it cannot be changed after creation.",
-  "Créé automatiquement à l'enregistrement": "Created automatically when saved"
+  "Créé automatiquement à l'enregistrement": "Created automatically when saved",
+  "Téléphone du responsable *": "Guardian's phone *",
+  "Obligatoire, sauf si le parent ou le tuteur relié dans « Famille » a déjà un téléphone sur sa fiche.": "Required, unless the parent or guardian linked in « Family » already has a phone on their record."
 }

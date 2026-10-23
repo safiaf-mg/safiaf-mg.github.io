@@ -171,15 +171,24 @@ public partial class DataStore
         return false;
     }
 
-    /// <summary>Responsable légal affiché : celui saisi, sinon un parent, sinon un tuteur lié à la fiche.</summary>
+    /// <summary>Responsable légal affiché : celui saisi, sinon un parent, sinon un tuteur lié à la fiche.
+    /// Sans téléphone sur la fiche du parent ou du tuteur, celui saisi sur la fiche du mineur est repris.</summary>
     public (string Nom, string Telephone) ResponsableAffiche(UserAccount u)
     {
-        if (!string.IsNullOrWhiteSpace(u.ResponsableLegal)) return (u.ResponsableLegal.Trim(), (u.ResponsableTelephone ?? "").Trim());
+        var telSaisi = (u.ResponsableTelephone ?? "").Trim();
+        if (!string.IsNullOrWhiteSpace(u.ResponsableLegal)) return (u.ResponsableLegal.Trim(), telSaisi);
         var parent = Lies(u, LiensFamille.Parent).FirstOrDefault(p => !p.EstMineur);
-        if (parent != null) return (L.F("{0} (parent)", parent.NomComplet), parent.Telephone ?? "");
+        if (parent != null) return (L.F("{0} (parent)", parent.NomComplet), Premier(parent.Telephone, telSaisi));
         var tuteur = Lies(u, LiensFamille.Tuteur).FirstOrDefault(p => !p.EstMineur);
-        return tuteur == null ? ("", "") : (L.F("{0} (tuteur)", tuteur.NomComplet), tuteur.Telephone ?? "");
+        return tuteur == null ? ("", telSaisi) : (L.F("{0} (tuteur)", tuteur.NomComplet), Premier(tuteur.Telephone, telSaisi));
     }
+
+    private static string Premier(string? a, string b) => string.IsNullOrWhiteSpace(a) ? b : a.Trim();
+
+    /// <summary>Téléphone du premier parent (ou tuteur) majeur relié à la fiche qui en a un.</summary>
+    private string TelephoneResponsableRelie(UserAccount u)
+        => Lies(u, LiensFamille.Parent).Concat(Lies(u, LiensFamille.Tuteur))
+            .Where(p => !p.EstMineur).Select(p => (p.Telephone ?? "").Trim()).FirstOrDefault(t => t.Length > 0) ?? "";
 
     /// <summary>Vrai si un parent ou un tuteur majeur est relié à la fiche.</summary>
     private bool AResponsableRelie(UserAccount u)

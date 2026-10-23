@@ -339,5 +339,7 @@
   "Numéro ({0} chiffres)": "Isa (tarehimarika {0})",
   "Saisir au format": "Soraty araka ny endrika",
   "Sert à se connecter ; il ne change plus après la création.": "Ampiasaina hidirana; tsy miova intsony rehefa voaforona.",
-  "Créé automatiquement à l'enregistrement": "Foronina ho azy rehefa voatahiry"
+  "Créé automatiquement à l'enregistrement": "Foronina ho azy rehefa voatahiry",
+  "Téléphone du responsable *": "Telefaonan'ny tompon'andraikitra *",
+  "Obligatoire, sauf si le parent ou le tuteur relié dans « Famille » a déjà un téléphone sur sa fiche.": "Tsy maintsy fenoina, raha tsy efa manana telefaona ao amin'ny takelany ny ray na reny na mpiahy mifandray ao amin'ny « Fianakaviana »."
 }
