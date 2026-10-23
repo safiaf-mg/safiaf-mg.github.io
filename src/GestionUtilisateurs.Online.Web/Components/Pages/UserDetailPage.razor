@@ -40,9 +40,9 @@
         {
             var (respNom, respTel) = Store.ResponsableAffiche(_user);
             <div class="kv-row"><span class="kv-label">@L.T("Responsable légal")</span><span class="kv-value">@(string.IsNullOrWhiteSpace(respNom) ? L.T("À renseigner") : respNom)</span></div>
-            @if (!string.IsNullOrWhiteSpace(respTel))
+            @if (!string.IsNullOrWhiteSpace(respTel) || _user.EstMineur)
             {
-                <div class="kv-row"><span class="kv-label">@L.T("Tél. du responsable")</span><span class="kv-value">@respTel</span></div>
+                <div class="kv-row"><span class="kv-label">@L.T("Tél. du responsable")</span><span class="kv-value">@(string.IsNullOrWhiteSpace(respTel) ? L.T("À renseigner") : respTel)</span></div>
             }
         }
     </div>

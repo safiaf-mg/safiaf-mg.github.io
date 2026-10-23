@@ -1679,13 +1679,21 @@ if (string.IsNullOrWhiteSpace(draft.Prenom)) Add("prenom", L.T("Le prénom est o
                 Add("email", L.T("Cette adresse e-mail existe déjà."));
         }
 
-        // Membre de moins de 18 ans : un responsable légal (nom) est demandé.
+        // Membre de moins de 18 ans : un responsable légal (nom) et son téléphone sont demandés.
+        // Un parent ou un tuteur relié dans « Famille » suffit, avec son propre téléphone s'il en a un.
         if (NormalizeYmd(draft.DateNaissance) is { Length: > 0 } naissance
-            && new UserAccount { DateNaissance = naissance }.EstMineur
-            && string.IsNullOrWhiteSpace(draft.ResponsableLegal)
-            && !(existingId != null && _users.FirstOrDefault(u => u.Id == existingId) is { } fiche
-                 && AResponsableRelie(fiche)))
-            Add("responsable", L.T("Moins de 18 ans : indiquez le responsable légal (parent ou tuteur), ou reliez un parent ou un tuteur dans la section Famille de sa fiche."));
+            && new UserAccount { DateNaissance = naissance }.EstMineur)
+        {
+            var fiche = existingId == null ? null : _users.FirstOrDefault(u => u.Id == existingId);
+            var relie = fiche != null && string.IsNullOrWhiteSpace(draft.ResponsableLegal) && AResponsableRelie(fiche);
+            if (string.IsNullOrWhiteSpace(draft.ResponsableLegal) && !relie)
+                Add("responsable", L.T("Moins de 18 ans : indiquez le responsable légal (parent ou tuteur), ou reliez un parent ou un tuteur dans la section Famille de sa fiche."));
+            var telRelie = relie && !string.IsNullOrWhiteSpace(TelephoneResponsableRelie(fiche!));
+            if (!telRelie && !(draft.ResponsableTelephone ?? "").Any(char.IsDigit))
+                Add("responsable-tel", L.T("Moins de 18 ans : le téléphone du responsable légal est obligatoire."));
+        }
+        if ((draft.ResponsableTelephone ?? "").Any(char.IsDigit) && !IsPhoneValid(NormalizePhone(draft.ResponsableTelephone)))
+            Add("responsable-tel", L.T("Le numéro doit avoir 9 chiffres après +261 (ex. 341234567)."));
 
         // Matricule facultatif mais unique s'il est renseigné.
         if (!string.IsNullOrWhiteSpace(draft.Matricule)

@@ -4,6 +4,18 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 23 octobre 2026 (téléphone du responsable légal)
+
+- Fiche d'un membre de moins de 18 ans : le téléphone du responsable légal
+  devient obligatoire, comme son nom. Le numéro suit le même format que les
+  autres (+261 puis 9 chiffres).
+- Si un parent ou un tuteur est relié dans la section « Famille » et qu'il a
+  déjà un téléphone sur sa fiche, ce numéro suffit : rien de plus à saisir.
+  Sinon, écrivez le numéro dans « Téléphone du responsable ».
+- Les fiches existantes ne changent pas : le numéro n'est demandé qu'à la
+  prochaine modification de la fiche. La fiche détaillée affiche « À
+  renseigner » tant qu'il manque.
+
 ## 22 octobre 2026 (slogan sur la page de connexion)
 
 - Page de connexion : la phrase « Membres, calendrier, documents, finances,
