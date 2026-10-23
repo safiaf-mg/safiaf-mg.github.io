@@ -18,6 +18,7 @@ obligatoire.
   (conversation → liste des conversations), Matériel et Réunions (fiche
   sélectionnée → liste). Le bouton ‹ en haut à gauche fait de même.
 - Une fiche de membre ouverte depuis l'accueil revient toujours à l'accueil.
+
 ## 23 octobre 2026 (téléphone du responsable légal)
 
 - Fiche d'un membre de moins de 18 ans : le téléphone du responsable légal
@@ -29,7 +30,6 @@ obligatoire.
 - Les fiches existantes ne changent pas : le numéro n'est demandé qu'à la
   prochaine modification de la fiche. La fiche détaillée affiche « À
   renseigner » tant qu'il manque.
-
 
 ## 22 octobre 2026 (slogan sur la page de connexion)
 
