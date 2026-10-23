@@ -1,3 +1,4 @@
+@implements IDisposable
 @inject AppState State
 @inject DataStore Store
 @inject JavascriptBridge Js
@@ -119,6 +120,18 @@ else
     {
         _selected = null;
     }
+
+    /// <summary>Geste « retour » : un module ouvert revient au sommaire du guide.</summary>
+    private void RetourSousVue()
+    {
+        _selected = null;
+        StateHasChanged();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+        => State.SetSousVue(this, _selected != null ? RetourSousVue : null);
+
+    public void Dispose() => State.SetSousVue(this, null);
 
     private int EntriesIndex()
     {

@@ -4,6 +4,21 @@ Les nouveautés de la version en ligne, de la plus récente à la plus ancienne.
 Chaque nouvelle version s'installe d'elle-même : la mise à jour est
 obligatoire.
 
+## 23 octobre 2026 (geste « retour » sur téléphone)
+
+- Application installée sur le téléphone : le geste « retour » (glisser
+  depuis le bord de l'écran, ou bouton retour d'Android) ne ferme plus
+  l'application par erreur. Sur l'écran de départ, un premier retour affiche
+  « Faites encore « retour » pour quitter l'application. » ; seul un second
+  retour dans les 3 secondes la ferme.
+- Le retour revient maintenant à l'écran précédent partout, y compris à
+  l'intérieur d'une page : Utilisateurs (fiche d'un membre → liste, formulaire
+  → fiche, fiche ouverte depuis une autre fiche → fiche précédente), Mon
+  profil (formulaire → profil), Guide (module → sommaire), Messagerie
+  (conversation → liste des conversations), Matériel et Réunions (fiche
+  sélectionnée → liste). Le bouton ‹ en haut à gauche fait de même.
+- Une fiche de membre ouverte depuis l'accueil revient toujours à l'accueil.
+
 ## 22 octobre 2026 (slogan sur la page de connexion)
 
 - Page de connexion : la phrase « Membres, calendrier, documents, finances,

@@ -491,6 +491,7 @@
         Store.DataChanged += OnChanged;
         Store.SessionChanged += OnChanged;
         State.PageChanged += OnChanged;
+        State.SousVueChanged += OnChanged;
         Online.Changed += OnOnlineChanged;
         State.TourRequested += OnTourRequested;
         currentUser = Store.GetCurrentUser();
@@ -547,6 +548,12 @@
         if (!State.HasHistory) return;
         _ = InvokeAsync(State.GoBack);
     }
+
+    /// <summary>Geste « retour » sur l'écran de départ de l'application installée :
+    /// au lieu de quitter, on prévient qu'un second retour fermera l'application.</summary>
+    [JSInvokable]
+    public void OnBackAtRoot()
+        => _ = InvokeAsync(() => State.NotifyInfo(L.T("Faites encore « retour » pour quitter l'application.")));
 
     private void OnChanged()
     {
@@ -1144,6 +1151,7 @@
         Store.DataChanged -= OnChanged;
         Store.SessionChanged -= OnChanged;
         State.PageChanged -= OnChanged;
+        State.SousVueChanged -= OnChanged;
         Online.Changed -= OnOnlineChanged;
         State.TourRequested -= OnTourRequested;
     }

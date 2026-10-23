@@ -472,8 +472,16 @@ else
         => string.Join(", ", Store.ParticipantsConversation(cid)
             .Select(p => p.Equals(Me, StringComparison.OrdinalIgnoreCase) ? L.T("vous") : Store.FindUserByIdentifier(p)?.NomComplet ?? p));
 
+    /// <summary>Geste « retour » : une conversation ouverte revient à la liste des conversations.</summary>
+    private void RetourSousVue()
+    {
+        CloseConversation();
+        StateHasChanged();
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        State.SetSousVue(this, _conversation != null ? RetourSousVue : null);
         // À l'ouverture et après un envoi, la conversation s'affiche sur ses derniers messages.
         if (!_defiler || _conversation == null) return;
         _defiler = false;
@@ -689,5 +697,9 @@ else
         RefreshList();
     }
 
-    public void Dispose() => Store.DataChanged -= Refresh;
+    public void Dispose()
+    {
+        State.SetSousVue(this, null);
+        Store.DataChanged -= Refresh;
+    }
 }

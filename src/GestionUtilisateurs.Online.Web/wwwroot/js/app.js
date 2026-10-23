@@ -164,6 +164,10 @@ window.guNav = {
 // une seule entrée d'historique « de garde » tant qu'il y a quelque chose à
 // fermer ou une page précédente. Le retour ferme d'abord la fenêtre ouverte,
 // sinon revient à la page précédente ; sans rien de tout cela, il quitte l'app.
+// Application installée (écran d'accueil du téléphone) : l'entrée de garde est
+// toujours là, et le retour sur l'écran de départ ne quitte pas l'application ;
+// il affiche un message, et seul un second retour dans les secondes qui suivent
+// la ferme.
 window.guRetour = {
     _ref: null,
     _bound: false,
@@ -171,14 +175,27 @@ window.guRetour = {
     _ignorer: 0,
     _pagePrecedente: false,
     _minuteur: null,
+    _sortieJusqua: 0,
     _ouvert: function () {
-        var o = document.querySelectorAll('.modal-overlay, .more-overlay, .photo-overlay');
+        var o = document.querySelectorAll('.modal-overlay, .more-overlay, .photo-overlay, .chat-menu-backdrop');
         return o.length ? o[o.length - 1] : null;
+    },
+    _installee: function () {
+        try {
+            if (window.navigator.standalone === true) return true;
+            return ['standalone', 'fullscreen', 'minimal-ui'].some(function (m) {
+                return window.matchMedia('(display-mode: ' + m + ')').matches;
+            });
+        } catch (_) { return false; }
     },
     _sync: function () {
         var r = window.guRetour;
         if (!r._ref) return;
-        var besoin = r._pagePrecedente || !!r._ouvert();
+        // Chrome ignore les entrées ajoutées avant tout contact avec la page :
+        // pour l'écran de départ, on attend le premier toucher (voir enable).
+        var actif = !navigator.userActivation || navigator.userActivation.hasBeenActive;
+        var besoin = r._pagePrecedente || !!r._ouvert()
+            || (actif && r._installee() && Date.now() >= r._sortieJusqua);
         try {
             if (besoin && !r._garde) {
                 history.pushState({ guRetour: 1 }, '');
@@ -207,9 +224,19 @@ window.guRetour = {
                 var o = r._ouvert();
                 if (o) o.click();
                 else if (r._pagePrecedente) { try { r._ref.invokeMethodAsync('OnSwipeBack'); } catch (_) { } }
+                else if (r._installee()) {
+                    // Écran de départ : on laisse 3 s pour un second retour qui
+                    // quitte l'application, puis l'entrée de garde est remise.
+                    r._sortieJusqua = Date.now() + 3000;
+                    try { r._ref.invokeMethodAsync('OnBackAtRoot'); } catch (_) { }
+                    setTimeout(r._sync, 3100);
+                }
                 r._plusTard();
             });
             new MutationObserver(r._plusTard).observe(document.body, { childList: true, subtree: true });
+            ['pointerdown', 'keydown'].forEach(function (t) {
+                document.addEventListener(t, r._plusTard, { passive: true, capture: true });
+            });
         }
         r._plusTard();
     },

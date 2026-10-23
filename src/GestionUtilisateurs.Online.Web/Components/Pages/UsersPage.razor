@@ -10,9 +10,9 @@
 else if (_viewMode == ViewMode.Detail)
 {
     <UserDetailPage UserId="@_detailUserId"
-                    OnBack="@(() => { _viewMode = ViewMode.List; _detailUserId = null; StateHasChanged(); })"
+                    OnBack="@CloseDetail"
                     OnEdit="@(id => OpenEdit(id))"
-                    OnOpenUser="@(id => { _detailUserId = id; StateHasChanged(); })" />
+                    OnOpenUser="@OpenLinkedUser" />
 }
 else
 {
@@ -278,6 +278,10 @@ else
     private ViewMode _viewMode = ViewMode.List;
     private string? _detailUserId;
     private string? _formUserId;
+    // Fiches consultées l'une depuis l'autre (lien familial…) : le retour les remonte une à une.
+    private readonly List<string> _detailPrecedents = new();
+    // Fiche ouverte directement depuis une autre page (accueil…) : le retour y revient.
+    private bool _detailDirect;
 
     private bool IsAdmin => Store.IsAdmin;
     private bool CanManage => Store.IsManager;
@@ -374,6 +378,7 @@ else
             {
                 _detailUserId = pending;
                 _viewMode = ViewMode.Detail;
+                _detailDirect = true;
             }
         }
         else
@@ -693,8 +698,47 @@ else
 
     private void OpenDetail(string id)
     {
+        _detailPrecedents.Clear();
+        _detailDirect = false;
         _detailUserId = id;
         _viewMode = ViewMode.Detail;
+    }
+
+    private void OpenLinkedUser(string id)
+    {
+        if (_detailUserId != null && _detailUserId != id) _detailPrecedents.Add(_detailUserId);
+        _detailUserId = id;
+        StateHasChanged();
+    }
+
+    private void CloseDetail()
+    {
+        _detailPrecedents.Clear();
+        _detailDirect = false;
+        _viewMode = ViewMode.List;
+        _detailUserId = null;
+        StateHasChanged();
+    }
+
+    /// <summary>Geste « retour » : ferme le formulaire, revient à la fiche précédente, puis à la liste.</summary>
+    private void RetourSousVue()
+    {
+        if (_viewMode == ViewMode.Form) { CloseForm(); return; }
+        if (_detailPrecedents.Count > 0)
+        {
+            _detailUserId = _detailPrecedents[^1];
+            _detailPrecedents.RemoveAt(_detailPrecedents.Count - 1);
+            StateHasChanged();
+            return;
+        }
+        CloseDetail();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        var sousVue = _viewMode == ViewMode.Form
+            || (_viewMode == ViewMode.Detail && (!_detailDirect || _detailPrecedents.Count > 0));
+        State.SetSousVue(this, sousVue ? RetourSousVue : null);
     }
 
     private void OpenPhoto(UserAccount u) => _viewer = u;
@@ -779,6 +823,7 @@ else
 
     public void Dispose()
     {
+        State.SetSousVue(this, null);
         Store.DataChanged -= OnChanged;
         _searchTimer?.Dispose();
     }
